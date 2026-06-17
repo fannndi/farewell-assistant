@@ -43,7 +43,7 @@ function Write-Fail {
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Magenta
-Write-Host "  farewell-assistant — Maintenance" -ForegroundColor Magenta
+Write-Host "  farewell-assistant - Maintenance" -ForegroundColor Magenta
 Write-Host "  =================================================" -ForegroundColor Magenta
 Write-Host ""
 
@@ -81,7 +81,7 @@ function Write-PullECC {
         Write-ChangelogDiff "ECC" $ECC_DIR "main" $before
         git reset --hard origin/main 2>&1 | Out-Null
         $afterShort = git log --oneline -1 2>$null
-        Write-Host "  ECC updated → $afterShort" -ForegroundColor Green
+        Write-Host "  ECC updated >> $afterShort" -ForegroundColor Green
         # Sync changelog
         git show origin/main:CHANGELOG.md 2>$null | Out-File -FilePath "$ROOT_DIR\CHANGELOG_ECC.md" -Encoding UTF8
         Write-OK "CHANGELOG_ECC.md synced"
@@ -103,7 +103,7 @@ function Write-Pull9Router {
         Write-ChangelogDiff "9Router" $ROUTER_DIR "master" $before
         git pull --ff-only 2>&1 | Out-Null
         $afterShort = git log --oneline -1 2>$null
-        Write-Host "  9Router updated → $afterShort" -ForegroundColor Green
+        Write-Host "  9Router updated >> $afterShort" -ForegroundColor Green
         # Sync changelog
         git show origin/master:CHANGELOG.md 2>$null | Out-File -FilePath "$ROOT_DIR\CHANGELOG_9ROUTER.md" -Encoding UTF8
         Write-OK "CHANGELOG_9ROUTER.md synced"
@@ -144,25 +144,25 @@ $issues = @()
 
 # Check ECC
 if (-not (Test-Path "$ECC_DIR\AGENTS.md")) {
-    $issues += "ECC not found — run: .\scripts\setup.ps1"
+    $issues += "ECC not found - run: .\scripts\setup.ps1"
 }
 
 # Check 9Router
 if (-not (Test-Path "$ROUTER_DIR\package.json")) {
-    $issues += "9Router not found — run: .\scripts\setup.ps1"
+    $issues += "9Router not found - run: .\scripts\setup.ps1"
 }
 
 # Check OpenCode config
 $openCodeConfig = "$env:USERPROFILE\.config\opencode\opencode.jsonc"
 if (-not (Test-Path $openCodeConfig)) {
-    $issues += "OpenCode config not found — run: .\scripts\setup.ps1"
+    $issues += "OpenCode config not found - run: .\scripts\setup.ps1"
 }
 
 # Check 9Router running
 try {
     $null = Invoke-RestMethod -Uri "http://localhost:20128/api/health" -TimeoutSec 3 -ErrorAction Stop
 } catch {
-    $issues += "9Router not running — start with: .\scripts\start.ps1"
+    $issues += "9Router not running - start with: .\scripts\start.ps1"
 }
 
 # Check Ollama
@@ -178,7 +178,7 @@ if ($mode -ne "eco") {
     try {
         $null = Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -TimeoutSec 3 -ErrorAction Stop
     } catch {
-        $issues += "Ollama not running (mode: $mode) — start with: .\scripts\llm-mode.ps1 on"
+        $issues += "Ollama not running (mode: $mode) - start with: .\scripts\llm-mode.ps1 on"
     }
 }
 
@@ -215,3 +215,4 @@ if ($issues.Count -eq 0) {
     Write-Host "  $($issues.Count) issue(s) found. Fix above." -ForegroundColor Yellow
 }
 Write-Host ""
+

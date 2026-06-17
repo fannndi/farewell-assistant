@@ -32,7 +32,7 @@ function Write-Fail {
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Magenta
-Write-Host "  farewell-assistant — First Install" -ForegroundColor Magenta
+Write-Host "  farewell-assistant - First Install" -ForegroundColor Magenta
 Write-Host "  =================================================" -ForegroundColor Magenta
 Write-Host ""
 
@@ -83,7 +83,8 @@ Write-Host "  Setup Complete!" -ForegroundColor Green
 Write-Host "  =================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Next steps:" -ForegroundColor Cyan
-Write-Host "    1. Edit api-key.txt — isi dengan key dari 9Router" -ForegroundColor White
+Write-Host "    1. Edit api-key.txt - isi dengan key dari 9Router" -ForegroundColor White
 Write-Host "       Dashboard: http://localhost:20128/dashboard" -ForegroundColor Gray
 Write-Host "    2. Jalankan: .\scripts\start.ps1" -ForegroundColor White
 Write-Host ""
+

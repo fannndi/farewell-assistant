@@ -1,4 +1,4 @@
-# Start — Single daily command
+# Start - Single daily command
 # Usage: .\start.ps1
 # Auto-setup, combo config, start 9Router, buka opencode
 
@@ -76,7 +76,7 @@ if (Test-Path $API_KEY_FILE) {
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Cyan
-Write-Host "  farewell-assistant — Daily Startup" -ForegroundColor Cyan
+Write-Host "  farewell-assistant - Daily Startup" -ForegroundColor Cyan
 Write-Host "  =================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -156,7 +156,7 @@ try {
 if ($remoteCombos.Count -gt 0) {
     Write-Host "  Combo tersedia: $($remoteCombos -join ', ')" -ForegroundColor Gray
 } else {
-    Write-Host "  (Tidak ada combo terdeteksi — buat dulu di dashboard)" -ForegroundColor Gray
+    Write-Host "  (Tidak ada combo terdeteksi - buat dulu di dashboard)" -ForegroundColor Gray
 }
 
 # Read saved combos
@@ -195,9 +195,9 @@ if ($needsSetup) {
     }
 }
 
-Write-Host "  → 0: $($savedCombos[0] -replace '^.*','(model utama)')" -ForegroundColor Gray
+Write-Host "  >> 0: $($savedCombos[0] -replace '^.*','(model utama)')" -ForegroundColor Gray
 if ($savedCombos.Count -gt 1) {
-    Write-Host "  → 1: $($savedCombos[1]) (small_model)" -ForegroundColor Gray
+    Write-Host "  >> 1: $($savedCombos[1]) (small_model)" -ForegroundColor Gray
 }
 
 # ── Step 3: Apply Profile ──
@@ -216,7 +216,8 @@ $comboModels = "{$modelEntries`n    }"
 $config = Get-Content $PROFILE_SRC -Raw
 $config = $config -replace '\{project\}', ($ROOT_DIR -replace '\\', '/')
 $config = $config -replace '\$\{COMBO_0\}', $savedCombos[0]
-$config = $config -replace '\$\{COMBO_1\}', (if ($savedCombos.Count -gt 1) { $savedCombos[1] } else { $savedCombos[0] })
+$combo1 = if ($savedCombos.Count -gt 1) { $savedCombos[1] } else { $savedCombos[0] }
+$config = $config -replace '\$\{COMBO_1\}', $combo1
 $config = $config -replace '\$\{COMBO_MODELS\}', $comboModels
 
 New-Item -ItemType Directory -Path $OPENCODE_DIR -Force | Out-Null
@@ -253,7 +254,7 @@ if ($mode -ne "eco") {
         Write-OK "Ollama running"
     }
 } else {
-    Write-Skip "ECO mode — Ollama not needed"
+    Write-Skip "ECO mode - Ollama not needed"
 }
 
 # ── Step 5: Update Check ──
@@ -266,7 +267,7 @@ if (Write-UpdateCheck "9Router" $ROUTER_DIR "origin" "master") { $hasUpdates = $
 
 if ($hasUpdates) {
     Write-Host ""
-    Write-Host "  ⚡ Update tersedia! Jalankan: .\scripts\admin.ps1" -ForegroundColor Cyan
+    Write-Host "  ! Update tersedia! Jalankan: .\scripts\admin.ps1" -ForegroundColor Cyan
     Write-Host "  Lihat changelog: CHANGELOG_ECC.md atau CHANGELOG_9ROUTER.md" -ForegroundColor Gray
 }
 
@@ -314,5 +315,6 @@ Write-Host "  ECC:         Available" -ForegroundColor Green
 Write-Host "  Combo:       $($savedCombos -join ', ')" -ForegroundColor White
 Write-Host "  LLM Mode:    $mode" -ForegroundColor $(if ($mode -eq "eco") { "Green" } else { "Cyan" })
 Write-Host ""
-Write-Host "  => Membuka opencode..." -ForegroundColor Cyan
+Write-Host "  >> Membuka opencode..." -ForegroundColor Cyan
 opencode
+

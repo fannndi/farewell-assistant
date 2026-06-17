@@ -9,13 +9,13 @@ Multi-project AI assistant berbasis OpenCode + 9Router + ECC. Didesain dari nol 
 ## Apa Ini?
 
 Seperti punya asisten coding yang:
-- **Tau project apa yang sedang kamu kerjakan** — auto-detect stack dan context
-- **Hemat token** — instruksi hanya ~800 token (bukan 5000+)
-- **Pakai GPU lokal** — enrichment via Ollama saat butuh (opsional)
-- **Handle semua project** — Flutter, Go, Node, PHP, Python, Rust, .NET
+- **Tau project apa yang sedang kamu kerjakan** - auto-detect stack dan context
+- **Hemat token** - instruksi hanya ~800 token (bukan 5000+)
+- **Pakai GPU lokal** - enrichment via Ollama saat butuh (opsional)
+- **Handle semua project** - Flutter, Go, Node, PHP, Python, Rust, .NET
 
 ```
-User Input → Project Detect → Enrich (opsional) → Execute → Response
+User Input >> Project Detect >> Enrich (opsional) >> Execute >> Response
     │              │                  │                │
     │              │                  │                └─ Cloud AI (9Router)
     │              │                  └─ Local GPU (MX150, qwen2.5:1.5b)
@@ -63,10 +63,10 @@ Mode: `eco` (GPU off) atau `on` (GPU active, ~1GB VRAM).
 git clone https://github.com/fannndi/farewell-assistant.git
 cd farewell-assistant
 
-# 2. Edit api-key.txt — isi key 9Router & key lain
+# 2. Edit api-key.txt - isi key 9Router & key lain
 #    (key dari dashboard: http://localhost:20128/dashboard)
 
-# 3. Start — auto semua, nanti pilih combo
+# 3. Start - auto semua, nanti pilih combo
 .\scripts\start.ps1
 ```
 
@@ -217,3 +217,4 @@ Switch: `/llm eco` or `/llm on`
 ## License
 
 MIT
+

@@ -37,7 +37,7 @@ $PROFILES = [ordered]@{
         vram = "~1GB"
         condition = "Indoor, unplugged"
         hf_repo = "Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF"
-        hf_file = "Qwen2.5-Coder-1.5B-Instruct-Q4_K_M.gguf"
+        hf_file = "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
         modelfile = "$ROOT_DIR\Modelfile.qwen2.5-coder-1.5b"
         size_gb = 1.0
     }
@@ -166,7 +166,7 @@ function Invoke-Pull {
     $ggufFiles = Get-GGUFFiles
 
     $targets = if ($TargetProfile) {
-        if ($PROFILES.ContainsKey($TargetProfile)) {
+        if ($PROFILES.Contains($TargetProfile)) {
             @{ $TargetProfile = $PROFILES[$TargetProfile] }
         } else {
             Write-Host "  [ERROR] Unknown profile: $TargetProfile" -ForegroundColor Red

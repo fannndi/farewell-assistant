@@ -1,4 +1,4 @@
 # Qwen2.5-Coder-1.5B — Eco profile (indoor, unplugged)
-FROM ./models/Qwen2.5-Coder-1.5B-Instruct-Q4_K_M.gguf
+FROM ./models/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf
 PARAMETER num_ctx 2048
 PARAMETER num_gpu 99

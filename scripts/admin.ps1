@@ -54,13 +54,13 @@ Write-Host ""
 Write-Step "1/4" "Pull Latest Changes"
 
 function Write-ChangelogDiff {
-    param([string]$Repo, [string]$Dir, [string]$Branch)
+    param([string]$Repo, [string]$Dir, [string]$Branch, [string]$Before)
     if (-not (Test-Path "$Dir\.git")) { return }
     Push-Location $Dir
-    $behind = git rev-list --count "HEAD..origin/$Branch" 2>&1
+    $behind = git rev-list --count "$Before..origin/$Branch" 2>&1
     if ($behind -and $behind -gt 0) {
         Write-Host "  ── $Repo ($behind new commit(s)) ──" -ForegroundColor Cyan
-        git log "HEAD..origin/$Branch" --oneline --no-decorate 2>$null | Select-Object -First 10 | ForEach-Object {
+        git log "$Before..origin/$Branch" --oneline --no-decorate 2>$null | Select-Object -First 10 | ForEach-Object {
             Write-Host "    $_" -ForegroundColor Gray
         }
         if ($behind -gt 10) {
@@ -70,37 +70,60 @@ function Write-ChangelogDiff {
     Pop-Location
 }
 
-if (Test-Path "$ECC_DIR\.git") {
+function Write-PullECC {
+    if (-not (Test-Path "$ECC_DIR\.git")) { Write-Skip "ECC not cloned"; return }
     Push-Location $ECC_DIR
-    $before = git log --oneline -1 2>$null
-    git pull --ff-only 2>&1 | Out-Null
-    $after = git log --oneline -1 2>$null
-    Pop-Location
-    if ($before -ne $after) {
-        Write-Host "  ECC updated: $before → $after" -ForegroundColor Green
-        Write-ChangelogDiff "ECC" $ECC_DIR "main"
+    git fetch origin 2>&1 | Out-Null
+    $before = git rev-parse HEAD 2>$null
+    $behind = git rev-list --count "HEAD..origin/main" 2>&1
+    if ($behind -and $behind -gt 0) {
+        Write-Host "  ECC: $behind commit(s) behind" -ForegroundColor Yellow
+        Write-ChangelogDiff "ECC" $ECC_DIR "main" $before
+        git reset --hard origin/main 2>&1 | Out-Null
+        $afterShort = git log --oneline -1 2>$null
+        Write-Host "  ECC updated → $afterShort" -ForegroundColor Green
+        # Sync changelog
+        git show origin/main:CHANGELOG.md 2>$null | Out-File -FilePath "$ROOT_DIR\CHANGELOG_ECC.md" -Encoding UTF8
+        Write-OK "CHANGELOG_ECC.md synced"
     } else {
         Write-Skip "ECC: already up to date"
     }
-} else {
-    Write-Skip "ECC not cloned"
+    Pop-Location
 }
 
-if (Test-Path "$ROUTER_DIR\.git") {
+function Write-Pull9Router {
+    if (-not (Test-Path "$ROUTER_DIR\.git")) { Write-Skip "9Router not cloned"; return }
     Push-Location $ROUTER_DIR
-    $before = git log --oneline -1 2>$null
-    git pull --ff-only 2>&1 | Out-Null
-    $after = git log --oneline -1 2>$null
-    Pop-Location
-    if ($before -ne $after) {
-        Write-Host "  9Router updated: $before → $after" -ForegroundColor Green
-        Write-ChangelogDiff "9Router" $ROUTER_DIR "master"
+    git fetch origin 2>&1 | Out-Null
+    $before = git rev-parse HEAD 2>$null
+    $beforePkg = Get-FileHash "package.json" 2>$null
+    $behind = git rev-list --count "HEAD..origin/master" 2>&1
+    if ($behind -and $behind -gt 0) {
+        Write-Host "  9Router: $behind commit(s) behind" -ForegroundColor Yellow
+        Write-ChangelogDiff "9Router" $ROUTER_DIR "master" $before
+        git pull --ff-only 2>&1 | Out-Null
+        $afterShort = git log --oneline -1 2>$null
+        Write-Host "  9Router updated → $afterShort" -ForegroundColor Green
+        # Sync changelog
+        git show origin/master:CHANGELOG.md 2>$null | Out-File -FilePath "$ROOT_DIR\CHANGELOG_9ROUTER.md" -Encoding UTF8
+        Write-OK "CHANGELOG_9ROUTER.md synced"
+        # Check npm
+        $afterPkg = Get-FileHash "package.json" 2>$null
+        if ($beforePkg.Hash -ne $afterPkg.Hash) {
+            Write-Host "  package.json changed, updating npm..." -ForegroundColor Gray
+            npm install 2>&1 | Out-Null
+            Write-OK "npm dependencies updated"
+        } else {
+            Write-Skip "package.json unchanged, npm skipped"
+        }
     } else {
         Write-Skip "9Router: already up to date"
     }
-} else {
-    Write-Skip "9Router not cloned"
+    Pop-Location
 }
+
+Write-PullECC
+Write-Pull9Router
 
 # ============================================================
 # Step 2: Doctor Check

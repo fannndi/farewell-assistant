@@ -58,7 +58,7 @@ Write-Host ""
 # Step 1: 9Router Health
 # ============================================================
 
-Write-Step "1/5" "9Router Health"
+Write-Step "1/6" "9Router Health"
 
 $routerRunning = $false
 try {
@@ -93,7 +93,7 @@ if (-not $routerRunning) {
 # Step 2: ECC Check
 # ============================================================
 
-Write-Step "2/5" "ECC (Skills)"
+Write-Step "2/6" "ECC (Skills)"
 
 if (Test-Path "$ECC_DIR\AGENTS.md") {
     Write-OK "ECC available"
@@ -106,7 +106,7 @@ if (Test-Path "$ECC_DIR\AGENTS.md") {
 # Step 3: Apply Profile
 # ============================================================
 
-Write-Step "3/5" "Apply Profile: $Profile"
+Write-Step "3/6" "Apply Profile: $Profile"
 
 if (-not (Test-Path $PROFILE_SRC)) {
     Write-Fail "Profile not found: $PROFILE_SRC"
@@ -124,7 +124,7 @@ if (-not (Test-Path $PROFILE_SRC)) {
 # Step 4: LLM Mode Check
 # ============================================================
 
-Write-Step "4/5" "LLM Mode"
+Write-Step "4/6" "LLM Mode"
 
 $modeFile = "$ROOT_DIR\.opencode\llm-mode.json"
 $mode = "eco"
@@ -162,10 +162,45 @@ if ($mode -ne "eco") {
 }
 
 # ============================================================
-# Step 5: Summary
+# Step 5: Update Check
 # ============================================================
 
-Write-Step "5/5" "Summary"
+Write-Step "5/6" "Update Check"
+
+$hasUpdates = $false
+
+function Write-UpdateCheck {
+    param([string]$Repo, [string]$Dir, [string]$Remote, [string]$Branch)
+    if (Test-Path "$Dir\.git") {
+        Push-Location $Dir
+        git fetch $Remote 2>&1 | Out-Null
+        $behind = git rev-list --count "HEAD..$Remote/$Branch" 2>&1
+        Pop-Location
+        if ($behind -and $behind -gt 0) {
+            Write-Host "  $Repo: $behind commit(s) behind" -ForegroundColor Yellow
+            return $true
+        } else {
+            Write-Skip "$Repo: up to date"
+        }
+    } else {
+        Write-Skip "$Repo: not cloned"
+    }
+    return $false
+}
+
+if (Write-UpdateCheck "ECC" $ECC_DIR "origin" "main") { $hasUpdates = $true }
+if (Write-UpdateCheck "9Router" $ROUTER_DIR "origin" "master") { $hasUpdates = $true }
+
+if ($hasUpdates) {
+    Write-Host ""
+    Write-Host "  ⚡ Update tersedia! Jalankan: .\scripts\admin.ps1" -ForegroundColor Cyan
+}
+
+# ============================================================
+# Step 6: Summary
+# ============================================================
+
+Write-Step "6/6" "Summary"
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Green

@@ -53,14 +53,32 @@ Write-Host ""
 
 Write-Step "1/4" "Pull Latest Changes"
 
+function Write-ChangelogDiff {
+    param([string]$Repo, [string]$Dir, [string]$Branch)
+    if (-not (Test-Path "$Dir\.git")) { return }
+    Push-Location $Dir
+    $behind = git rev-list --count "HEAD..origin/$Branch" 2>&1
+    if ($behind -and $behind -gt 0) {
+        Write-Host "  ── $Repo ($behind new commit(s)) ──" -ForegroundColor Cyan
+        git log "HEAD..origin/$Branch" --oneline --no-decorate 2>$null | Select-Object -First 10 | ForEach-Object {
+            Write-Host "    $_" -ForegroundColor Gray
+        }
+        if ($behind -gt 10) {
+            Write-Host "    ... and $($behind - 10) more" -ForegroundColor Gray
+        }
+    }
+    Pop-Location
+}
+
 if (Test-Path "$ECC_DIR\.git") {
     Push-Location $ECC_DIR
     $before = git log --oneline -1 2>$null
-    git pull 2>&1 | Out-Null
+    git pull --ff-only 2>&1 | Out-Null
     $after = git log --oneline -1 2>$null
     Pop-Location
     if ($before -ne $after) {
         Write-Host "  ECC updated: $before → $after" -ForegroundColor Green
+        Write-ChangelogDiff "ECC" $ECC_DIR "main"
     } else {
         Write-Skip "ECC: already up to date"
     }
@@ -71,11 +89,12 @@ if (Test-Path "$ECC_DIR\.git") {
 if (Test-Path "$ROUTER_DIR\.git") {
     Push-Location $ROUTER_DIR
     $before = git log --oneline -1 2>$null
-    git pull 2>&1 | Out-Null
+    git pull --ff-only 2>&1 | Out-Null
     $after = git log --oneline -1 2>$null
     Pop-Location
     if ($before -ne $after) {
         Write-Host "  9Router updated: $before → $after" -ForegroundColor Green
+        Write-ChangelogDiff "9Router" $ROUTER_DIR "master"
     } else {
         Write-Skip "9Router: already up to date"
     }

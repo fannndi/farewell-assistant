@@ -81,7 +81,7 @@ if (Test-Path "$ROUTER_DIR\package.json") {
 } else {
     Write-Host "  Cloning 9Router..." -ForegroundColor Gray
     try {
-        git clone https://github.com/9router/9router.git $ROUTER_DIR 2>&1 | Out-Null
+        git clone https://github.com/decolua/9router.git $ROUTER_DIR 2>&1 | Out-Null
         Write-OK "9Router cloned"
     } catch {
         Write-Fail "Failed to clone 9Router. Check your internet connection."

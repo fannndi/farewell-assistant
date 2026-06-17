@@ -4,6 +4,23 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.1.0] — 2026-06-17 — Update Repo & Auto-Check
+
+### Changed
+- **ECC** remote → `github.com/affaan-m/ECC` (upstream)
+- **9Router** remote → `github.com/decolua/9router` (replaces broken `9router/9router`)
+- `setup.ps1` clone URLs updated sesuai remote baru
+
+### Added
+- **start.ps1** — Step 5 Update Check: otomatis cek ECC & 9Router untuk update baru tiap startup
+- **admin.ps1** — Changelog diff: setelah pull, tampilkan daftar commit baru dari upstream
+
+### Known Upstream Updates
+- **ECC v2.0.0**: Discord community, orchestrator skill family, kubernetes-patterns, perf fixes
+- **9Router v0.5.2**: Combo Fusion strategy, Kiro headless auth, Claude auto-ping, SSRF hardening
+
+---
+
 ## [1.0.0] — 2026-06-17 — Initial Release
 
 ### Architecture

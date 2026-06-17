@@ -19,6 +19,14 @@ $API_URL = "http://localhost:20128"
 $PROFILE_FILE = "$ROOT_DIR\.opencode\profile"
 $stateDir = "$ROOT_DIR\.opencode"
 
+# Set API key env for OpenCode
+if (Test-Path $API_KEY_FILE) {
+    $key = Get-Content $API_KEY_FILE -Raw | ForEach-Object { $_.Trim() }
+    if ($key) {
+        $env:NINEROUTER_API_KEY = $key
+    }
+}
+
 function Write-Step {
     param([string]$Step, [string]$Message)
     Write-Host ""
@@ -154,18 +162,20 @@ Write-Step "1/7" "9Router Health"
 
 $routerRunning = $false
 try {
-    $null = Invoke-RestMethod -Uri "$API_URL/health" -TimeoutSec 3 -ErrorAction Stop
+    $null = Invoke-RestMethod -Uri "$API_URL/api/health" -TimeoutSec 3 -ErrorAction Stop
     $routerRunning = $true
     Write-OK "9Router is running"
 } catch {}
 
 if (-not $routerRunning) {
     Write-Host "  Starting 9Router..." -ForegroundColor Gray
-    Start-Process -FilePath "npm" -ArgumentList "start" -WindowStyle Minimized -WorkingDirectory $ROUTER_DIR
-    Start-Sleep -Seconds 5
+    $env:PORT = "20128"
+    $env:DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"
+    Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $ROUTER_DIR -Environment @{ PORT = "20128"; NODE_ENV = "production"; DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router" }
+    Start-Sleep -Seconds 8
     try {
-        $null = Invoke-RestMethod -Uri "$API_URL/health" -TimeoutSec 10 -ErrorAction Stop
-        Write-OK "9Router started successfully"
+        $null = Invoke-RestMethod -Uri "$API_URL/api/health" -TimeoutSec 10 -ErrorAction Stop
+        Write-OK "9Router started successfully (v0.5.2)"
     } catch {
         Write-Fail "9Router started but not reachable yet"
     }

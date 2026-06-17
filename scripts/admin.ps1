@@ -123,7 +123,7 @@ function Write-Pull9Router {
             $nodePids | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
             Start-Sleep -Seconds 2
         }
-        Start-Process -FilePath "npm" -ArgumentList "start" -WindowStyle Minimized -WorkingDirectory $ROUTER_DIR
+        Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Minimized -WorkingDirectory $ROUTER_DIR
         Write-OK "9Router restarted with new version"
     } else {
         Write-Skip "9Router: already up to date"
@@ -160,7 +160,7 @@ if (-not (Test-Path $openCodeConfig)) {
 
 # Check 9Router running
 try {
-    $null = Invoke-RestMethod -Uri "http://localhost:20128/health" -TimeoutSec 3 -ErrorAction Stop
+    $null = Invoke-RestMethod -Uri "http://localhost:20128/api/health" -TimeoutSec 3 -ErrorAction Stop
 } catch {
     $issues += "9Router not running — start with: .\scripts\start.ps1"
 }

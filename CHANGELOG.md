@@ -4,6 +4,23 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.3.0] — 2026-06-17 — Single Profile + Combo Setup
+
+### Changed
+- **Profiles**: Hapus `profiles/gratis/` & `profiles/go/`. Ganti dengan `profiles/combo/` — template dengan placeholder `${COMBO_0}`, `${COMBO_1}`, `${COMBO_MODELS}`
+- **start.ps1**: Hapus semua logic `-Profile`, wizard pilih profile, persist profile
+- **start.ps1**: +Step baru **Combo Setup** — fetch combo dari 9Router API, input combo interaktif (loop), simpan ke `.opencode/combo.json`
+- **start.ps1**: Apply profile — substitute `${COMBO_0}`, `${COMBO_1}`, `${COMBO_MODELS}` dengan combo user
+- **start.ps1**: Auto-run `opencode` di akhir
+- **setup.ps1**: Hapus `-Profile` param, simplifikasi
+- **commands/**: `start-free.md` & `start-go.md` → merge jadi `start.md`
+
+### Added
+- **profiles/combo/opencode.jsonc** — single default profile template
+- **start.ps1** — Combo Setup: fetch remote combos dari 9Router, input loop, simpan
+
+---
+
 ## [1.2.0] — 2026-06-17 — Single-Command Daily Flow
 
 ### Changed

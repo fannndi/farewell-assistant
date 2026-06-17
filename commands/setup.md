@@ -13,4 +13,4 @@ Flow:
 4. Apply profile ke ~/.config/opencode/
 5. Initialize state (ECO mode)
 
-Setelah setup, edit `api-key.txt` dengan key dari 9Router dashboard, lalu jalankan `/start-free`.
+Setelah setup, edit `api-key.txt` dengan key dari 9Router dashboard, lalu jalankan `/start`.

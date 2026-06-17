@@ -1,7 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "9router/gratis",
-  "small_model": "9router/emergency",
+  "model": "9router/${COMBO_0}",
+  "small_model": "9router/${COMBO_1}",
   "default_agent": "build",
 
   "provider": {
@@ -12,10 +12,7 @@
         "baseURL": "http://localhost:20128/v1",
         "apiKey": "{env:NINEROUTER_API_KEY}"
       },
-      "models": {
-        "gratis": { "name": "Gratis Combo" },
-        "emergency": { "name": "Emergency Combo" }
-      }
+      "models": ${COMBO_MODELS}
     }
   },
 
@@ -35,7 +32,7 @@
     "build": {
       "description": "Primary coding agent",
       "mode": "primary",
-      "model": "9router/gratis",
+      "model": "9router/${COMBO_0}",
       "tools": {
         "write": true,
         "edit": true,
@@ -47,42 +44,42 @@
     "planner": {
       "description": "Planning specialist.",
       "mode": "subagent",
-      "model": "9router/emergency",
+      "model": "9router/${COMBO_1}",
       "prompt": "{file:{project}/ecc/.opencode/prompts/agents/planner.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "code-reviewer": {
       "description": "Code review specialist.",
       "mode": "subagent",
-      "model": "9router/emergency",
+      "model": "9router/${COMBO_1}",
       "prompt": "{file:{project}/ecc/.opencode/prompts/agents/code-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "security-reviewer": {
       "description": "Security specialist.",
       "mode": "subagent",
-      "model": "9router/gratis",
+      "model": "9router/${COMBO_0}",
       "prompt": "{file:{project}/ecc/.opencode/prompts/agents/security-reviewer.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "tdd-guide": {
       "description": "TDD specialist.",
       "mode": "subagent",
-      "model": "9router/gratis",
+      "model": "9router/${COMBO_0}",
       "prompt": "{file:{project}/ecc/.opencode/prompts/agents/tdd-guide.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "build-error-resolver": {
       "description": "Build error specialist.",
       "mode": "subagent",
-      "model": "9router/emergency",
+      "model": "9router/${COMBO_1}",
       "prompt": "{file:{project}/ecc/.opencode/prompts/agents/build-error-resolver.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "doc-updater": {
       "description": "Documentation specialist.",
       "mode": "subagent",
-      "model": "9router/emergency",
+      "model": "9router/${COMBO_1}",
       "prompt": "{file:{project}/ecc/.opencode/prompts/agents/doc-updater.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     }
@@ -91,15 +88,11 @@
   "command": {
     "setup": {
       "description": "First install — clone ECC, 9Router, apply profile",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\setup.ps1\" -Profile gratis $ARGUMENTS"
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\setup.ps1\" $ARGUMENTS"
     },
-    "start-free": {
-      "description": "Daily startup — health check, apply profile (free)",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\start.ps1\" -Profile gratis $ARGUMENTS"
-    },
-    "start-go": {
-      "description": "Daily startup — health check, apply profile (go)",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\start.ps1\" -Profile go $ARGUMENTS"
+    "start": {
+      "description": "Daily startup — all-in-one",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\start.ps1\" $ARGUMENTS"
     },
     "admin": {
       "description": "Maintenance — pull repos, changelog, doctor",

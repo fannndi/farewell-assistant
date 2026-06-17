@@ -58,38 +58,23 @@ Mode: `eco` (GPU off) atau `on` (GPU active, ~1GB VRAM).
 
 ## Quick Setup
 
-### First Install
-
 ```powershell
 # 1. Clone
 git clone https://github.com/fannndi/farewell-assistant.git
 cd farewell-assistant
 
-# 2. Edit api-key.txt — isi dengan key dari 9Router
-#    (copy dari .\opencode-setup\api-key.txt atau dashboard)
+# 2. Edit api-key.txt — isi key 9Router & key lain
+#    (key dari dashboard: http://localhost:20128/dashboard)
 
-# 3. Start (auto-clone ECC & 9Router jika belum ada)
-.\scripts\start.ps1 -Profile gratis
+# 3. Start — auto semua, nanti pilih combo
+.\scripts\start.ps1
 ```
-
-### Daily Startup — Cuma 1 Step
-
-```powershell
-# Auto setup + start + update check
-.\scripts\start.ps1 -Profile gratis
-
-# Buka opencode
-opencode
-```
-
-Semua otomatis: clone, install deps, start 9Router, cek update, sync changelog.
 
 ### Commands
 
 | Command | Fungsi |
 |---------|--------|
-| `/start-free` | Daily startup (free) |
-| `/start-go` | Daily startup (paid) |
+| `/start` | Daily startup + auto-setup |
 | `/admin` | Maintenance + pull update |
 | `/llm eco` | Turn off GPU |
 | `/llm on` | Turn on GPU |
@@ -132,9 +117,9 @@ Registry di `projects/registry.json` track project aktif.
 
 ```
 farewell-assistant/
-├── scripts/                    # 7 scripts (bukan 64)
-│   ├── setup.ps1               # First install (optional — start.ps1 auto-runs)
-│   ├── start.ps1               # ✨ Daily startup (auto-setup + start)
+├── scripts/                    # 6 scripts (bukan 64)
+│   ├── setup.ps1               # First install
+│   ├── start.ps1               # ✨ Daily startup (auto-setup + combo)
 │   ├── llm-adapter.ps1         # Ollama API + enrichment
 │   ├── llm-mode.ps1            # Mode switch (eco/on)
 │   ├── admin.ps1               # Maintenance + pull update
@@ -142,17 +127,15 @@ farewell-assistant/
 │   └── hooks/
 │       ├── check-enrich.ps1    # Enrichment verification
 │       └── self-heal.ps1       # Post-edit typecheck
-├── profiles/                   # OpenCode configs
-│   ├── gratis/opencode.jsonc   # Free models
-│   └── go/opencode.jsonc       # Paid models
+├── profiles/
+│   └── combo/opencode.jsonc    # Single profile template
 ├── instructions/               # AI behavior (3 files)
 │   ├── user-rules.md           # Core rules
 │   ├── preprocess.md           # Enrichment pipeline
 │   └── footer.md               # Footer format
-├── commands/                   # 5 custom commands
+├── commands/                   # 4 custom commands
 │   ├── setup.md
-│   ├── start-free.md
-│   ├── start-go.md
+│   ├── start.md
 │   ├── admin.md
 │   └── go.md
 ├── projects/                   # Multi-project management
@@ -162,11 +145,11 @@ farewell-assistant/
 ├── CHANGELOG_ECC.md            # ECC upstream changelog (auto-sync)
 ├── CHANGELOG_9ROUTER.md        # 9Router upstream changelog (auto-sync)
 ├── .opencode/                  # Runtime state (gitignored)
-├── api-key.txt                 # 9Router key (gitignored)
+├── api-key.txt                 # Multi-key storage (gitignored)
 └── Modelfile.qwen2-1.5b       # GPU model config
 ```
 
-**Total: ~32 files** (dari ~150+ di project lama).
+**Total: ~30 files** (dari ~150+ di project lama).
 
 ---
 

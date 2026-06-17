@@ -16,13 +16,17 @@ Setiap user input setelah Session Init:
    - Baca .opencode/work-mode.json → ambil mode (plan / build)
    - PLAN mode: gunakan skill audit, research, explore
    - BUILD mode: gunakan skill orchestration, tdd, coding, security
-6. ENRICHMENT CHECK:
+6. COUNT SKILLS:
+   - Baca projects/skill-mode-index.json → skills[work_mode]
+   - Hitung total = sum semua skill di semua group
+   - Status: ON jika count > 0, OFF jika count = 0
+7. ENRICHMENT CHECK:
    - Mode == eco?           → SKIP
    - Input < 5 kata?        → SKIP
    - Pertanyaan umum?       → SKIP ("apa itu", "jelaskan", "what is", "how to")
    - Selain itu             → Jalankan Invoke-LLMEnrich()
-7. JAWAB user dengan context + work mode
-8. APPEND footer (Session | Kategori | Mode | GPU | Work)
+8. JAWAB user dengan context + work mode
+9. APPEND footer (Session | Kategori | Mode | GPU | Work | Skills)
 ```
 
 ## Kapan Enrichment Berguna

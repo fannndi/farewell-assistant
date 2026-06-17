@@ -19,13 +19,30 @@ $API_URL = "http://localhost:20128"
 $PROFILE_FILE = "$ROOT_DIR\.opencode\profile"
 $stateDir = "$ROOT_DIR\.opencode"
 
-# Set API key env for OpenCode
-if (Test-Path $API_KEY_FILE) {
-    $key = Get-Content $API_KEY_FILE -Raw | ForEach-Object { $_.Trim() }
-    if ($key) {
-        $env:NINEROUTER_API_KEY = $key
+# Load all API keys from api-key.txt (format: KEY_NAME=value)
+function Write-LoadKeys {
+    if (-not (Test-Path $API_KEY_FILE)) { return }
+    $missingKeys = @()
+    Get-Content $API_KEY_FILE | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -match '^([A-Z_]+)=') {
+            $name = $matches[1]
+            $value = $line.Substring($name.Length + 1)
+            if ($value) {
+                Set-Item -Path "env:$name" -Value $value
+            } else {
+                $missingKeys += $name
+            }
+        }
     }
+    # Also persist NINEROUTER_API_KEY for other terminals
+    if ($env:NINEROUTER_API_KEY) {
+        try { setx NINEROUTER_API_KEY $env:NINEROUTER_API_KEY 2>&1 | Out-Null } catch {}
+    }
+    return $missingKeys
 }
+
+$missingKeys = Write-LoadKeys
 
 function Write-Step {
     param([string]$Step, [string]$Message)
@@ -54,26 +71,32 @@ function Write-Fail {
 
 $firstRun = $false
 
-$apiKey = ""
-if (Test-Path $API_KEY_FILE) {
-    $apiKey = Get-Content $API_KEY_FILE -Raw | ForEach-Object { $_.Trim() }
-}
-if (-not $apiKey) {
+# First-run wizard: missing keys
+if ($missingKeys -and $missingKeys.Count -gt 0) {
     $firstRun = $true
     Write-Host ""
     Write-Host "  ╔══════════════════════════════════════════╗" -ForegroundColor Cyan
     Write-Host "  ║   Selamat datang di farewell-assistant!  ║" -ForegroundColor Cyan
     Write-Host "  ╚══════════════════════════════════════════╝" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "  API key 9Router diperlukan." -ForegroundColor Yellow
-    Write-Host "  Cek dashboard: http://localhost:20128/dashboard (setelah 9Router jalan)" -ForegroundColor Gray
-    Write-Host ""
-    $key = Read-Host "  Masukkan API key"
-    if ($key) {
-        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
-        $key | Set-Content -Path $API_KEY_FILE -Encoding UTF8 -NoNewline
-        Write-OK "API key saved"
+
+    $lines = Get-Content $API_KEY_FILE
+    foreach ($name in $missingKeys) {
+        $label = $name -replace '_API_KEY$', '' -replace '_', ' '
+        Write-Host "  $label key kosong." -ForegroundColor Yellow
+        $val = Read-Host "  Masukkan API key (enter untuk skip)"
+        if ($val) {
+            for ($i = 0; $i -lt $lines.Count; $i++) {
+                if ($lines[$i] -match "^$name=") {
+                    $lines[$i] = "$name=$val"
+                }
+            }
+        }
     }
+    $lines | Set-Content -Path $API_KEY_FILE -Encoding UTF8
+    Write-OK "API keys saved"
+    # Reload
+    $missingKeys = Write-LoadKeys
 }
 
 if (-not $Profile) {
@@ -300,5 +323,5 @@ Write-Host "  9Router:     $(if ($routerRunning) { 'Running' } else { 'Check man
 Write-Host "  ECC:         Available" -ForegroundColor Green
 Write-Host "  LLM Mode:    $mode" -ForegroundColor $(if ($mode -eq "eco") { "Green" } else { "Cyan" })
 Write-Host ""
-Write-Host "  Start coding: opencode" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "  => Membuka opencode..." -ForegroundColor Cyan
+opencode

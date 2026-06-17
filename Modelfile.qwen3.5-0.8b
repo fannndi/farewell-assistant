@@ -1,0 +1,4 @@
+# Qwen3.5-0.8B — Hot profile (outdoor, unplugged, high temp)
+FROM qwen3.5:0.8b
+PARAMETER num_ctx 2048
+PARAMETER num_gpu 99

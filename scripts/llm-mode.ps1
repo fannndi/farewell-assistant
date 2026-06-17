@@ -1,8 +1,15 @@
 # LLM Mode - Operating Mode Switch
-# Usage: .\llm-mode.ps1 eco|on|status
+# Usage:
+#   .\llm-mode.ps1 eco            → no LLM, zero GPU
+#   .\llm-mode.ps1 on             → use default eco model
+#   .\llm-models.ps1 pull         → download models first
+#   .\llm-mode.ps1 hot            → hot profile (qwen3.5:0.8b)
+#   .\llm-mode.ps1 balance        → balance profile (qwen3.5:2b)
+#   .\llm-mode.ps1 performance    → performance profile (qwen3.5:4b)
+#   .\llm-mode.ps1 status         → show current mode
 
 param(
-    [ValidateSet("eco", "on", "status")]
+    [ValidateSet("eco", "on", "hot", "balance", "performance", "status")]
     [string]$Action = "status"
 )
 
@@ -13,8 +20,19 @@ $MODE_FILE = "$MODE_DIR\llm-mode.json"
 $OLLAMA_URL = "http://localhost:11434"
 
 $MODEL_MAP = @{
-    "eco" = $null
-    "on"  = "qwen2.5:1.5b-s"
+    "eco"         = $null
+    "on"          = "qwen2.5-coder:1.5b"
+    "hot"         = "qwen3.5:0.8b"
+    "balance"     = "qwen3.5:2b"
+    "performance" = "qwen3.5:4b"
+}
+
+$VRAM_MAP = @{
+    "eco"         = "0"
+    "on"          = "~1GB"
+    "hot"         = "~600MB"
+    "balance"     = "~1.4GB"
+    "performance" = "~2.5GB"
 }
 
 function Get-Mode {
@@ -66,7 +84,16 @@ function Invoke-Warmup {
 switch ($Action) {
     "eco" {
         Set-Mode -Mode "eco" -Model $null
-        ollama stop qwen2.5:1.5b-s 2>$null
+        $running = Test-OllamaRunning
+        if ($running) {
+            # Stop all models
+            $tags = Invoke-RestMethod -Uri "$OLLAMA_URL/api/tags" -TimeoutSec 5
+            if ($tags.models) {
+                foreach ($m in $tags.models) {
+                    ollama stop $m.name 2>$null
+                }
+            }
+        }
         Write-Host "  [MODE] ECO — no LLM, zero GPU usage" -ForegroundColor Green
     }
 
@@ -83,19 +110,44 @@ switch ($Action) {
         Set-Mode -Mode "on" -Model $model
         Write-Host "  [MODE] Loading $model to GPU..." -ForegroundColor Gray
         Invoke-Warmup -ModelName $model
-        Write-Host "  [MODE] ON — $model (~1GB VRAM, enrichment active)" -ForegroundColor Cyan
+        Write-Host "  [MODE] ON — $model ($($VRAM_MAP['on']), enrichment active)" -ForegroundColor Cyan
+    }
+
+    { $_ -in "hot", "balance", "performance" } {
+        $model = $MODEL_MAP[$Action]
+        $running = Test-OllamaRunning
+        if (-not $running) {
+            Write-Host "  [MODE] Ollama not running. Starting..." -ForegroundColor Yellow
+            try {
+                Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Minimized
+                Start-Sleep -Seconds 3
+            } catch {}
+        }
+        Set-Mode -Mode $Action -Model $model
+        Write-Host "  [MODE] Loading $model to GPU..." -ForegroundColor Gray
+        Invoke-Warmup -ModelName $model
+        Write-Host "  [MODE] $($Action.ToUpper()) — $model ($($VRAM_MAP[$Action]))" -ForegroundColor Magenta
     }
 
     "status" {
         $mode = Get-Mode
-        $model = if ($mode -eq "eco") { "none" } else { "qwen2.5:1.5b-s" }
+        $model = $MODEL_MAP[$mode]
+        if (-not $model) { $model = "none" }
         $running = Test-OllamaRunning
-        $label = if ($mode -eq "eco") { "ECO" } else { "ON" }
-        $color = if ($mode -eq "eco") { "Green" } else { "Cyan" }
+        $label = $mode.ToUpper()
+        $color = switch ($mode) {
+            "eco" { "Green" }
+            "on" { "Cyan" }
+            "hot" { "Red" }
+            "balance" { "Yellow" }
+            "performance" { "Magenta" }
+            default { "White" }
+        }
 
         Write-Host ""
         Write-Host "  Mode:     $label" -ForegroundColor $color
         Write-Host "  Model:    $model" -ForegroundColor White
+        Write-Host "  VRAM:     $($VRAM_MAP[$mode])" -ForegroundColor Gray
         Write-Host "  Ollama:   $(if ($running) { 'Running' } else { 'Stopped' })" -ForegroundColor $(if ($running) { "Green" } else { "Red" })
 
         if ($running) {

@@ -101,8 +101,12 @@
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\admin.ps1\" $ARGUMENTS"
     },
     "llm": {
-      "description": "Mode switch: eco / on / status",
+      "description": "Mode switch: eco / on / hot / balance / performance / status",
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\llm-mode.ps1\" $ARGUMENTS"
+    },
+    "models": {
+      "description": "Model management: list / pull / status / remove",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\llm-models.ps1\" $ARGUMENTS"
     },
     "mode": {
       "description": "Work mode: plan / build / status",

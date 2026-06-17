@@ -1,0 +1,4 @@
+# Qwen3.5-2B — Balance profile (indoor, plugged, AC)
+FROM qwen3.5:2b
+PARAMETER num_ctx 2048
+PARAMETER num_gpu 99

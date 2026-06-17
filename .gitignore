@@ -1,0 +1,22 @@
+# Runtime state
+.opencode/
+!projects/context/.gitkeep
+
+# Secrets
+api-key.txt
+.env
+
+# Dependencies (cloned, not committed)
+ecc/
+9router/
+
+# OS
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace

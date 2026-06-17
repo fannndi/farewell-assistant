@@ -1,0 +1,165 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "9router/go",
+  "small_model": "9router/emergency",
+  "default_agent": "build",
+
+  "provider": {
+    "9router": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Local 9Router",
+      "options": {
+        "baseURL": "http://localhost:20128/v1",
+        "apiKey": "{env:NINEROUTER_API_KEY}"
+      },
+      "models": {
+        "go": { "name": "Go Combo" },
+        "emergency": { "name": "Emergency Combo" }
+      }
+    }
+  },
+
+  "instructions": [
+    "{project}/.opencode/context.md",
+    "{project}/.opencode/llm-mode.json",
+    "{project}/instructions/user-rules.md",
+    "{project}/instructions/preprocess.md",
+    "{project}/instructions/footer.md"
+  ],
+
+  "skills": {
+    "paths": ["{project}/../ecc/skills"]
+  },
+
+  "agent": {
+    "build": {
+      "description": "Primary coding agent",
+      "mode": "primary",
+      "model": "9router/go",
+      "tools": {
+        "write": true,
+        "edit": true,
+        "bash": true,
+        "read": true,
+        "changed-files": true
+      }
+    },
+    "planner": {
+      "description": "Planning specialist.",
+      "mode": "subagent",
+      "model": "9router/emergency",
+      "prompt": "{file:{project}/../ecc/.opencode/prompts/agents/planner.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "code-reviewer": {
+      "description": "Code review specialist.",
+      "mode": "subagent",
+      "model": "9router/emergency",
+      "prompt": "{file:{project}/../ecc/.opencode/prompts/agents/code-reviewer.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "security-reviewer": {
+      "description": "Security specialist.",
+      "mode": "subagent",
+      "model": "9router/go",
+      "prompt": "{file:{project}/../ecc/.opencode/prompts/agents/security-reviewer.txt}",
+      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+    },
+    "tdd-guide": {
+      "description": "TDD specialist.",
+      "mode": "subagent",
+      "model": "9router/go",
+      "prompt": "{file:{project}/../ecc/.opencode/prompts/agents/tdd-guide.txt}",
+      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+    },
+    "build-error-resolver": {
+      "description": "Build error specialist.",
+      "mode": "subagent",
+      "model": "9router/emergency",
+      "prompt": "{file:{project}/../ecc/.opencode/prompts/agents/build-error-resolver.txt}",
+      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+    },
+    "doc-updater": {
+      "description": "Documentation specialist.",
+      "mode": "subagent",
+      "model": "9router/emergency",
+      "prompt": "{file:{project}/../ecc/.opencode/prompts/agents/doc-updater.txt}",
+      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+    }
+  },
+
+  "command": {
+    "setup": {
+      "description": "First install — clone ECC, 9Router, apply profile",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\setup.ps1\" -Profile go $ARGUMENTS"
+    },
+    "start-free": {
+      "description": "Daily startup — health check, apply profile (free)",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\start.ps1\" -Profile gratis $ARGUMENTS"
+    },
+    "start-go": {
+      "description": "Daily startup — health check, apply profile (go)",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\start.ps1\" -Profile go $ARGUMENTS"
+    },
+    "admin": {
+      "description": "Maintenance — pull repos, changelog, doctor",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\admin.ps1\" $ARGUMENTS"
+    },
+    "llm": {
+      "description": "Mode switch: eco / on / status",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\llm-mode.ps1\" $ARGUMENTS"
+    },
+    "detect": {
+      "description": "Auto-detect project type",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\detect-project.ps1\" $ARGUMENTS"
+    },
+    "go": {
+      "description": "Universal task — goal-based execution",
+      "template": "{file:{project}/commands/go.md}\n\n$ARGUMENTS"
+    },
+    "plan": {
+      "description": "Create implementation plan",
+      "template": "{file:{project}/../ecc/.opencode/commands/plan.md}\n\n$ARGUMENTS",
+      "agent": "planner",
+      "subtask": true
+    },
+    "tdd": {
+      "description": "TDD workflow",
+      "template": "{file:{project}/../ecc/.opencode/commands/tdd.md}\n\n$ARGUMENTS",
+      "agent": "tdd-guide",
+      "subtask": true
+    },
+    "code-review": {
+      "description": "Code review",
+      "template": "{file:{project}/../ecc/.opencode/commands/code-review.md}\n\n$ARGUMENTS",
+      "agent": "code-reviewer",
+      "subtask": true
+    },
+    "security-scan": {
+      "description": "Security review (OWASP)",
+      "template": "{file:{project}/../ecc/.opencode/commands/security.md}\n\n$ARGUMENTS",
+      "agent": "security-reviewer",
+      "subtask": true
+    },
+    "build-fix": {
+      "description": "Fix build errors",
+      "template": "{file:{project}/../ecc/.opencode/commands/build-fix.md}\n\n$ARGUMENTS",
+      "agent": "build-error-resolver",
+      "subtask": true
+    },
+    "verify": {
+      "description": "Run verification loop",
+      "template": "{file:{project}/../ecc/.opencode/commands/verify.md}\n\n$ARGUMENTS"
+    },
+    "update-docs": {
+      "description": "Update documentation",
+      "template": "{file:{project}/../ecc/.opencode/commands/update-docs.md}\n\n$ARGUMENTS",
+      "agent": "doc-updater",
+      "subtask": true
+    }
+  },
+
+  "permission": {
+    "mcp_*": "ask"
+  }
+}

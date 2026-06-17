@@ -1,0 +1,11 @@
+﻿{
+  "active": "farewell-assistant",
+  "projects": {
+    "farewell-assistant": {
+      "path": "C:/Users/FANNNDI/Documents/farewell-assistant",
+      "type": "powershell",
+      "context_file": "context/farewell-assistant.md",
+      "last_used": "2026-06-17"
+    }
+  }
+}

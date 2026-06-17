@@ -61,41 +61,36 @@ Mode: `eco` (GPU off) atau `on` (GPU active, ~1GB VRAM).
 ### First Install
 
 ```powershell
-# 1. Clone this repo
+# 1. Clone
 git clone https://github.com/fannndi/farewell-assistant.git
 cd farewell-assistant
 
-# 2. Run setup (clones ECC + 9Router, applies profile)
-.\scripts\setup.ps1
+# 2. Edit api-key.txt — isi dengan key dari 9Router
+#    (copy dari .\opencode-setup\api-key.txt atau dashboard)
 
-# 3. Edit api-key.txt — isi dengan key dari 9Router
-#    Dashboard: http://localhost:20128/dashboard
-
-# 4. Start
+# 3. Start (auto-clone ECC & 9Router jika belum ada)
 .\scripts\start.ps1 -Profile gratis
 ```
 
-### Daily Startup
+### Daily Startup — Cuma 1 Step
 
 ```powershell
-# Start with free models
+# Auto setup + start + update check
 .\scripts\start.ps1 -Profile gratis
 
-# Start with paid models
-.\scripts\start.ps1 -Profile go
-
-# Then open opencode
+# Buka opencode
 opencode
 ```
+
+Semua otomatis: clone, install deps, start 9Router, cek update, sync changelog.
 
 ### Commands
 
 | Command | Fungsi |
 |---------|--------|
-| `/setup` | First install |
 | `/start-free` | Daily startup (free) |
 | `/start-go` | Daily startup (paid) |
-| `/admin` | Maintenance |
+| `/admin` | Maintenance + pull update |
 | `/llm eco` | Turn off GPU |
 | `/llm on` | Turn on GPU |
 | `/llm status` | Check mode |
@@ -138,11 +133,11 @@ Registry di `projects/registry.json` track project aktif.
 ```
 farewell-assistant/
 ├── scripts/                    # 7 scripts (bukan 64)
-│   ├── setup.ps1               # First install
-│   ├── start.ps1               # Daily startup
+│   ├── setup.ps1               # First install (optional — start.ps1 auto-runs)
+│   ├── start.ps1               # ✨ Daily startup (auto-setup + start)
 │   ├── llm-adapter.ps1         # Ollama API + enrichment
 │   ├── llm-mode.ps1            # Mode switch (eco/on)
-│   ├── admin.ps1               # Maintenance
+│   ├── admin.ps1               # Maintenance + pull update
 │   ├── detect-project.ps1      # Project auto-detect
 │   └── hooks/
 │       ├── check-enrich.ps1    # Enrichment verification
@@ -163,12 +158,15 @@ farewell-assistant/
 ├── projects/                   # Multi-project management
 │   ├── registry.json           # Project index
 │   └── context/                # Per-project context
+├── CHANGELOG.md                # Project changelog
+├── CHANGELOG_ECC.md            # ECC upstream changelog (auto-sync)
+├── CHANGELOG_9ROUTER.md        # 9Router upstream changelog (auto-sync)
 ├── .opencode/                  # Runtime state (gitignored)
 ├── api-key.txt                 # 9Router key (gitignored)
 └── Modelfile.qwen2-1.5b       # GPU model config
 ```
 
-**Total: ~30 files** (dari ~150+ di project lama).
+**Total: ~32 files** (dari ~150+ di project lama).
 
 ---
 
@@ -183,6 +181,18 @@ farewell-assistant/
 | Instruction tokens | ~5000+ | ~800 |
 | Pipeline steps | 8+ | 3 |
 | Multi-project | Overcomplicated | Simple registry |
+
+---
+
+## Changelogs
+
+| File | Source | Auto-Sync |
+|------|--------|-----------|
+| `CHANGELOG.md` | farewell-assistant sendiri | Manual |
+| `CHANGELOG_ECC.md` | [affaan-m/ECC](https://github.com/affaan-m/ECC) | ✅ tiap `start.ps1` |
+| `CHANGELOG_9ROUTER.md` | [decolua/9router](https://github.com/decolua/9router) | ✅ tiap `start.ps1` |
+
+Update manual: `.\scripts\admin.ps1`
 
 ---
 

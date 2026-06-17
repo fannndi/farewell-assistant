@@ -1,5 +1,6 @@
-# Start - Daily Startup
+# Start - Single daily command
 # Usage: .\start.ps1 -Profile gratis|go
+# Auto-setup ECC, 9Router + start everything
 
 param(
     [Parameter(Mandatory=$true)]
@@ -17,10 +18,6 @@ $OPENCODE_DIR = "$env:USERPROFILE\.config\opencode"
 $OPENCODE_CONFIG = "$OPENCODE_DIR\opencode.jsonc"
 $PROFILE_SRC = "$ROOT_DIR\profiles\$Profile\opencode.jsonc"
 $API_URL = "http://localhost:20128"
-
-# ============================================================
-# Helpers
-# ============================================================
 
 function Write-Step {
     param([string]$Step, [string]$Message)
@@ -43,9 +40,24 @@ function Write-Fail {
     Write-Host "  [FAIL] $Message" -ForegroundColor Red
 }
 
-# ============================================================
-# Banner
-# ============================================================
+function Write-UpdateCheck {
+    param([string]$Repo, [string]$Dir, [string]$Remote, [string]$Branch)
+    if (Test-Path "$Dir\.git") {
+        Push-Location $Dir
+        git fetch $Remote 2>&1 | Out-Null
+        $behind = git rev-list --count "HEAD..$Remote/$Branch" 2>&1
+        Pop-Location
+        if ($behind -and $behind -gt 0) {
+            Write-Host "  ${Repo}: $behind commit(s) behind" -ForegroundColor Yellow
+            return $true
+        } else {
+            Write-Skip "${Repo}: up to date"
+        }
+    } else {
+        Write-Skip "${Repo}: not cloned"
+    }
+    return $false
+}
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Cyan
@@ -55,10 +67,42 @@ Write-Host "  =================================================" -ForegroundColo
 Write-Host ""
 
 # ============================================================
+# Step 0: Auto-Setup (clone if missing)
+# ============================================================
+
+Write-Step "0/7" "Auto-Setup"
+
+if (-not (Test-Path "$ECC_DIR\AGENTS.md")) {
+    Write-Host "  Cloning ECC..." -ForegroundColor Gray
+    git clone https://github.com/affaan-m/ECC.git $ECC_DIR 2>&1 | Out-Null
+    Write-OK "ECC cloned"
+} else {
+    Write-Skip "ECC already cloned"
+}
+
+if (-not (Test-Path "$ROUTER_DIR\package.json")) {
+    Write-Host "  Cloning 9Router..." -ForegroundColor Gray
+    git clone https://github.com/decolua/9router.git $ROUTER_DIR 2>&1 | Out-Null
+    Write-OK "9Router cloned"
+} else {
+    Write-Skip "9Router already cloned"
+}
+
+if (-not (Test-Path "$ROUTER_DIR\node_modules")) {
+    Write-Host "  Installing 9Router dependencies..." -ForegroundColor Gray
+    Push-Location $ROUTER_DIR
+    npm install 2>&1 | Out-Null
+    Pop-Location
+    Write-OK "Dependencies installed"
+} else {
+    Write-Skip "9Router dependencies already installed"
+}
+
+# ============================================================
 # Step 1: 9Router Health
 # ============================================================
 
-Write-Step "1/6" "9Router Health"
+Write-Step "1/7" "9Router Health"
 
 $routerRunning = $false
 try {
@@ -69,62 +113,35 @@ try {
 
 if (-not $routerRunning) {
     Write-Host "  Starting 9Router..." -ForegroundColor Gray
-    if (Test-Path "$ROUTER_DIR\package.json") {
-        try {
-            Push-Location $ROUTER_DIR
-            Start-Process -FilePath "npm" -ArgumentList "start" -WindowStyle Minimized
-            Pop-Location
-            Start-Sleep -Seconds 5
-            try {
-                $null = Invoke-RestMethod -Uri "$API_URL/health" -TimeoutSec 10 -ErrorAction Stop
-                Write-OK "9Router started successfully"
-            } catch {
-                Write-Fail "9Router started but not reachable yet. Wait a moment and retry."
-            }
-        } catch {
-            Write-Fail "Failed to start 9Router"
-        }
-    } else {
-        Write-Fail "9Router not found. Run: .\scripts\setup.ps1"
+    Push-Location $ROUTER_DIR
+    Start-Process -FilePath "npm" -ArgumentList "start" -WindowStyle Minimized
+    Pop-Location
+    Start-Sleep -Seconds 5
+    try {
+        $null = Invoke-RestMethod -Uri "$API_URL/health" -TimeoutSec 10 -ErrorAction Stop
+        Write-OK "9Router started successfully"
+    } catch {
+        Write-Fail "9Router started but not reachable yet"
     }
 }
 
 # ============================================================
-# Step 2: ECC Check
+# Step 2: Apply Profile
 # ============================================================
 
-Write-Step "2/6" "ECC (Skills)"
+Write-Step "2/7" "Apply Profile: $Profile"
 
-if (Test-Path "$ECC_DIR\AGENTS.md") {
-    Write-OK "ECC available"
-} else {
-    Write-Fail "ECC not found at $ECC_DIR"
-    Write-Host "  Run: .\scripts\setup.ps1" -ForegroundColor Yellow
-}
-
-# ============================================================
-# Step 3: Apply Profile
-# ============================================================
-
-Write-Step "3/6" "Apply Profile: $Profile"
-
-if (-not (Test-Path $PROFILE_SRC)) {
-    Write-Fail "Profile not found: $PROFILE_SRC"
-} else {
-    New-Item -ItemType Directory -Path $OPENCODE_DIR -Force | Out-Null
-
-    $config = Get-Content $PROFILE_SRC -Raw
-    $config = $config -replace '\{project\}', ($ROOT_DIR -replace '\\', '/')
-    $config | Set-Content -Path $OPENCODE_CONFIG -Encoding UTF8
-
-    Write-OK "Profile applied"
-}
+New-Item -ItemType Directory -Path $OPENCODE_DIR -Force | Out-Null
+$config = Get-Content $PROFILE_SRC -Raw
+$config = $config -replace '\{project\}', ($ROOT_DIR -replace '\\', '/')
+$config | Set-Content -Path $OPENCODE_CONFIG -Encoding UTF8
+Write-OK "Profile applied"
 
 # ============================================================
-# Step 4: LLM Mode Check
+# Step 3: LLM Mode Check
 # ============================================================
 
-Write-Step "4/6" "LLM Mode"
+Write-Step "3/7" "LLM Mode"
 
 $modeFile = "$ROOT_DIR\.opencode\llm-mode.json"
 $mode = "eco"
@@ -138,22 +155,16 @@ if (Test-Path $modeFile) {
 Write-Host "  Mode: $mode" -ForegroundColor $(if ($mode -eq "eco") { "Green" } else { "Cyan" })
 
 if ($mode -ne "eco") {
-    # Check Ollama
     $ollamaRunning = $false
     try {
         $null = Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -TimeoutSec 3 -ErrorAction Stop
         $ollamaRunning = $true
     } catch {}
-
     if (-not $ollamaRunning) {
         Write-Host "  Starting Ollama..." -ForegroundColor Gray
-        try {
-            Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Minimized
-            Start-Sleep -Seconds 3
-            Write-OK "Ollama started"
-        } catch {
-            Write-Fail "Failed to start Ollama"
-        }
+        Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Minimized
+        Start-Sleep -Seconds 3
+        Write-OK "Ollama started"
     } else {
         Write-OK "Ollama running"
     }
@@ -162,45 +173,66 @@ if ($mode -ne "eco") {
 }
 
 # ============================================================
-# Step 5: Update Check
+# Step 4: Update Check
 # ============================================================
 
-Write-Step "5/6" "Update Check"
+Write-Step "4/7" "Update Check"
 
 $hasUpdates = $false
-
-function Write-UpdateCheck {
-    param([string]$Repo, [string]$Dir, [string]$Remote, [string]$Branch)
-    if (Test-Path "$Dir\.git") {
-        Push-Location $Dir
-        git fetch $Remote 2>&1 | Out-Null
-        $behind = git rev-list --count "HEAD..$Remote/$Branch" 2>&1
-        Pop-Location
-        if ($behind -and $behind -gt 0) {
-            Write-Host "  $Repo: $behind commit(s) behind" -ForegroundColor Yellow
-            return $true
-        } else {
-            Write-Skip "$Repo: up to date"
-        }
-    } else {
-        Write-Skip "$Repo: not cloned"
-    }
-    return $false
-}
-
 if (Write-UpdateCheck "ECC" $ECC_DIR "origin" "main") { $hasUpdates = $true }
 if (Write-UpdateCheck "9Router" $ROUTER_DIR "origin" "master") { $hasUpdates = $true }
 
 if ($hasUpdates) {
     Write-Host ""
     Write-Host "  ⚡ Update tersedia! Jalankan: .\scripts\admin.ps1" -ForegroundColor Cyan
+    Write-Host "  Lihat changelog: CHANGELOG_ECC.md atau CHANGELOG_9ROUTER.md" -ForegroundColor Gray
+}
+
+# ============================================================
+# Step 5: Changelog Check (new in upstream)
+# ============================================================
+
+Write-Step "5/7" "Changelog Sync"
+
+# Check if ECC or 9Router changelogs need updating
+$eccChanged = $false
+$routerChanged = $false
+
+Push-Location $ECC_DIR
+$eccLocal = git log --oneline -1 2>$null
+$eccNew = git rev-list --count "HEAD..origin/main" 2>$null
+Pop-Location
+
+Push-Location $ROUTER_DIR
+$routerLocal = git log --oneline -1 2>$null
+$routerNew = git rev-list --count "HEAD..origin/master" 2>$null
+Pop-Location
+
+if ($eccNew -and $eccNew -gt 0) {
+    Push-Location $ECC_DIR
+    git show origin/main:CHANGELOG.md 2>$null | Out-File -FilePath "$ROOT_DIR\CHANGELOG_ECC.md" -Encoding UTF8
+    Pop-Location
+    Write-OK "CHANGELOG_ECC.md updated"
+    $eccChanged = $true
+} else {
+    Write-Skip "ECC changelog already current"
+}
+
+if ($routerNew -and $routerNew -gt 0) {
+    Push-Location $ROUTER_DIR
+    git show origin/master:CHANGELOG.md 2>$null | Out-File -FilePath "$ROOT_DIR\CHANGELOG_9ROUTER.md" -Encoding UTF8
+    Pop-Location
+    Write-OK "CHANGELOG_9ROUTER.md updated"
+    $routerChanged = $true
+} else {
+    Write-Skip "9Router changelog already current"
 }
 
 # ============================================================
 # Step 6: Summary
 # ============================================================
 
-Write-Step "6/6" "Summary"
+Write-Step "6/7" "Summary"
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Green
@@ -209,8 +241,8 @@ Write-Host "  =================================================" -ForegroundColo
 Write-Host ""
 Write-Host "  Profile:     $Profile" -ForegroundColor White
 Write-Host "  9Router:     $(if ($routerRunning) { 'Running' } else { 'Check manually' })" -ForegroundColor $(if ($routerRunning) { "Green" } else { "Yellow" })
-Write-Host "  ECC:         $(if (Test-Path $ECC_DIR) { 'Available' } else { 'Missing' })" -ForegroundColor $(if (Test-Path $ECC_DIR) { "Green" } else { "Red" })
-Write-Host "  LLM Mode:   $mode" -ForegroundColor $(if ($mode -eq "eco") { "Green" } else { "Cyan" })
+Write-Host "  ECC:         Available" -ForegroundColor Green
+Write-Host "  LLM Mode:    $mode" -ForegroundColor $(if ($mode -eq "eco") { "Green" } else { "Cyan" })
 Write-Host ""
 Write-Host "  Start coding: opencode" -ForegroundColor Cyan
 Write-Host ""

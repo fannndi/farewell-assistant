@@ -4,6 +4,22 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.2.0] — 2026-06-17 — Single-Command Daily Flow
+
+### Changed
+- **start.ps1** — Kini jadi satu-satunya command yang perlu dijalankan tiap hari:
+  - Auto-clone ECC & 9Router jika belum ada (ganti setup.ps1)
+  - Auto-install npm dependencies
+  - Update check + changelog sync otomatis
+- **README.md** — Simplified workflow, tambah section changelog
+
+### Added
+- `CHANGELOG_ECC.md` — Tracked dari upstream affaan-m/ECC
+- `CHANGELOG_9ROUTER.md` — Tracked dari upstream decolua/9router
+- **start.ps1** Step 5: auto-sync changelog files dari upstream
+
+---
+
 ## [1.1.0] — 2026-06-17 — Update Repo & Auto-Check
 
 ### Changed
@@ -12,12 +28,8 @@ Semua perubahan penting di farewell-assistant.
 - `setup.ps1` clone URLs updated sesuai remote baru
 
 ### Added
-- **start.ps1** — Step 5 Update Check: otomatis cek ECC & 9Router untuk update baru tiap startup
+- **start.ps1** — Update Check: otomatis cek ECC & 9Router untuk update baru tiap startup
 - **admin.ps1** — Changelog diff: setelah pull, tampilkan daftar commit baru dari upstream
-
-### Known Upstream Updates
-- **ECC v2.0.0**: Discord community, orchestrator skill family, kubernetes-patterns, perf fixes
-- **9Router v0.5.2**: Combo Fusion strategy, Kiro headless auth, Claude auto-ping, SSRF hardening
 
 ---
 

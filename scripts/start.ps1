@@ -1,7 +1,5 @@
-# Start - Single daily command
+# Start - Single daily command (cukup jalankan, auto semua)
 # Usage: .\start.ps1 [[-Profile] gratis|go]
-# Auto-setup ECC, 9Router + start everything
-# Profile otomatis tersimpan — cukup jalankan tanpa parameter
 
 param(
     [ValidateSet("gratis", "go")]
@@ -16,30 +14,10 @@ $ECC_DIR = "$ROOT_DIR\ecc"
 $ROUTER_DIR = "$ROOT_DIR\9router"
 $OPENCODE_DIR = "$env:USERPROFILE\.config\opencode"
 $OPENCODE_CONFIG = "$OPENCODE_DIR\opencode.jsonc"
+$API_KEY_FILE = "$ROOT_DIR\api-key.txt"
 $API_URL = "http://localhost:20128"
 $PROFILE_FILE = "$ROOT_DIR\.opencode\profile"
-
-# Resolve profile
-if (-not $Profile) {
-    if (Test-Path $PROFILE_FILE) {
-        $Profile = Get-Content $PROFILE_FILE -Raw | ForEach-Object { $_.Trim() }
-    }
-}
-
-if (-not $Profile -or ($Profile -ne "gratis" -and $Profile -ne "go")) {
-    Write-Host ""
-    Write-Host "  Pilih profile:" -ForegroundColor Cyan
-    Write-Host "    [1] gratis  — Free models (default)" -ForegroundColor White
-    Write-Host "    [2] go      — Paid models" -ForegroundColor White
-    $choice = Read-Host "  Masukkan pilihan (1/2)"
-    $Profile = if ($choice -eq "2") { "go" } else { "gratis" }
-}
-
-# Simpan profile
-New-Item -ItemType Directory -Path "$ROOT_DIR\.opencode" -Force | Out-Null
-$Profile | Set-Content -Path $PROFILE_FILE -Encoding UTF8 -NoNewline
-
-$PROFILE_SRC = "$ROOT_DIR\profiles\$Profile\opencode.jsonc"
+$stateDir = "$ROOT_DIR\.opencode"
 
 function Write-Step {
     param([string]$Step, [string]$Message)
@@ -61,6 +39,54 @@ function Write-Fail {
     param([string]$Message)
     Write-Host "  [FAIL] $Message" -ForegroundColor Red
 }
+
+# ============================================================
+# First-run wizard (API key + profile)
+# ============================================================
+
+$firstRun = $false
+
+$apiKey = ""
+if (Test-Path $API_KEY_FILE) {
+    $apiKey = Get-Content $API_KEY_FILE -Raw | ForEach-Object { $_.Trim() }
+}
+if (-not $apiKey) {
+    $firstRun = $true
+    Write-Host ""
+    Write-Host "  ╔══════════════════════════════════════════╗" -ForegroundColor Cyan
+    Write-Host "  ║   Selamat datang di farewell-assistant!  ║" -ForegroundColor Cyan
+    Write-Host "  ╚══════════════════════════════════════════╝" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  API key 9Router diperlukan." -ForegroundColor Yellow
+    Write-Host "  Cek dashboard: http://localhost:20128/dashboard (setelah 9Router jalan)" -ForegroundColor Gray
+    Write-Host ""
+    $key = Read-Host "  Masukkan API key"
+    if ($key) {
+        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+        $key | Set-Content -Path $API_KEY_FILE -Encoding UTF8 -NoNewline
+        Write-OK "API key saved"
+    }
+}
+
+if (-not $Profile) {
+    if (Test-Path $PROFILE_FILE) {
+        $Profile = Get-Content $PROFILE_FILE -Raw | ForEach-Object { $_.Trim() }
+    }
+}
+
+if (-not $Profile -or ($Profile -ne "gratis" -and $Profile -ne "go")) {
+    $firstRun = $true
+    Write-Host ""
+    Write-Host "  Pilih profile:" -ForegroundColor Cyan
+    Write-Host "    [1] gratis  — Free models (default)" -ForegroundColor White
+    Write-Host "    [2] go      — Paid models" -ForegroundColor White
+    $choice = Read-Host "  Masukkan pilihan (1/2)"
+    $Profile = if ($choice -eq "2") { "go" } else { "gratis" }
+}
+
+New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+$Profile | Set-Content -Path $PROFILE_FILE -Encoding UTF8 -NoNewline
+$PROFILE_SRC = "$ROOT_DIR\profiles\$Profile\opencode.jsonc"
 
 function Write-UpdateCheck {
     param([string]$Repo, [string]$Dir, [string]$Remote, [string]$Branch)

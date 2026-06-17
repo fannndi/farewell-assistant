@@ -15,6 +15,7 @@ $ROUTER_DIR = "$ROOT_DIR\9router"
 $PROFILE_SRC = "$ROOT_DIR\profiles\$Profile\opencode.jsonc"
 $OPENCODE_DIR = "$env:USERPROFILE\.config\opencode"
 $OPENCODE_CONFIG = "$OPENCODE_DIR\opencode.jsonc"
+$PROFILE_FILE = "$ROOT_DIR\.opencode\profile"
 
 # ============================================================
 # Helpers
@@ -134,6 +135,10 @@ if (-not (Test-Path $PROFILE_SRC)) {
 
     Write-OK "Profile '$Profile' applied to $OPENCODE_CONFIG"
 }
+
+# Persist profile choice
+$Profile | Set-Content -Path $PROFILE_FILE -Encoding UTF8 -NoNewline
+Write-Host "  Profile saved for next startup" -ForegroundColor Gray
 
 # ============================================================
 # Step 5: Initialize State

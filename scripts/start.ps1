@@ -1,11 +1,11 @@
 # Start - Single daily command
-# Usage: .\start.ps1 -Profile gratis|go
+# Usage: .\start.ps1 [[-Profile] gratis|go]
 # Auto-setup ECC, 9Router + start everything
+# Profile otomatis tersimpan — cukup jalankan tanpa parameter
 
 param(
-    [Parameter(Mandatory=$true)]
     [ValidateSet("gratis", "go")]
-    [string]$Profile
+    [string]$Profile = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,8 +16,30 @@ $ECC_DIR = "$ROOT_DIR\ecc"
 $ROUTER_DIR = "$ROOT_DIR\9router"
 $OPENCODE_DIR = "$env:USERPROFILE\.config\opencode"
 $OPENCODE_CONFIG = "$OPENCODE_DIR\opencode.jsonc"
-$PROFILE_SRC = "$ROOT_DIR\profiles\$Profile\opencode.jsonc"
 $API_URL = "http://localhost:20128"
+$PROFILE_FILE = "$ROOT_DIR\.opencode\profile"
+
+# Resolve profile
+if (-not $Profile) {
+    if (Test-Path $PROFILE_FILE) {
+        $Profile = Get-Content $PROFILE_FILE -Raw | ForEach-Object { $_.Trim() }
+    }
+}
+
+if (-not $Profile -or ($Profile -ne "gratis" -and $Profile -ne "go")) {
+    Write-Host ""
+    Write-Host "  Pilih profile:" -ForegroundColor Cyan
+    Write-Host "    [1] gratis  — Free models (default)" -ForegroundColor White
+    Write-Host "    [2] go      — Paid models" -ForegroundColor White
+    $choice = Read-Host "  Masukkan pilihan (1/2)"
+    $Profile = if ($choice -eq "2") { "go" } else { "gratis" }
+}
+
+# Simpan profile
+New-Item -ItemType Directory -Path "$ROOT_DIR\.opencode" -Force | Out-Null
+$Profile | Set-Content -Path $PROFILE_FILE -Encoding UTF8 -NoNewline
+
+$PROFILE_SRC = "$ROOT_DIR\profiles\$Profile\opencode.jsonc"
 
 function Write-Step {
     param([string]$Step, [string]$Message)

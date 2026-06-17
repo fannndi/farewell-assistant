@@ -21,10 +21,10 @@ $OLLAMA_URL = "http://localhost:11434"
 
 $MODEL_MAP = @{
     "eco"         = $null
-    "on"          = "qwen2.5-coder:1.5b"
-    "hot"         = "qwen3.5:0.8b"
-    "balance"     = "qwen3.5:2b"
-    "performance" = "qwen3.5:4b"
+    "on"          = "qwen2.5-coder-1.5b"
+    "hot"         = "qwen3.5-0.8b"
+    "balance"     = "qwen3.5-2b"
+    "performance" = "qwen3.5-4b"
 }
 
 $VRAM_MAP = @{

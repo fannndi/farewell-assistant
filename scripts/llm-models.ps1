@@ -1,7 +1,7 @@
-# LLM Models - Model download & profile management
+# LLM Models - GGUF download & profile management
 # Usage:
 #   .\llm-models.ps1 list            → lihat semua profile + status
-#   .\llm-models.ps1 pull            → download semua model
+#   .\llm-models.ps1 pull            → download semua model GGUF
 #   .\llm-models.ps1 pull hot        → download model hot saja
 #   .\llm-models.ps1 pull balance    → download model balance saja
 #   .\llm-models.ps1 status          → status GPU + VRAM
@@ -15,40 +15,49 @@ param(
 
 $ErrorActionPreference = "Stop"
 $ROOT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
+$MODELS_DIR = "$ROOT_DIR\models"
 $OLLAMA_URL = "http://localhost:11434"
 
 # ============================================================
-# Model Profiles
+# Model Profiles (GGUF from HuggingFace)
 # ============================================================
 
 $PROFILES = [ordered]@{
     "hot" = @{
-        model = "qwen3.5:0.8b"
+        model = "qwen3.5-0.8b"
         vram = "~600MB"
         condition = "Outdoor, unplugged, high temp"
-        mode = "full_gpu"
+        hf_repo = "unsloth/Qwen3.5-0.8B-GGUF"
+        hf_file = "Qwen3.5-0.8B-Q4_K_M.gguf"
         modelfile = "$ROOT_DIR\Modelfile.qwen3.5-0.8b"
+        size_gb = 0.5
     }
     "eco" = @{
-        model = "qwen2.5-coder:1.5b"
+        model = "qwen2.5-coder-1.5b"
         vram = "~1GB"
         condition = "Indoor, unplugged"
-        mode = "full_gpu"
+        hf_repo = "Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF"
+        hf_file = "Qwen2.5-Coder-1.5B-Instruct-Q4_K_M.gguf"
         modelfile = "$ROOT_DIR\Modelfile.qwen2.5-coder-1.5b"
+        size_gb = 1.0
     }
     "balance" = @{
-        model = "qwen3.5:2b"
+        model = "qwen3.5-2b"
         vram = "~1.4GB"
         condition = "Indoor, plugged, AC"
-        mode = "full_gpu"
+        hf_repo = "unsloth/Qwen3.5-2B-GGUF"
+        hf_file = "Qwen3.5-2B-Q4_K_M.gguf"
         modelfile = "$ROOT_DIR\Modelfile.qwen3.5-2b"
+        size_gb = 1.4
     }
     "performance" = @{
-        model = "qwen3.5:4b"
+        model = "qwen3.5-4b"
         vram = "~2.5GB"
         condition = "Indoor, plugged, fan active"
-        mode = "hybrid_gpu_cpu"
+        hf_repo = "unsloth/Qwen3.5-4B-GGUF"
+        hf_file = "Qwen3.5-4B-Q4_K_M.gguf"
         modelfile = "$ROOT_DIR\Modelfile.qwen3.5-4b"
+        size_gb = 2.5
     }
 }
 
@@ -88,6 +97,14 @@ function Get-DownloadedModels {
     } catch { return @() }
 }
 
+function Get-GGUFFiles {
+    $map = @{}
+    if (-not (Test-Path $MODELS_DIR)) { return $map }
+    $files = Get-ChildItem -Path $MODELS_DIR -Filter "*.gguf" -ErrorAction SilentlyContinue
+    foreach ($f in $files) { $map[$f.Name] = $f.FullName }
+    return $map
+}
+
 function Get-GPUInfo {
     try {
         $gpuRaw = nvidia-smi --query-gpu=name,memory.used,memory.total,temperature.gpu --format=csv,noheader 2>$null
@@ -113,38 +130,40 @@ function Show-List {
     $downloadedNames = @{}
     foreach ($m in $downloaded) { $downloadedNames[$m.name] = $true }
 
+    $ggufFiles = Get-GGUFFiles
+
     Write-Host ""
-    Write-Host "  LLM Model Profiles" -ForegroundColor Cyan
-    Write-Host "  ==================" -ForegroundColor Cyan
+    Write-Host "  LLM Model Profiles (GGUF)" -ForegroundColor Cyan
+    Write-Host "  ==========================" -ForegroundColor Cyan
     Write-Host ""
 
     foreach ($key in $PROFILES.Keys) {
         $p = $PROFILES[$key]
-        $status = if ($downloadedNames.ContainsKey($p.model)) {
-            "Downloaded"
-        } else {
-            "Pending"
-        }
-        $statusColor = if ($status -eq "Downloaded") { "Green" } else { "Yellow" }
+        $ggufStatus = if ($ggufFiles.ContainsKey($p.hf_file)) { "Downloaded" } else { "Pending" }
+        $ollamaStatus = if ($downloadedNames.ContainsKey($p.model)) { "Loaded" } else { "Not Loaded" }
+        $statusColor = if ($ggufStatus -eq "Downloaded") { "Green" } else { "Yellow" }
 
         Write-Host "  $key" -NoNewline -ForegroundColor White
         Write-Host " " -NoNewline
-        Write-Host ($p.model).PadRight(25) -NoNewline -ForegroundColor Gray
         Write-Host ($p.vram).PadRight(10) -NoNewline -ForegroundColor Gray
-        Write-Host $status -ForegroundColor $statusColor
+        Write-Host $ggufStatus -NoNewline -ForegroundColor $statusColor
+        Write-Host " " -NoNewline
+        Write-Host $ollamaStatus -ForegroundColor $(if ($ollamaStatus -eq "Loaded") { "Green" } else { "DarkGray" })
     }
 
     Write-Host ""
 }
 
 # ============================================================
-# Pull Model
+# Pull GGUF
 # ============================================================
 
 function Invoke-Pull {
     param([string]$TargetProfile)
 
-    Start-Ollama
+    New-Item -ItemType Directory -Path $MODELS_DIR -Force | Out-Null
+
+    $ggufFiles = Get-GGUFFiles
 
     $targets = if ($TargetProfile) {
         if ($PROFILES.ContainsKey($TargetProfile)) {
@@ -158,29 +177,51 @@ function Invoke-Pull {
         $PROFILES
     }
 
-    $downloaded = Get-DownloadedModels
-    $downloadedNames = @{}
-    foreach ($m in $downloaded) { $downloadedNames[$m.name] = $true }
-
     foreach ($key in $targets.Keys) {
         $p = $targets[$key]
-        if ($downloadedNames.ContainsKey($p.model)) {
-            Write-Host "  [SKIP] $($p.model) already downloaded" -ForegroundColor Yellow
+
+        # Skip if already downloaded
+        if ($ggufFiles.ContainsKey($p.hf_file)) {
+            Write-Host "  [SKIP] $($p.hf_file) already downloaded" -ForegroundColor Yellow
             continue
         }
 
-        Write-Host "  [PULL] $($p.model) ($($p.vram))..." -ForegroundColor Cyan
+        $url = "https://huggingface.co/$($p.hf_repo)/resolve/main/$($p.hf_file)"
+        $outFile = "$MODELS_DIR\$($p.hf_file)"
+
+        Write-Host "  [PULL] $($p.model) (~$($p.size_gb)GB)..." -ForegroundColor Cyan
+        Write-Host "         $url" -ForegroundColor DarkGray
+
         try {
-            & ollama pull $p.model
+            # Use curl.exe for large file download (supports resume)
+            $result = & curl.exe -L -C - -o $outFile $url 2>&1
             if ($LASTEXITCODE -eq 0) {
-                Write-Host "  [OK] $($p.model) downloaded" -ForegroundColor Green
+                Write-Host "  [OK] $($p.hf_file) downloaded" -ForegroundColor Green
             } else {
-                Write-Host "  [FAIL] $($p.model) pull failed" -ForegroundColor Red
+                Write-Host "  [FAIL] Download failed" -ForegroundColor Red
+                continue
             }
         } catch {
-            Write-Host "  [FAIL] Error pulling $($p.model): $_" -ForegroundColor Red
+            Write-Host "  [FAIL] Error: $_" -ForegroundColor Red
+            continue
+        }
+
+        # Create Ollama model from GGUF
+        Write-Host "  [CREATE] Importing to Ollama..." -ForegroundColor Gray
+        try {
+            Start-Ollama
+            & ollama create $p.model -f $p.modelfile
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "  [OK] $($p.model) imported to Ollama" -ForegroundColor Green
+            } else {
+                Write-Host "  [FAIL] Import failed" -ForegroundColor Red
+            }
+        } catch {
+            Write-Host "  [FAIL] Import error: $_" -ForegroundColor Red
         }
     }
+
+    Write-Host ""
 }
 
 # ============================================================
@@ -216,7 +257,16 @@ function Show-Status {
                 Write-Host "    $($m.name) ($size GB)" -ForegroundColor Gray
             }
         } else {
-            Write-Host "  Models:    None downloaded" -ForegroundColor Yellow
+            Write-Host "  Models:    None loaded" -ForegroundColor Yellow
+        }
+    }
+
+    $ggufFiles = Get-GGUFFiles
+    if ($ggufFiles.Count -gt 0) {
+        Write-Host "  GGUF:" -ForegroundColor Gray
+        foreach ($name in $ggufFiles.Keys) {
+            $size = [math]::Round((Get-Item $ggufFiles[$name]).Length / 1GB, 2)
+            Write-Host "    $name ($size GB)" -ForegroundColor Gray
         }
     }
 
@@ -228,21 +278,28 @@ function Show-Status {
 # ============================================================
 
 function Invoke-Remove {
-    Start-Ollama
+    # Remove from Ollama
     $downloaded = Get-DownloadedModels
-
-    if ($downloaded.Count -eq 0) {
-        Write-Host "  No models to remove" -ForegroundColor Yellow
-        return
+    if ($downloaded.Count -gt 0) {
+        Start-Ollama
+        foreach ($m in $downloaded) {
+            Write-Host "  [REMOVE] $($m.name) from Ollama..." -ForegroundColor Yellow
+            try {
+                & ollama rm $m.name
+                Write-Host "  [OK] $($m.name) removed" -ForegroundColor Green
+            } catch {
+                Write-Host "  [FAIL] Cannot remove: $_" -ForegroundColor Red
+            }
+        }
     }
 
-    foreach ($m in $downloaded) {
-        Write-Host "  [REMOVE] $($m.name)..." -ForegroundColor Yellow
-        try {
-            & ollama rm $m.name
-            Write-Host "  [OK] $($m.name) removed" -ForegroundColor Green
-        } catch {
-            Write-Host "  [FAIL] Cannot remove $($m.name): $_" -ForegroundColor Red
+    # Remove GGUF files
+    $ggufFiles = Get-GGUFFiles
+    if ($ggufFiles.Count -gt 0) {
+        foreach ($name in $ggufFiles.Keys) {
+            Write-Host "  [REMOVE] $name ..." -ForegroundColor Yellow
+            Remove-Item -Path $ggufFiles[$name] -Force
+            Write-Host "  [OK] $name removed" -ForegroundColor Green
         }
     }
 }

@@ -9,13 +9,16 @@ Setiap user input setelah Session Init:
    - Ambil unique values dari registry → active → kategori
    - Sort by importance: WEB > MOBILE > AI_ML > DATA > INFRA > AUTOMATION
    - Simpan ke session state untuk footer
-4. ENRICHMENT CHECK:
+4. READ MODE + GPU:
+   - Baca .opencode/llm-mode.json → ambil mode
+   - Infer GPU: eco → off, on → on
+5. ENRICHMENT CHECK:
    - Mode == eco?           → SKIP
    - Input < 20 kata?       → SKIP
    - Pertanyaan umum?       → SKIP ("apa itu", "jelaskan", "what is", "how to")
    - Selain itu             → Jalankan Invoke-LLMEnrich()
-5. JAWAB user dengan context
-6. APPEND footer (Profile | Session | Kategori)
+6. JAWAB user dengan context
+7. APPEND footer (Session | Kategori | Mode | GPU)
 ```
 
 ## Kapan Enrichment Berguna

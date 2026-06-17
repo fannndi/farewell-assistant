@@ -19,6 +19,7 @@
   "instructions": [
     "{project}/.opencode/context.md",
     "{project}/.opencode/llm-mode.json",
+    "{project}/.opencode/work-mode.json",
     "{project}/instructions/user-rules.md",
     "{project}/instructions/preprocess.md",
     "{project}/instructions/footer.md",
@@ -102,6 +103,10 @@
     "llm": {
       "description": "Mode switch: eco / on / status",
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\llm-mode.ps1\" $ARGUMENTS"
+    },
+    "mode": {
+      "description": "Work mode: plan / build / status",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\mode-switch.ps1\" $ARGUMENTS"
     },
     "detect": {
       "description": "Auto-detect project type",

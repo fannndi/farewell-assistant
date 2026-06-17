@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-06-17",
+
+  "plan": {
+    "description": "Read-only mode: audit, research, analyze, no file modification",
+    "skills": {
+      "audit": [
+        "workspace-surface-audit",
+        "repo-scan",
+        "context-budget",
+        "agent-architecture-audit",
+        "automation-audit-ops",
+        "ecc-guide"
+      ],
+      "research": [
+        "search-first",
+        "research-ops",
+        "deep-research",
+        "exa-search",
+        "documentation-lookup",
+        "literature-review"
+      ],
+      "explore": [
+        "codebase-onboarding",
+        "code-tour",
+        "iterative-retrieval",
+        "config-gc"
+      ],
+      "planning": [
+        "blueprint",
+        "product-capability",
+        "intent-driven-development",
+        "plan-orchestrate"
+      ]
+    },
+    "agents": ["explore", "architect", "planner"],
+    "tools_allowed": ["read", "bash"],
+    "tools_blocked": ["write", "edit"],
+    "behavior": "read-only, analyze, audit, research, rekomendasi tanpa ngubah file"
+  },
+
+  "build": {
+    "description": "Write/execute mode: implement, test, deploy, commit",
+    "skills": {
+      "orchestration": [
+        "orch-pipeline",
+        "orch-add-feature",
+        "orch-fix-defect",
+        "orch-change-feature",
+        "orch-refine-code",
+        "orch-build-mvp"
+      ],
+      "tdd_testing": [
+        "tdd-workflow",
+        "e2e-testing",
+        "ai-regression-testing"
+      ],
+      "coding": [
+        "powershell-patterns",
+        "coding-standards",
+        "error-handling",
+        "plankton-code-quality"
+      ],
+      "security": [
+        "security-review",
+        "safety-guard",
+        "gateguard"
+      ],
+      "deployment": [
+        "deployment-patterns",
+        "docker-patterns",
+        "database-migrations",
+        "git-workflow"
+      ],
+      "agent_eng": [
+        "agentic-engineering",
+        "agentic-os",
+        "agent-harness-construction"
+      ]
+    },
+    "agents": ["build", "tdd-guide", "code-reviewer", "security-reviewer", "build-error-resolver", "doc-updater"],
+    "tools_allowed": ["write", "edit", "bash", "read"],
+    "tools_blocked": [],
+    "behavior": "write, edit, execute, implement, test, commit"
+  }
+}

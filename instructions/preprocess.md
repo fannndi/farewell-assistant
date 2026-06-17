@@ -12,13 +12,17 @@ Setiap user input setelah Session Init:
 4. READ MODE + GPU:
    - Baca .opencode/llm-mode.json → ambil mode
    - Infer GPU: eco → off, on → on
-5. ENRICHMENT CHECK:
+5. READ WORK MODE:
+   - Baca .opencode/work-mode.json → ambil mode (plan / build)
+   - PLAN mode: gunakan skill audit, research, explore
+   - BUILD mode: gunakan skill orchestration, tdd, coding, security
+6. ENRICHMENT CHECK:
    - Mode == eco?           → SKIP
-   - Input < 20 kata?       → SKIP
+   - Input < 5 kata?        → SKIP
    - Pertanyaan umum?       → SKIP ("apa itu", "jelaskan", "what is", "how to")
    - Selain itu             → Jalankan Invoke-LLMEnrich()
-6. JAWAB user dengan context
-7. APPEND footer (Session | Kategori | Mode | GPU)
+7. JAWAB user dengan context + work mode
+8. APPEND footer (Session | Kategori | Mode | GPU | Work)
 ```
 
 ## Kapan Enrichment Berguna
@@ -39,3 +43,12 @@ System harus validasi bahwa kategori di footer hanya berasal dari project aktif:
 - `farewell-assistant` → hanya `AUTOMATION`
 - `service-hub` → `AUTOMATION - DATA - INFRA - MOBILE - WEB`
 - Tidak ada project → jangan tampilkan footer
+
+## Mode Behavior
+
+| Mode | Skill Groups | Allowed Tools | Behavior |
+|------|-------------|---------------|----------|
+| PLAN | audit, research, explore, planning | read, bash | Read-only, tidak edit file |
+| BUILD | orchestration, tdd, coding, security, deployment | read, bash, write, edit | Implementasi, test, commit |
+
+Default: BUILD.

@@ -161,9 +161,7 @@ try {
 
 if (-not $routerRunning) {
     Write-Host "  Starting 9Router..." -ForegroundColor Gray
-    Push-Location $ROUTER_DIR
-    Start-Process -FilePath "npm" -ArgumentList "start" -WindowStyle Minimized
-    Pop-Location
+    Start-Process -FilePath "npm" -ArgumentList "start" -WindowStyle Minimized -WorkingDirectory $ROUTER_DIR
     Start-Sleep -Seconds 5
     try {
         $null = Invoke-RestMethod -Uri "$API_URL/health" -TimeoutSec 10 -ErrorAction Stop

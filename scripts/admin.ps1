@@ -116,6 +116,15 @@ function Write-Pull9Router {
         } else {
             Write-Skip "package.json unchanged, npm skipped"
         }
+        # Restart 9Router to apply update
+        Write-Host "  Restarting 9Router..." -ForegroundColor Gray
+        $nodePids = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match [regex]::Escape($ROUTER_DIR) } | Select-Object -ExpandProperty ProcessId
+        if ($nodePids) {
+            $nodePids | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+            Start-Sleep -Seconds 2
+        }
+        Start-Process -FilePath "npm" -ArgumentList "start" -WindowStyle Minimized -WorkingDirectory $ROUTER_DIR
+        Write-OK "9Router restarted with new version"
     } else {
         Write-Skip "9Router: already up to date"
     }

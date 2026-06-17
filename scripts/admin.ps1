@@ -123,7 +123,11 @@ function Write-Pull9Router {
             $nodePids | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
             Start-Sleep -Seconds 2
         }
-        Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Minimized -WorkingDirectory $ROUTER_DIR
+        if (-not (Test-Path "$ROUTER_DIR\.next\standalone\.next\static")) {
+            Copy-Item -Path "$ROUTER_DIR\.next\static" -Destination "$ROUTER_DIR\.next\standalone\.next\static" -Recurse -Force
+        }
+        $pw = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }
+        Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $ROUTER_DIR -Environment @{ PORT = "20128"; NODE_ENV = "production"; DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"; INITIAL_PASSWORD = "$pw" }
         Write-OK "9Router restarted with new version"
     } else {
         Write-Skip "9Router: already up to date"

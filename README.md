@@ -63,12 +63,17 @@ Mode: `eco` (GPU off) atau `on` (GPU active, ~1GB VRAM).
 git clone https://github.com/fannndi/farewell-assistant.git
 cd farewell-assistant
 
-# 2. Edit api-key.txt - isi key 9Router & key lain
+# 2. Edit api-key.txt — isi key 9Router & key lain
 #    (key dari dashboard: http://localhost:20128/dashboard)
 
-# 3. Start - auto semua, nanti pilih combo
+# 3. Start — auto semua, nanti pilih combo
 .\scripts\start.ps1
 ```
+
+### Dashboard 9Router
+
+Buka `http://localhost:20128/login` di browser.
+Password ada di `api-key.txt` (baris `9ROUTER_PASSWORD`).
 
 ### Commands
 

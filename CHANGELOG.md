@@ -4,6 +4,19 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.3.1] - 2026-06-17 - Fix standalone static, dashboard
+
+### Fixed
+- **9Router dashboard**: Static JS files nggak ke-copy pas build standalone -> dashboard cuma "Loading..."
+- **start.ps1**: +Auto-copy `.next/static` ke `.next/standalone/.next/static` setelah build
+- **admin.ps1**: +Static copy + password env sebelum restart 9Router
+
+### Added
+- `api-key.txt`: +`9ROUTER_PASSWORD` untuk login dashboard 9Router
+- `start.ps1`: Pass `INITIAL_PASSWORD` dari api-key.txt ke standalone server
+
+---
+
 ## [1.3.0] - 2026-06-17 - Single Profile + Combo Setup
 
 ### Changed

@@ -130,6 +130,12 @@ if (-not $routerRunning) {
         Pop-Location
         Write-OK "9Router built"
     }
+    # Ensure static files exist in standalone output
+    if (-not (Test-Path "$ROUTER_DIR\.next\standalone\.next\static")) {
+        Write-Host "  Copying static files for standalone..." -ForegroundColor Gray
+        Copy-Item -Path "$ROUTER_DIR\.next\static" -Destination "$ROUTER_DIR\.next\standalone\.next\static" -Recurse -Force
+        Write-OK "Static files copied"
+    }
     $env:PORT = "20128"
     $env:DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"
     $pw = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }

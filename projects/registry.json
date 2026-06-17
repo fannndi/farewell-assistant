@@ -1,6 +1,22 @@
 {
-  "active": "farewell-assistant",
   "projects": {
+    "farewell-assistant": {
+      "type": "unknown",
+      "last_used": "2026-06-17",
+      "context_file": "context/farewell-assistant.md",
+      "kategori": {
+        "ecc/": "AUTOMATION",
+        "commands/": "AUTOMATION",
+        "profiles/": "AUTOMATION",
+        "projects/": "AUTOMATION",
+        "scripts/": "AUTOMATION",
+        "instructions/": "AUTOMATION",
+        "9router/": "AUTOMATION",
+        ".opencode/": "AUTOMATION"
+      },
+      "path": "C:/Users/FANNNDI/Documents/farewell-assistant",
+      "dominan": "AUTOMATION"
+    },
     "service-hub": {
       "last_used": "2026-06-17",
       "context_file": "context/service-hub.md",
@@ -16,23 +32,7 @@
       "path": "C:/Users/FANNNDI/Documents/service-hub",
       "type": "node",
       "dominan": "MOBILE+WEB"
-    },
-    "farewell-assistant": {
-      "type": "unknown",
-      "last_used": "2026-06-17",
-      "dominan": "AUTOMATION",
-      "path": "C:/Users/FANNNDI/Documents/farewell-assistant",
-      "context_file": "context/farewell-assistant.md",
-      "kategori": {
-        "commands/": "AUTOMATION",
-        "9router/": "AUTOMATION",
-        "projects/": "AUTOMATION",
-        "instructions/": "AUTOMATION",
-        "profiles/": "AUTOMATION",
-        "ecc/": "AUTOMATION",
-        "scripts/": "AUTOMATION",
-        ".opencode/": "AUTOMATION"
-      }
     }
-  }
+  },
+  "active": "farewell-assistant"
 }

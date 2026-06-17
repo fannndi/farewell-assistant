@@ -20,6 +20,36 @@ $OLLAMA_URL = "http://localhost:11434"
 $script:SessionTokens = 0
 
 # ============================================================
+# Token Estimation (multi-language aware)
+# ============================================================
+
+function Estimate-Tokens {
+    param([string]$Text)
+    if (-not $Text) { return 0 }
+    $tokens = 0
+    foreach ($char in $Text.ToCharArray()) {
+        $code = [int]$char
+        # CJK characters = 1 token each
+        if (($code -ge 0x4E00 -and $code -le 0x9FFF) -or
+            ($code -ge 0x3040 -and $code -le 0x309F) -or
+            ($code -ge 0x30A0 -and $code -le 0x30FF) -or
+            ($code -ge 0xAC00 -and $code -le 0xD7AF) -or
+            ($code -ge 0x3400 -and $code -le 0x4DBF)) {
+            $tokens += 1
+        }
+        # Symbols and punctuation = ~0.5 token each (counted in pairs)
+        elseif ($code -lt 0x30 -or ($code -ge 0x2000 -and $code -le 0x206F)) {
+            $tokens += 0.5
+        }
+        # Regular ASCII = ~0.25 token each (4 chars per token)
+        else {
+            $tokens += 0.25
+        }
+    }
+    return [math]::Max(1, [math]::Ceiling($tokens))
+}
+
+# ============================================================
 # Mode Helpers
 # ============================================================
 
@@ -129,7 +159,7 @@ function Invoke-LLM {
 
         if ($response.message.content) {
             $tokens = $response.eval_count
-            if (-not $tokens) { $tokens = [math]::Max(1, [math]::Round($response.message.content.Length / 4)) }
+            if (-not $tokens) { $tokens = Estimate-Tokens $response.message.content }
             $tps = if ($elapsed -gt 0) { [math]::Round($tokens / $elapsed, 2) } else { 0 }
 
             $script:SessionTokens += $tokens
@@ -169,7 +199,8 @@ function Invoke-LLMEnrich {
     if (-not $Force) {
         $skipKeywords = @("apa itu", "jelaskan", "what is", "how to", "hai", "ok", "thanks", "oke", "baik")
         $inputLower = $Text.ToLower().Trim()
-        if ($Text.Length -lt 20) { return $Text }
+        $wordCount = ($Text -split '\s+').Count
+        if ($wordCount -lt 5) { return $Text }
         foreach ($kw in $skipKeywords) {
             if ($inputLower -match [regex]::Escape($kw)) { return $Text }
         }

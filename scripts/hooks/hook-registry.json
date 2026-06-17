@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "hooks": {
+    "post-edit": {
+      "description": "Run self-heal after file edits to check for type errors",
+      "trigger": "after Edit or Write tool",
+      "script": "{project}/scripts/hooks/self-heal.ps1",
+      "args": {
+        "FilePath": "file edited",
+        "ProjectPath": "current project"
+      },
+      "languages": [".ts", ".tsx", ".dart", ".py"],
+      "enabled": true
+    },
+    "pre-bash-gate": {
+      "description": "Fact-forcing before destructive commands",
+      "trigger": "before Bash tool with dangerous commands",
+      "enabled": false
+    }
+  }
+}

@@ -72,7 +72,7 @@ function Refine-PHPType {
     return "PHP"
 }
 
-# ── Detect ──
+# -- Detect --
 
 Write-Step "DETECT" "Project type detection"
 Write-Info "Path: $Path"

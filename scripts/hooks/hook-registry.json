@@ -2,7 +2,7 @@
   "version": "1.1.0",
   "hooks": {
     "post-edit": {
-      "description": "Run self-heal after file edits — project-aware typecheck (tsc/flutter/ruff)",
+      "description": "Run self-heal after file edits -- project-aware typecheck (tsc/flutter/ruff)",
       "trigger": "after Edit or Write tool",
       "script": "{project}/scripts/hooks/self-heal.ps1",
       "args": {

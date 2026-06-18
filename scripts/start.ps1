@@ -15,7 +15,7 @@ Write-Host "  farewell-assistant - Start" -ForegroundColor Magenta
 Write-Host "  =================================================" -ForegroundColor Magenta
 Write-Host ""
 
-# ────── Helpers ──────
+# ------ Helpers ------
 
 function Write-GitPull {
     param([string]$Repo, [string]$Dir, [string]$Remote, [string]$Branch)
@@ -71,11 +71,11 @@ $pulledSelf = Write-GitPull -Repo "farewell-assistant" -Dir $script:ROOT_DIR -Re
 $startHashAfter = $null
 try { $startHashAfter = (Get-FileHash $PSCommandPath -ErrorAction Stop).Hash } catch {}
 if ($startHashBefore -and $startHashAfter -and $startHashBefore -ne $startHashAfter) {
-    Write-Host "  start.ps1 updated — run /start again to use the new version." -ForegroundColor Yellow
+    Write-Host "  start.ps1 updated -- run /start again to use the new version." -ForegroundColor Yellow
 }
 
 # ============================================================
-#  Step 2/7: Initial Bootstrap (guard — only runs once)
+#  Step 2/7: Initial Bootstrap (guard - only runs once)
 # ============================================================
 
 Write-Step "2/7" "Initial Bootstrap"
@@ -120,7 +120,7 @@ if ($needsInit) {
 
     # Start 9Router
     if (-not (Start-9Router)) {
-        Write-Info "Start 9Router failed — check logs after setup"
+        Write-Info "Start 9Router failed -- check logs after setup"
     }
 
     # api-key.txt
@@ -139,7 +139,7 @@ if ($needsInit) {
     Write-Host "    3. Create combos (model groups)" -ForegroundColor White
     Write-Host "    4. Edit api-key.txt with actual API key + combo models" -ForegroundColor White
     Write-Host ""
-    try { Read-Host "  Press Enter when done" } catch { Write-Host "  (non-interactive — continuing)" }
+    try { Read-Host "  Press Enter when done" } catch { Write-Host "  (non-interactive -- continuing)" }
 
     # Validate API key
     $apiKey = $null
@@ -159,7 +159,7 @@ if ($needsInit) {
             $null = Invoke-RestMethod -Uri "$($script:API_URL)/api/v1/models" -TimeoutSec 5 -ErrorAction Stop
             Write-OK "API key valid"
         } catch { Write-Fail "API key validation failed" }
-    } else { Write-Skip "API key not set — edit api-key.txt" }
+    } else { Write-Skip "API key not set -- edit api-key.txt" }
 
     # Save combos
     if ($comboEntries.Count -gt 0) {
@@ -250,7 +250,7 @@ try {
     $npmVer = npm view 9router version 2>$null
     $localVer = (Get-Content "$($script:ROUTER_DIR)\package.json" -Raw | ConvertFrom-Json).version
     if ($npmVer -and $localVer -and $npmVer -ne $localVer) {
-        Write-Host "  npm 9router v$npmVer available (local: v$localVer) — pulling update..." -ForegroundColor Yellow
+        Write-Host "  npm 9router v$npmVer available (local: v$localVer) -- pulling update..." -ForegroundColor Yellow
         Push-Location $script:ROUTER_DIR
         try { git pull --ff-only origin master 2>&1 | Out-Null; npm install 2>&1 | Out-Null; Stop-9Router; npm run build 2>&1 | Out-Null } finally { Pop-Location }
         if (Test-Path "$($script:ROUTER_DIR)\.next\standalone\server.js") {
@@ -260,7 +260,7 @@ try {
     }
 } catch { Write-Verbose "npm version check failed: $_" }
 
-# Changelog analysis — scan breaking changes
+# Changelog analysis -- scan breaking changes
 $hasBreaking = $false
 if (Test-Path "$($script:ROOT_DIR)\CHANGELOG_ECC.md") {
     $eccContent = Get-Content "$($script:ROOT_DIR)\CHANGELOG_ECC.md" -Raw -ErrorAction SilentlyContinue
@@ -309,7 +309,7 @@ if (-not $routerRunning) {
 
 Write-Step "5/7" "Load Configuration"
 
-# Parse api-key.txt → env vars + combo entries
+# Parse api-key.txt -> env vars + combo entries
 $apiKeyInFile = $null
 $comboEntries = @()
 $comboBadges = @()
@@ -363,7 +363,7 @@ if (Test-Path $script:API_KEY_FILE) {
 
     # Show status
     if ($newCombos.Count -gt 0 -or $changed.Count -gt 0) {
-        foreach ($nc in $newCombos) { Write-Host "  NEW combo: $nc — $($currentCombos[$nc] -join ', ')" -ForegroundColor Green }
+        foreach ($nc in $newCombos) { Write-Host "  NEW combo: $nc -- $($currentCombos[$nc] -join ', ')" -ForegroundColor Green }
         foreach ($ch in $changed) {
             $cachedEntry = $cached | Where-Object { $_.name -eq $ch }
             $old = if ($cachedEntry) { @($cachedEntry.models) -join ', ' } else { "(none)" }
@@ -416,7 +416,7 @@ if ($comboNamesFromFile.Count -gt 0) {
     $config | Set-Content -Path $script:OPENCODE_CFG -Encoding UTF8
     Write-OK "Profile applied"
 } else {
-    Write-Skip "No combos — profile not generated"
+    Write-Skip "No combos -- profile not generated"
 }
 
 # ============================================================

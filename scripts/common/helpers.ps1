@@ -1,7 +1,7 @@
 # Common Helpers - Shared functions for all scripts
 # Usage: . "$PSScriptRoot\helpers.ps1"
 
-# ── Write Helpers ──
+# -- Write Helpers --
 
 function Write-Step {
     param([string]$Step, [string]$Message)
@@ -29,7 +29,7 @@ function Write-Info {
     Write-Host "  [..] $Message" -ForegroundColor Gray
 }
 
-# ── JSON State Helpers ──
+# -- JSON State Helpers --
 
 function Read-JsonState {
     param(
@@ -56,7 +56,7 @@ function Write-JsonState {
     $Data | ConvertTo-Json -Depth 5 | Set-Content -Path $Path -Encoding UTF8
 }
 
-# ── Mode Helpers ──
+# -- Mode Helpers --
 
 function Get-LLMMode {
     $state = Read-JsonState -Path $script:LLM_MODE_FILE -Default { return @{ mode = "eco"; model = "" } }
@@ -73,7 +73,7 @@ function Get-LLMModel {
     return if ($state.model) { $state.model } else { "" }
 }
 
-# ── Ollama Helpers ──
+# -- Ollama Helpers --
 
 function Test-OllamaRunning {
     try {
@@ -108,7 +108,7 @@ function Stop-OllamaModels {
     } catch {}
 }
 
-# ── 9Router Helpers ──
+# -- 9Router Helpers --
 
 function Get-9RouterPid {
     try {
@@ -186,7 +186,7 @@ function Start-9Router {
 
     # Health-check with backoff: 2s, 3s, 5s, 8s, 12s, 15s (max ~45s)
     # First /api/health hit on a cold Next.js standalone build triggers route
-    # compilation, so the first request can take several seconds — use 10s
+    # compilation, so the first request can take several seconds -- use 10s
     # timeout per probe (not 2s) to avoid false-negative on slow cold start.
     $waits = @(2, 3, 5, 8, 12, 15)
     $total = 0
@@ -203,7 +203,7 @@ function Start-9Router {
     return $false
 }
 
-# ── GPU Helpers ──
+# -- GPU Helpers --
 
 function Get-GPUInfo {
     param([string]$Fields = "utilization.gpu,memory.used,memory.total")
@@ -237,7 +237,7 @@ function Get-GPUInfo {
     return @{ available = $false; utilization = 0; memory_used = 0; memory_total = 0 }
 }
 
-# ── Token Estimation (multi-language aware) ──
+# -- Token Estimation (multi-language aware) --
 
 function Estimate-Tokens {
     param([string]$Text)
@@ -260,7 +260,7 @@ function Estimate-Tokens {
     return [math]::Max(1, [math]::Ceiling($tokens))
 }
 
-# ── LLM Call ──
+# -- LLM Call --
 
 function Invoke-LLM {
     param(
@@ -316,7 +316,7 @@ function Invoke-LLM {
     return $null
 }
 
-# ── Smart Enrichment ──
+# -- Smart Enrichment --
 
 function Invoke-LLMEnrich {
     param(

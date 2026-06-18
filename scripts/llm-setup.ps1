@@ -187,21 +187,7 @@ function Invoke-ImportToOllama {
     return $true
 }
 
-function Stop-OllamaModels {
-    $running = & ollama ps 2>$null
-    if ($running -and $running -notmatch "NAME") {
-        Write-Step "Stopping all Ollama models..."
-        & ollama ps 2>$null | Select-Object -Skip 1 | ForEach-Object {
-            $modelName = ($_ -split '\s+')[0]
-            if ($modelName) {
-                & ollama stop $modelName 2>$null
-                Write-OK "Stopped $modelName"
-            }
-        }
-    } else {
-        Write-Skip "No running models"
-    }
-}
+# Stop-OllamaModels is defined in helpers.ps1 (API-based, more reliable)
 
 function Invoke-AutoMode {
     Write-Step "Detecting GPU hardware..."

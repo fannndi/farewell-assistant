@@ -107,11 +107,15 @@ function Select-ModelRoute {
         [string]$Profile
     )
 
-    # Complexity-based routing
-    $routeMap = @{
-        "low"    = @{ primary = "Free"; secondary = "Free"; heavy = "Free" }
-        "medium" = @{ primary = "Free"; secondary = "Free"; heavy = "Free" }
-        "high"   = @{ primary = "Free"; secondary = "Emergency"; heavy = "Emergency" }
+    # Complexity-based routing (use $script:MODEL_ROUTES from config.ps1)
+    $routeMap = $script:MODEL_ROUTES
+    if (-not $routeMap) {
+        $routeMap = @{
+            "low"      = @{ primary = "Free"; secondary = "Free"; heavy = "Free" }
+            "medium"   = @{ primary = "Free"; secondary = "Free"; heavy = "Free" }
+            "high"     = @{ primary = "Free"; secondary = "Emergency"; heavy = "Emergency" }
+            "critical" = @{ primary = "Emergency"; secondary = "Emergency"; heavy = "Emergency" }
+        }
     }
 
     $routes = $routeMap[$Complexity]
@@ -258,6 +262,18 @@ function Sync-TurnState {
     }
 
     $turnCount = if ($Result.turn) { $Result.turn } else { $script:TurnCount }
+
+    # Get session start time from session-state.json
+    $sessionStarted = ""
+    try {
+        $ssPath = Join-Path $stateDir "session-state.json"
+        if (Test-Path $ssPath) {
+            $ss = Get-Content $ssPath -Raw | ConvertFrom-Json
+            if ($ss.session.started) { $sessionStarted = $ss.session.started }
+        }
+    } catch {}
+    if (-not $sessionStarted) { $sessionStarted = Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz' }
+
     $contextContent = @"
 # Session State
 
@@ -265,7 +281,7 @@ function Sync-TurnState {
 - **Kategori:** $kategori
 - **Mode:** $mode
 - **Work:** $work
-- **Started:** $(Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz')
+- **Started:** $sessionStarted
 
 # Turn State
 
@@ -278,6 +294,14 @@ function Sync-TurnState {
 - **Planning:** $planningDisplay
 - **Blocked:** $blockedDisplay
 - **Turn:** $turnCount
+
+# Pipeline Status
+
+- **Enrichment:** $(if ($Result.intent.source -eq "structured") { "OK (structured)" } else { "fallback (quick)" })
+- **Classification:** $(if ($Result.success) { "OK" } else { "BLOCKED - $($Result.reason)" })
+- **Skill Chain:** $(if ($chainDisplay) { "OK ($($Result.skill_chain.Count) steps)" } else { "N/A" })
+- **Model Route:** $(if ($Result.success) { "OK ($($Result.model_route.primary)/$($Result.model_route.heavy))" } else { "N/A" })
+- **Timestamp:** $(Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz')
 "@
 
     $contextPath = Join-Path $stateDir "context.md"

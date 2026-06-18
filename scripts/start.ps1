@@ -473,6 +473,8 @@ Write-Step "5/7" "Load Configuration"
 $apiKeyInFile = $null
 $comboEntries = @()
 $comboBadges = @()
+$currentCombos = @{}
+$comboNamesFromFile = @()
 if (Test-Path $script:API_KEY_FILE) {
     Get-Content $script:API_KEY_FILE | ForEach-Object {
         $line = $_.Trim()

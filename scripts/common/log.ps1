@@ -76,21 +76,21 @@ function Sync-SessionState {
         }
         Write-JsonState -Path "$($script:STATE_DIR)\session-state.json" -Data $state
 
-        # Write context.md
-        $ctx = @"
+        # context.md is managed by Sync-TurnState (intent-router.ps1)
+        # Only write initial context.md if it doesn't exist
+        $contextPath = "$($script:STATE_DIR)\context.md"
+        if (-not (Test-Path $contextPath)) {
+            $ctx = @"
 # Session State
 
-- **Mode:** $mode
-- **Role:** User
 - **Project:** $active
 - **Kategori:** $kategori
-- **GPU:** $gpu
+- **Mode:** $mode
 - **Work:** $($work.ToUpper())
-- **Skills:** ON - $skillCount
-- **Session:** $((Get-Date -Format 'yyyy-MM-dd'))
 - **Started:** $now
 "@
-        Set-Content -Path "$($script:STATE_DIR)\context.md" -Value $ctx -Encoding UTF8
+            $ctx | Set-Content -Path $contextPath -Encoding UTF8
+        }
     } catch {
         Write-Verbose "Sync-SessionState failed: $_"
     }

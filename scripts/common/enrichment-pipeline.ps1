@@ -108,30 +108,53 @@ function Get-QuickIntent {
     param([string]$TextInput)
 
     $inputLower = $TextInput.ToLower().Trim()
+    $domain = "general"
+    $stack = @()
 
-    if ($inputLower -match '(fix|bug|error|crash|broken|broken|debug)') {
-        return @{ intent = "fix"; complexity = "medium"; confidence = 0.7 }
+    # Detect domain from keywords
+    if ($inputLower -match '(react|nextjs|next\.js|vue|angular|frontend|ui|css|html|api|rest|express|fastapi|django|laravel|spring|nest)') { $domain = "web" }
+    elseif ($inputLower -match '(flutter|dart|kotlin|android|ios|swift|compose|mobile|react.native)') { $domain = "mobile" }
+    elseif ($inputLower -match '(docker|kubernetes|k8s|ci|cd|deploy|nginx|terraform|ansible|infra)') { $domain = "infra" }
+    elseif ($inputLower -match '(postgres|mysql|redis|clickhouse|database|sql|etl|pipeline|data)') { $domain = "data" }
+    elseif ($inputLower -match '(pytorch|tensorflow|llm|model|train|inference|ml|ai|gpu|cuda)') { $domain = "ai_ml" }
+    elseif ($inputLower -match '(powershell|script|automate|task|schedule|windows|registry|env)') { $domain = "automation" }
+
+    # Detect stack from keywords
+    if ($inputLower -match 'python|fastapi|django|flask') { $stack = @("python") }
+    elseif ($inputLower -match 'node|javascript|typescript|express|nest') { $stack = @("nodejs") }
+    elseif ($inputLower -match 'react|nextjs|next\.js') { $stack = @("react") }
+    elseif ($inputLower -match 'flutter|dart') { $stack = @("flutter") }
+    elseif ($inputLower -match 'powershell|ps1') { $stack = @("powershell") }
+    elseif ($inputLower -match 'go|golang') { $stack = @("golang") }
+    elseif ($inputLower -match 'rust|cargo') { $stack = @("rust") }
+    elseif ($inputLower -match 'php|laravel') { $stack = @("php") }
+    elseif ($inputLower -match 'java|spring') { $stack = @("java") }
+    elseif ($inputLower -match 'kotlin') { $stack = @("kotlin") }
+    elseif ($inputLower -match 'swift|ios') { $stack = @("swift") }
+
+    if ($inputLower -match '(fix|bug|error|crash|broken|debug)') {
+        return @{ intent = "fix"; domain = $domain; stack = $stack; complexity = "medium"; confidence = 0.7 }
     }
     if ($inputLower -match '(review|audit|check|inspect|scan)') {
-        return @{ intent = "review"; complexity = "medium"; confidence = 0.7 }
+        return @{ intent = "review"; domain = $domain; stack = $stack; complexity = "medium"; confidence = 0.7 }
     }
     if ($inputLower -match '(deploy|release|ship|publish|ci|cd)') {
-        return @{ intent = "deploy"; complexity = "high"; confidence = 0.7 }
+        return @{ intent = "deploy"; domain = $domain; stack = $stack; complexity = "high"; confidence = 0.7 }
     }
     if ($inputLower -match '(research|search|find|investigate|compare)') {
-        return @{ intent = "research"; complexity = "low"; confidence = 0.7 }
+        return @{ intent = "research"; domain = $domain; stack = $stack; complexity = "low"; confidence = 0.7 }
     }
     if ($inputLower -match '(write|document|readme|docs|guide)') {
-        return @{ intent = "docs"; complexity = "low"; confidence = 0.7 }
+        return @{ intent = "docs"; domain = $domain; stack = $stack; complexity = "low"; confidence = 0.7 }
     }
     if ($inputLower -match '(create|build|make|add|implement|bikin|buat|tambah)') {
         $complexity = "medium"
         if ($inputLower -match '(simple|basic|quick|tipis)') { $complexity = "low" }
         if ($inputLower -match '(full|complex|advanced|enterprise|sistem|api|crud|auth)') { $complexity = "high" }
-        return @{ intent = "build"; complexity = $complexity; confidence = 0.8 }
+        return @{ intent = "build"; domain = $domain; stack = $stack; complexity = $complexity; confidence = 0.8 }
     }
 
-    return @{ intent = "ask"; complexity = "low"; confidence = 0.6 }
+    return @{ intent = "ask"; domain = $domain; stack = $stack; complexity = "low"; confidence = 0.6 }
 }
 
 # -- Intent Cache (per session) --

@@ -126,9 +126,10 @@ function Stop-9Router {
     if ($existingPid) {
         try { Stop-Process -Id $existingPid -Force -ErrorAction Stop; Start-Sleep -Seconds 1 } catch {}
     }
-    # Fallback: kill whatever owns port 20128 (precision, not regex over all node.exe)
+    # Fallback: kill whatever owns router port (precision, not regex over all node.exe)
     try {
-        $conns = Get-NetTCPConnection -LocalPort 20128 -State Listen -ErrorAction SilentlyContinue
+        $routerPort = if ($script:ROUTER_PORT) { $script:ROUTER_PORT } else { "20128" }
+        $conns = Get-NetTCPConnection -LocalPort $routerPort -State Listen -ErrorAction SilentlyContinue
         foreach ($c in $conns) {
             if ($c.OwningProcess -and $c.OwningProcess -ne 0) {
                 $proc = Get-Process -Id $c.OwningProcess -ErrorAction SilentlyContinue
@@ -165,7 +166,7 @@ function Start-9Router {
     $logOut = "$($script:LOG_DIR)\9router.log"
     $logErr = "$($script:LOG_DIR)\9router-error.log"
 
-    $env:PORT = "20128"
+    $env:PORT = if ($script:ROUTER_PORT) { $script:ROUTER_PORT } else { "20128" }
     $env:NODE_ENV = "production"
     $env:DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"
     $env:INITIAL_PASSWORD = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }
@@ -331,21 +332,6 @@ function Get-SkillCount {
     return $count
 }
 
-function Parse-ApiKeyFile {
-    $entries = @()
-    if (-not (Test-Path $script:API_KEY_FILE)) { return $entries }
-    Get-Content $script:API_KEY_FILE | ForEach-Object {
-        $line = $_.Trim()
-        if ($line -match '^([A-Z_0-9]+)=(.*)') {
-            $key = $matches[1]; $val = $matches[2]
-            Set-Item -Path "env:$key" -Value $val -ErrorAction SilentlyContinue
-            if ($key -eq "NINEROUTER_API_KEY") { $entries = @{ key = $key; value = $val } + $entries; return }
-            $entries += @{ key = $key; value = $val }
-        }
-    }
-    return $entries
-}
-
 function Get-ComboDetails {
     $combos = @()
     $dbPath = "$env:USERPROFILE\AppData\Roaming\9router\db\data.sqlite"
@@ -360,7 +346,7 @@ function Get-ComboDetails {
     return $combos
 }
 
-# -- Smart Enrichment --
+# -- Smart Enrichment (DEPRECATED: use Invoke-StructuredEnrichment from enrichment-pipeline.ps1) --
 
 function Invoke-LLMEnrich {
     param(

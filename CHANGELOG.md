@@ -4,6 +4,33 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.4.2] - 2026-06-19 - Audit Fix: P0 Critical + P1 High + P2 Medium + P3 Low
+
+### Fixed — P0 Critical
+- **context.md race condition**: Hapus context.md write dari `Sync-SessionState` (log.ps1). Sekarang hanya `Sync-TurnState` yang manage context.md → tidak ada overwrite mid-session.
+- **Preprocess.md pipeline flow**: Update steps 1-9 → match actual code (Cache Check step 2, Quick Classify fallback step 4).
+- **Critical complexity**: Tambah `"critical"` ke `Select-ModelRoute` → Emergency/Emergency/Emergency.
+
+### Fixed — P1 High
+- **Get-QuickIntent**: Tambah `domain` + `stack` detection (web/mobile/infra/data/ai_ml/automation + python/nodejs/flutter/powershell/etc).
+- **Dead code removed**: `Parse-ApiKeyFile` (helpers.ps1), `$script:PIPELINE` (config.ps1), duplicate `Stop-OllamaModels` (llm-setup.ps1).
+- **$currentCombos scope bug**: Initialize `$currentCombos = @{}` dan `$comboNamesFromFile = @()` sebelum if block.
+
+### Fixed — P2 Medium
+- **Hardcoded ports**: Replace `20128` di helpers.ps1 → pakai `$script:ROUTER_PORT` (configurable).
+- **Started field**: Baca dari `session-state.json` (session start), bukan current turn time.
+- **Footer indicator**: Tambah "Pipeline Status" section ke context.md (enrichment, classification, skill chain, model route status).
+
+### Fixed — P3 Low
+- **Duplicate regex**: Hapus `broken|broken` → `broken` di quick intent.
+- **Invoke-LLMEnrich**: Mark sebagai DEPRECATED di comment.
+
+### Changed
+- **llm-mode.json**: Mode balance aktif (qwen3.5-2b, 1.4GB VRAM)
+- **$script:MODEL_ROUTES**: Sekarang dipakai oleh `Select-ModelRoute` (bukan dead code lagi)
+
+---
+
 ## [1.4.1] - 2026-06-19 - Precision Context System: Bridge Pipeline → AI
 
 ### Problem

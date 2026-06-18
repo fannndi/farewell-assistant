@@ -4,9 +4,9 @@ Setiap user input setelah Session Init:
 
 ```
 1. INPUT           → User input masuk ke pipeline
-2. QUICK CLASSIFY  → Pattern-based intent detection (tanpa LLM, instan)
-3. STRUCTURED ENRICH → Ollama qwen2.5:1.5b klasifikasi intent secara presisi
-4. CACHE CHECK     → Skip enrichment kalau input sudah di-cache
+2. CACHE CHECK     → Skip enrichment kalau input sudah di-cache
+3. STRUCTURED ENRICH → Ollama (qwen3.5-2b) klasifikasi intent sebagai JSON
+4. QUICK CLASSIFY  → Fallback pattern-based kalau enrichment gagal (tanpa LLM)
 5. RULE CHECK      → Validasi permission vs work mode (PLAN/BUILD)
 6. SKILL CHAIN     → Bangun urutan skill berdasarkan intent + domain
 7. MODEL ROUTE     → Pilih model combo berdasarkan complexity

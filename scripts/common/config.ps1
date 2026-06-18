@@ -63,10 +63,3 @@ $script:ENRICHMENT = @{
     timeout = 45
     cache_ttl = 3600
 }
-
-# -- Pipeline Settings --
-$script:PIPELINE = @{
-    enabled = $true
-    skip_keywords = @("apa itu", "jelaskan", "what is", "how to", "hai", "ok", "thanks")
-    complex_threshold = "high"
-}

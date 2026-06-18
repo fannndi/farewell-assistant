@@ -4,6 +4,7 @@
 
 $ErrorActionPreference = "Continue"
 $ProgressPreference = "SilentlyContinue"
+$script:startTimestamp = Get-Date
 
 . "$PSScriptRoot\common\helpers.ps1"
 . "$PSScriptRoot\common\config.ps1"
@@ -54,6 +55,182 @@ function Write-ShortChangelog {
         }
     }
     return $false
+}
+
+function Write-StartReport {
+    param(
+        [bool]$RouterRunning,
+        [string[]]$ComboBadges,
+        [string]$Mode,
+        [hashtable]$CurrentCombos,
+        [string[]]$ComboNamesFromFile
+    )
+
+    $startTs = if ($script:startTimestamp) { $script:startTimestamp } else { Get-Date }
+    $duration = [math]::Round(((Get-Date) - $startTs).TotalSeconds, 1)
+    $commit = try { git -C $script:ROOT_DIR rev-parse --short HEAD 2>$null } catch { "unknown" }
+    $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+    # 9Router details
+    $routerPid = Get-9RouterPid
+    $routerVersion = "?"
+    if (Test-Path "$($script:ROUTER_DIR)\package.json") {
+        try { $pv = (Get-Content "$($script:ROUTER_DIR)\package.json" -Raw | ConvertFrom-Json); $routerVersion = $pv.version } catch {}
+    }
+
+    # Dependencies
+    $eccExists = Test-Path "$($script:ECC_DIR)\AGENTS.md"
+    $standaloneExists = Test-Path "$($script:ROUTER_DIR)\.next\standalone\server.js"
+
+    # GPU & LLM
+    $gpu = Get-GPUInfo -Fields "name"
+    $gpuName = if ($gpu.available) { $gpu.name } else { "not detected" }
+    $ollamaOk = Test-OllamaRunning
+
+    # Work mode & skills
+    $workMode = Get-WorkMode
+    $skillCount = 0
+    if (Test-Path $script:SKILL_IDX_FILE) {
+        try {
+            $idx = Get-Content $script:SKILL_IDX_FILE -Raw | ConvertFrom-Json
+            $md = $idx.$workMode
+            if ($md -and $md.skills) { foreach ($g in $md.skills.PSObject.Properties) { $skillCount += $g.Value.Count } }
+        } catch {}
+    }
+
+    # Autostart
+    $taskExists = $false
+    try { $taskExists = (Get-ScheduledTask -TaskName $script:TASK_NAME -ErrorAction Stop) -ne $null } catch {}
+
+    # Read combo models from 9Router SQLite
+    $comboDbModels = @()
+    $dbPath = "$env:USERPROFILE\AppData\Roaming\9router\db\data.sqlite"
+    if (Test-Path $dbPath -ErrorAction SilentlyContinue -PathType Leaf) {
+        try {
+            $dbPathFs = $dbPath -replace '\\', '/'
+            Push-Location $script:ROUTER_DIR
+            $nodeScript = "const Database = require('better-sqlite3'); const db = new Database('$dbPathFs', {readonly: true}); const combos = db.prepare('SELECT name, kind, models FROM combos ORDER BY createdAt ASC').all(); combos.forEach(c => console.log(JSON.stringify({name:c.name, kind:c.kind, models:JSON.parse(c.models||'[]')}))); db.close();"
+            $comboDbModels = node -e $nodeScript 2>$null | Where-Object { $_ -match '^\{"name"' } | ForEach-Object { try { $_ | ConvertFrom-Json } catch {} }
+            Pop-Location
+        } catch { Pop-Location }
+    }
+
+    # Agent-to-combo mapping
+    $agentMap = @{}
+    $combo0Agents = @("build", "tdd-guide", "security-reviewer")
+    $combo1Agents = @("planner", "code-reviewer", "build-error-resolver", "doc-updater")
+    if ($ComboNamesFromFile.Count -gt 0) { $agentMap[$ComboNamesFromFile[0]] = $combo0Agents }
+    if ($ComboNamesFromFile.Count -gt 1) { $agentMap[$ComboNamesFromFile[1]] = $combo1Agents }
+
+    # Ping models (sequential, 10s timeout)
+    $pingResults = @()
+    if ($RouterRunning -and $env:NINEROUTER_API_KEY) {
+        $hdrs = @{ "Authorization" = "Bearer $env:NINEROUTER_API_KEY"; "Content-Type" = "application/json" }
+        foreach ($cd in $comboDbModels) {
+            if (-not $cd.models -or $cd.models.Count -eq 0) { continue }
+            foreach ($m in $cd.models) {
+                $pingBody = @{ model = $m; messages = @(@{ role = "user"; content = "ping" }); max_tokens = 5 } | ConvertTo-Json -Compress
+                $t0 = Get-Date; $ok = $false; $code = 0; $err = ""
+                try {
+                    $resp = Invoke-WebRequest -Uri "$($script:API_URL)/v1/chat/completions" -Method Post -Headers $hdrs -Body $pingBody -TimeoutSec 10 -ErrorAction Stop
+                    $code = [int]$resp.StatusCode; $ok = ($code -eq 200)
+                } catch {
+                    if ($_.Exception.Response) { try { $code = [int]$_.Exception.Response.StatusCode } catch {} }
+                    if ($_.Exception.Message -match "timeout|timed out") { $err = "timeout" } else { $err = "error" }
+                }
+                $elapsed = [math]::Round(((Get-Date) - $t0).TotalSeconds, 1)
+                $pingResults += @{ combo = $cd.name; model = $m; ok = $ok; code = $code; time = $elapsed; err = $err }
+            }
+        }
+    }
+
+    # ============== RENDER ==============
+    Write-Host ""
+    Write-Host "  =================================================" -ForegroundColor Magenta
+    Write-Host "  farewell-assistant - Start Report" -ForegroundColor Magenta
+    Write-Host "  =================================================" -ForegroundColor Magenta
+    Write-Host ""
+
+    Write-Host "  SYSTEM" -ForegroundColor Cyan
+    Write-Host "    Project:       farewell-assistant" -ForegroundColor White
+    Write-Host "    Commit:        $commit" -ForegroundColor Gray
+    Write-Host "    Duration:      ${duration}s" -ForegroundColor White
+    Write-Host "    Timestamp:     $now" -ForegroundColor Gray
+    Write-Host ""
+
+    Write-Host "  9ROUTER" -ForegroundColor Cyan
+    if ($RouterRunning) {
+        Write-Host "    Status:        Running" -ForegroundColor Green
+        Write-Host "    Port:          20128" -ForegroundColor White
+        if ($routerPid) { Write-Host "    PID:           $routerPid" -ForegroundColor Gray }
+        Write-Host "    Version:       $routerVersion" -ForegroundColor Gray
+        Write-Host "    Dashboard:     http://localhost:20128/dashboard" -ForegroundColor Blue
+    } else { Write-Host "    Status:        Stopped" -ForegroundColor Red }
+    Write-Host ""
+
+    Write-Host "  LLM & GPU" -ForegroundColor Cyan
+    $modeColor = if ($Mode -eq "eco") { "Green" } else { "Cyan" }
+    Write-Host "    Mode:          $Mode" -ForegroundColor $modeColor
+    Write-Host "    GPU:           $gpuName" -ForegroundColor Gray
+    $ollamaLabel = if ($Mode -eq "eco") { "skipped (eco mode)" } elseif ($ollamaOk) { "running" } else { "not running" }
+    $ollamaColor = if ($Mode -eq "eco") { "Gray" } elseif ($ollamaOk) { "Green" } else { "Yellow" }
+    Write-Host "    Ollama:        $ollamaLabel" -ForegroundColor $ollamaColor
+    Write-Host ""
+
+    Write-Host "  COMBOS & PROFILE" -ForegroundColor Cyan
+    for ($i = 0; $i -lt $ComboNamesFromFile.Count; $i++) {
+        $cName = $ComboNamesFromFile[$i]
+        $cAgents = if ($i -eq 0) { "build, tdd-guide, security-reviewer" } else { "planner, code-reviewer, build-error-resolver, doc-updater" }
+        $cDb = $comboDbModels | Where-Object { $_.name -eq $cName }
+        $cModelCount = if ($cDb) { $cDb.models.Count } else { "?" }
+        Write-Host "    COMBO_$i`:       $cName" -ForegroundColor White
+        Write-Host "      Agents:      $cAgents" -ForegroundColor Gray
+        Write-Host "      Models:      $cModelCount models" -ForegroundColor Gray
+    }
+    Write-Host "    Profile:       $($script:OPENCODE_CFG)" -ForegroundColor Gray
+    Write-Host ""
+
+    Write-Host "  MODEL HEALTH" -ForegroundColor Cyan
+    if ($pingResults.Count -gt 0) {
+        $groups = $pingResults | Group-Object combo
+        foreach ($g in $groups) {
+            Write-Host "    $($g.Name):" -ForegroundColor White
+            foreach ($pr in $g.Group) {
+                $icon = if ($pr.ok) { "+" } else { "x" }
+                $iconColor = if ($pr.ok) { "Green" } else { "Red" }
+                $statusLabel = if ($pr.ok) { "$($pr.code) ($($pr.time)s)" }
+                    elseif ($pr.err -eq "timeout") { "timeout" }
+                    else { "$($pr.code) error" }
+                $line = "      $icon $($pr.model)".PadRight(46)
+                Write-Host $line -ForegroundColor $iconColor -NoNewline
+                Write-Host " $statusLabel" -ForegroundColor $(if ($pr.ok) { "Gray" } else { "Red" })
+            }
+        }
+    } else {
+        if (-not $RouterRunning) { Write-Host "    9Router not running" -ForegroundColor Yellow }
+        else { Write-Host "    No model data found" -ForegroundColor Yellow }
+    }
+    Write-Host ""
+
+    Write-Host "  DEPENDENCIES" -ForegroundColor Cyan
+    $eccLabel = if ($eccExists) { "cloned" } else { "missing" }
+    $standaloneLabel = if ($standaloneExists) { "built" } else { "missing" }
+    Write-Host "    ECC:           $eccLabel $(if ($eccExists) {'(v)'} else {'(x)'})" -ForegroundColor $(if ($eccExists) { "Green" } else { "Red" })
+    Write-Host "    9Router:       $standaloneLabel $(if ($standaloneExists) {'(v)'} else {'(x)'})" -ForegroundColor $(if ($standaloneExists) { "Green" } else { "Red" })
+    Write-Host "    Skills:        ON - $skillCount" -ForegroundColor White
+    Write-Host ""
+
+    Write-Host "  AUTOSTART" -ForegroundColor Cyan
+    $taskLabel = if ($taskExists) { "registered" } else { "not configured" }
+    Write-Host "    Task:          $($script:TASK_NAME) $(if ($taskExists) {'(v)'} else {'(x)'})" -ForegroundColor $(if ($taskExists) { "Green" } else { "Gray" })
+    Write-Host ""
+
+    Write-Host "  WORK MODE" -ForegroundColor Cyan
+    Write-Host "    Mode:          $($workMode.ToUpper())" -ForegroundColor $(if ($workMode -eq "build") { "Green" } else { "Yellow" })
+    Write-Host ""
+
+    Write-Host "  =================================================" -ForegroundColor Magenta
+    Write-Host ""
 }
 
 # ============================================================
@@ -462,11 +639,7 @@ if ($mode -ne "eco") {
     if ($ollamaOk) { Write-OK "Ollama running" } else { Write-Fail "Ollama failed to start" }
 }
 
-Write-Host ""
-Write-Host "  9Router:    $(if ($routerRunning) { 'Running' } else { 'Check manually' })" -ForegroundColor $(if ($routerRunning) { "Green" } else { "Yellow" })
-Write-Host "  Combos:     $($comboBadges -join ', ')" -ForegroundColor White
-Write-Host "  LLM Mode:   $mode" -ForegroundColor $(if ($mode -eq "eco") { "Green" } else { "Cyan" })
-Write-Host ""
+Write-StartReport -RouterRunning $routerRunning -ComboBadges $comboBadges -Mode $mode -CurrentCombos $currentCombos -ComboNamesFromFile $comboNamesFromFile
 
 Sync-SessionState
 Write-TaskLog -Stage "START" -Action "Consolidated start completed" -Result "success"

@@ -4,6 +4,16 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.3.3] - 2026-06-19 - Full Status Report + Model Health Ping
+
+### Added
+- **start.ps1**: Full status report setelah `/start` — tampilan rapi: SYSTEM, 9ROUTER, LLM & GPU, COMBOS & PROFILE, MODEL HEALTH, DEPENDENCIES, AUTOSTART, WORK MODE.
+- **Model health ping**: Ping tiap model di setiap combo via 9Router API (10s timeout per model). Tampilkan status (✓/✗), HTTP code, response time.
+- **Combo model list**: Read combo models dari 9Router SQLite (`better-sqlite3`) via Node.js script — tahu model apa saja di dalam tiap combo.
+- **Duration tracking**: Hitung waktu total dari awal script sampai selesai.
+
+---
+
 ## [1.3.2] - 2026-06-19 - Fix combo handling + regex
 
 ### Fixed

@@ -7,25 +7,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ROOT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
-$REGISTRY_FILE = "$ROOT_DIR\projects\registry.json"
-$SKILL_INDEX_FILE = "$ROOT_DIR\projects\skill-index.json"
-$CONTEXT_DIR = "$ROOT_DIR\projects\context"
 
-# ============================================================
-# Helpers
-# ============================================================
+. "$PSScriptRoot\common\helpers.ps1"
+. "$PSScriptRoot\common\config.ps1"
 
-function Write-OK    { param([string]$Message) Write-Host "  [OK] $Message" -ForegroundColor Green }
-function Write-Skip  { param([string]$Message) Write-Host "  [SKIP] $Message" -ForegroundColor Yellow }
-function Write-Info  { param([string]$Message) Write-Host "  [..] $Message" -ForegroundColor Gray }
-
-function Get-DetectorMarkers {
-    if (Test-Path $SKILL_INDEX_FILE) {
-        try { return (Get-Content $SKILL_INDEX_FILE -Raw | ConvertFrom-Json).detector_markers } catch {}
-    }
-    return $null
-}
+$CONTEXT_DIR = "$($script:ROOT_DIR)\projects\context"
 
 # ============================================================
 # Kategori Detection Engine
@@ -38,89 +24,43 @@ function Get-KategoriForFile {
     $name = [System.IO.Path]::GetFileName($FilePath).ToLower()
     $dir = [System.IO.Path]::GetFileName([System.IO.Path]::GetDirectoryName($FilePath)).ToLower()
 
-    # Primary files
     $primaryMap = @{
-        "pubspec.yaml" = "MOBILE"
-        "android/" = "MOBILE"
-        "ios/" = "MOBILE"
-        "package.json" = "WEB"
-        "go.mod" = "WEB"
-        "composer.json" = "WEB"
-        "requirements.txt" = "WEB"
-        "pyproject.toml" = "WEB"
-        "Cargo.toml" = "WEB"
-        "Gemfile" = "WEB"
-        "pom.xml" = "WEB"
-        "build.gradle" = "WEB"
-        "Dockerfile" = "INFRA"
-        "docker-compose.yml" = "INFRA"
-        "render.yaml" = "INFRA"
+        "pubspec.yaml" = "MOBILE"; "android/" = "MOBILE"; "ios/" = "MOBILE"
+        "package.json" = "WEB"; "go.mod" = "WEB"; "composer.json" = "WEB"
+        "requirements.txt" = "WEB"; "pyproject.toml" = "WEB"; "Cargo.toml" = "WEB"
+        "Gemfile" = "WEB"; "pom.xml" = "WEB"; "build.gradle" = "WEB"
+        "Dockerfile" = "INFRA"; "docker-compose.yml" = "INFRA"; "render.yaml" = "INFRA"
         ".github/workflows/" = "INFRA"
-        "schema.prisma" = "DATA"
-        "migrations/" = "DATA"
-        "supabase/" = "DATA"
-        "supabase" = "DATA"
-        "*.ps1" = "AUTOMATION"
-        "*.sh" = "AUTOMATION"
+        "schema.prisma" = "DATA"; "migrations/" = "DATA"; "supabase/" = "DATA"
+        "*.ps1" = "AUTOMATION"; "*.sh" = "AUTOMATION"
     }
 
     foreach ($key in $primaryMap.Keys) {
         if ($key -like "*\*") {
-            $pattern = $key.TrimEnd('*')
-            if ($name -like "$pattern*") { return $primaryMap[$key] }
+            if ($name -like "$($key.TrimEnd('*'))*") { return $primaryMap[$key] }
         } elseif ($key -like "*/") {
-            $folder = $key.TrimEnd('/')
-            if ($dir -eq $folder) { return $primaryMap[$key] }
+            if ($dir -eq $key.TrimEnd('/')) { return $primaryMap[$key] }
         } elseif ($name -eq $key) {
             return $primaryMap[$key]
         }
     }
 
-    # Extension-based
     $extMap = @{
-        ".dart" = "MOBILE"
-        ".kt" = "MOBILE"
-        ".kts" = "MOBILE"
-        ".swift" = "MOBILE"
-        ".ts" = "WEB"
-        ".tsx" = "WEB"
-        ".js" = "WEB"
-        ".jsx" = "WEB"
-        ".vue" = "WEB"
-        ".php" = "WEB"
-        ".py" = "WEB"
-        ".java" = "WEB"
-        ".go" = "WEB"
-        ".rb" = "WEB"
-        ".rs" = "WEB"
-        ".cs" = "WEB"
-        ".yaml" = "INFRA"
-        ".yml" = "INFRA"
-        ".tf" = "INFRA"
-        ".sql" = "DATA"
+        ".dart" = "MOBILE"; ".kt" = "MOBILE"; ".kts" = "MOBILE"; ".swift" = "MOBILE"
+        ".ts" = "WEB"; ".tsx" = "WEB"; ".js" = "WEB"; ".jsx" = "WEB"; ".vue" = "WEB"
+        ".php" = "WEB"; ".py" = "WEB"; ".java" = "WEB"; ".go" = "WEB"
+        ".rb" = "WEB"; ".rs" = "WEB"; ".cs" = "WEB"
+        ".yaml" = "INFRA"; ".yml" = "INFRA"; ".tf" = "INFRA"; ".sql" = "DATA"
     }
-
     if ($extMap.ContainsKey($ext)) { return $extMap[$ext] }
 
-    # Directory-based
     $dirMap = @{
-        "android" = "MOBILE"
-        "ios" = "MOBILE"
-        "frontend" = "MOBILE"
-        "mobile" = "MOBILE"
-        "backend" = "WEB"
-        "api" = "WEB"
-        "server" = "WEB"
-        "web" = "WEB"
-        "infra" = "INFRA"
-        "deploy" = "INFRA"
-        "docker" = "INFRA"
-        "scripts" = "AUTOMATION"
-        "hooks" = "AUTOMATION"
-        "data" = "DATA"
-        "database" = "DATA"
+        "android" = "MOBILE"; "ios" = "MOBILE"; "frontend" = "MOBILE"; "mobile" = "MOBILE"
+        "backend" = "WEB"; "api" = "WEB"; "server" = "WEB"; "web" = "WEB"
+        "infra" = "INFRA"; "deploy" = "INFRA"; "docker" = "INFRA"
+        "scripts" = "AUTOMATION"; "hooks" = "AUTOMATION"
+        "data" = "DATA"; "database" = "DATA"
     }
-
     if ($dirMap.ContainsKey($dir)) { return $dirMap[$dir] }
 
     return "AUTOMATION"
@@ -133,59 +73,37 @@ function Get-KategoriForModule {
     $dirs = Get-ChildItem -Path $ModulePath -Directory -ErrorAction SilentlyContinue
 
     $kategoriScores = @{
-        "MOBILE" = 0
-        "WEB" = 0
-        "INFRA" = 0
-        "DATA" = 0
-        "AUTOMATION" = 0
-        "AI_ML" = 0
+        "MOBILE" = 0; "WEB" = 0; "INFRA" = 0; "DATA" = 0
+        "AUTOMATION" = 0; "AI_ML" = 0
     }
 
-    # Score files
     foreach ($file in $files) {
         $kat = Get-KategoriForFile -FilePath $file.FullName
         if ($kategoriScores.ContainsKey($kat)) { $kategoriScores[$kat] += 2 }
     }
 
-    # Score directories
     foreach ($dir in $dirs) {
         $dirName = $dir.Name.ToLower()
         $dirScoreMap = @{
-            "android" = "MOBILE"; "ios" = "MOBILE"
-            "frontend" = "MOBILE"; "mobile" = "MOBILE"
+            "android" = "MOBILE"; "ios" = "MOBILE"; "frontend" = "MOBILE"; "mobile" = "MOBILE"
             "backend" = "WEB"; "api" = "WEB"; "server" = "WEB"
             "infra" = "INFRA"; "deploy" = "INFRA"; "docker" = "INFRA"
-        "scripts" = "AUTOMATION"; "hooks" = "AUTOMATION"
-        "data" = "DATA"; "database" = "DATA"; "migrations" = "DATA"; "supabase" = "DATA"
+            "scripts" = "AUTOMATION"; "hooks" = "AUTOMATION"
+            "data" = "DATA"; "database" = "DATA"; "migrations" = "DATA"; "supabase" = "DATA"
             "ml" = "AI_ML"; "ai" = "AI_ML"; "model" = "AI_ML"
         }
         if ($dirScoreMap.ContainsKey($dirName)) { $kategoriScores[$dirScoreMap[$dirName]] += 3 }
     }
 
-    # Check primary markers in module
     $moduleName = (Get-Item $ModulePath).Name.ToLower()
     $primaryMap = @{
-        "frontend" = "MOBILE"
-        "android" = "MOBILE"
-        "ios" = "MOBILE"
-        "mobile" = "MOBILE"
-        "backend" = "WEB"
-        "api" = "WEB"
-        "server" = "WEB"
-        "web" = "WEB"
-        "infra" = "INFRA"
-        "deploy" = "INFRA"
-        "scripts" = "AUTOMATION"
-        "db" = "DATA"
-        "database" = "DATA"
-        "supabase" = "DATA"
+        "frontend" = "MOBILE"; "android" = "MOBILE"; "ios" = "MOBILE"; "mobile" = "MOBILE"
+        "backend" = "WEB"; "api" = "WEB"; "server" = "WEB"; "web" = "WEB"
+        "infra" = "INFRA"; "deploy" = "INFRA"; "scripts" = "AUTOMATION"
+        "db" = "DATA"; "database" = "DATA"; "supabase" = "DATA"
     }
+    if ($primaryMap.ContainsKey($moduleName)) { $kategoriScores[$primaryMap[$moduleName]] += 5 }
 
-    if ($primaryMap.ContainsKey($moduleName)) {
-        $kategoriScores[$primaryMap[$moduleName]] += 5
-    }
-
-    # Package-specific detection
     $packageJson = Join-Path $ModulePath "package.json"
     if (Test-Path $packageJson) {
         try {
@@ -208,7 +126,6 @@ function Get-KategoriForModule {
         } catch {}
     }
 
-    # pubspec.yaml detection
     $pubspec = Join-Path $ModulePath "pubspec.yaml"
     if (Test-Path $pubspec) {
         try {
@@ -218,10 +135,8 @@ function Get-KategoriForModule {
         } catch {}
     }
 
-    # Winner
     $top = $kategoriScores.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1
     if ($top.Value -ge 3) { return $top.Key }
-
     return "AUTOMATION"
 }
 
@@ -237,13 +152,9 @@ function Invoke-ModuleScan {
         $_.Name -notmatch '^(\.git|node_modules|\.next|build|dist|\.dart_tool|\.pub-cache)$'
     }
 
-    # Score root files
     $rootKategori = Get-KategoriForModule -ModulePath $ProjectPath
-    if ($rootKategori -ne "AUTOMATION") {
-        $modules["/"] = $rootKategori
-    }
+    if ($rootKategori -ne "AUTOMATION") { $modules["/"] = $rootKategori }
 
-    # Score each top-level directory
     foreach ($dir in $topDirs) {
         $moduleKey = $dir.Name + "/"
         $kat = Get-KategoriForModule -ModulePath $dir.FullName
@@ -264,12 +175,9 @@ function Invoke-AIScan {
         [hashtable]$Modules
     )
 
-    $llmAdapter = "$ROOT_DIR\scripts\llm-adapter.ps1"
-    if (-not (Test-Path $llmAdapter)) { return $Modules }
-
     try {
-        . $llmAdapter
-        $mode = Get-OperatingMode
+        . "$PSScriptRoot\llm-adapter.ps1"
+        $mode = Get-LLMMode
         if ($mode -ne "on") { return $Modules }
     } catch { return $Modules }
 
@@ -333,7 +241,7 @@ Write-Host "  farewell-assistant - Project Detection" -ForegroundColor Cyan
 Write-Host "  Path: $Path" -ForegroundColor Gray
 Write-Host ""
 
-# --- Detect Type (legacy) ---
+# --- Detect Type ---
 $detectedType = "unknown"
 $slug = (Get-Item $Path).Name.ToLower() -replace '[^a-z0-9\-]', '-'
 $slug = $slug.Trim('-')
@@ -354,31 +262,15 @@ foreach ($check in $legacyChecks) {
     $pattern = $check.file
     if ($pattern -match '^\*') {
         $found = Get-ChildItem -Path $Path -Filter $pattern -ErrorAction SilentlyContinue
-        if ($found) {
-            $detectedType = $check.type
-            Write-OK ("Detected: " + $check.label + " (" + $check.file + ")")
-            break
-        }
+        if ($found) { $detectedType = $check.type; Write-OK ("Detected: " + $check.label + " (" + $check.file + ")"); break }
     } else {
         $testPath = Join-Path $Path $check.file
-        if (Test-Path $testPath) {
-            $detectedType = $check.type
-            Write-OK ("Detected: " + $check.label + " (" + $check.file + ")")
-            break
-        }
+        if (Test-Path $testPath) { $detectedType = $check.type; Write-OK ("Detected: " + $check.label + " (" + $check.file + ")"); break }
     }
 }
 
-# Monorepo fallback: check subdirectories
 if ($detectedType -eq "unknown") {
-    $subChecks = @(
-        "backend/package.json"
-        "frontend/pubspec.yaml"
-        "backend/composer.json"
-        "backend/go.mod"
-        "backend/Cargo.toml"
-        "backend/Gemfile"
-    )
+    $subChecks = @("backend/package.json", "frontend/pubspec.yaml", "backend/composer.json", "backend/go.mod", "backend/Cargo.toml", "backend/Gemfile")
     foreach ($subCheck in $subChecks) {
         $subPath = Join-Path $Path $subCheck
         if (Test-Path $subPath) {
@@ -392,10 +284,7 @@ if ($detectedType -eq "unknown") {
             break
         }
     }
-
-    if ($detectedType -eq "unknown") {
-        Write-Skip "No characteristic files found. Type: unknown"
-    }
+    if ($detectedType -eq "unknown") { Write-Skip "No characteristic files found. Type: unknown" }
 }
 
 # --- Multi-Module Scan ---
@@ -403,19 +292,11 @@ Write-Host ""
 Write-Info "Scanning modules for kategori..."
 $modules = Invoke-ModuleScan -ProjectPath $Path
 
-# Optional AI enhancement
 Write-Info "Running AI enrichment (if mode=ON)..."
 $modules = Invoke-AIScan -ProjectPath $Path -Modules $modules
 
-# Determine dominant kategori (weighted by file count + module)
-$kategoriWeights = @{
-    "MOBILE" = 0
-    "WEB" = 0
-    "INFRA" = 0
-    "DATA" = 0
-    "AI_ML" = 0
-    "AUTOMATION" = 0
-}
+# Determine dominant kategori
+$kategoriWeights = @{ "MOBILE" = 0; "WEB" = 0; "INFRA" = 0; "DATA" = 0; "AI_ML" = 0; "AUTOMATION" = 0 }
 foreach ($key in $modules.Keys) {
     $kat = $modules[$key]
     $modulePath = Join-Path $Path $key.Replace('/','')
@@ -430,7 +311,6 @@ $sortedKat = $kategoriWeights.GetEnumerator() | Sort-Object Value -Descending
 $dominantKategori = $sortedKat | Select-Object -First 1 | ForEach-Object { $_.Name }
 $secondaryKat = $sortedKat | Select-Object -Skip 1 -First 2 | Where-Object { $_.Value -gt 0 } | ForEach-Object { $_.Name }
 
-# Build dominant display (core categories)
 $coreCategories = @("MOBILE", "WEB", "AI_ML")
 $dominantKatParts = @($dominantKategori)
 foreach ($sec in $secondaryKat) {
@@ -442,7 +322,6 @@ foreach ($sec in $secondaryKat) {
 }
 $dominantKategori = $dominantKatParts -join "+"
 
-# Build full display string (all unique)
 $allKategori = $modules.Values | Sort-Object -Unique
 $kategoriDisplay = $allKategori -join "+"
 
@@ -450,27 +329,20 @@ Write-Host ""
 Write-OK "Modules scanned: $($modules.Count)"
 foreach ($key in ($modules.Keys | Sort-Object)) {
     $icon = switch ($modules[$key]) {
-        "MOBILE" { "📱" }
-        "WEB" { "🌐" }
-        "INFRA" { "⚙️" }
-        "DATA" { "🗄️" }
-        "AI_ML" { "🤖" }
-        "AUTOMATION" { "🔧" }
-        default { "📁" }
+        "MOBILE" { "[M]" }; "WEB" { "[W]" }; "INFRA" { "[I]" }
+        "DATA" { "[D]" }; "AI_ML" { "[A]" }; "AUTOMATION" { "[X]" }; default { "[-]" }
     }
     Write-Host "    $icon $key → $($modules[$key])"
 }
 
 # --- Update Registry ---
 $registry = @{ active = $slug; projects = @{} }
-if (Test-Path $REGISTRY_FILE) {
+if (Test-Path $script:REGISTRY_FILE) {
     try {
-        $raw = Get-Content $REGISTRY_FILE -Raw | ConvertFrom-Json
+        $raw = Get-Content $script:REGISTRY_FILE -Raw | ConvertFrom-Json
         $projects = @{}
         if ($raw.projects) {
-            $raw.projects.PSObject.Properties | ForEach-Object {
-                $projects[$_.Name] = $_.Value
-            }
+            $raw.projects.PSObject.Properties | ForEach-Object { $projects[$_.Name] = $_.Value }
         }
         $registry = @{ active = $raw.active; projects = $projects }
     } catch {
@@ -483,9 +355,7 @@ $cleanPath = $Path -replace '\\', '/'
 $today = Get-Date -Format "yyyy-MM-dd"
 
 $kategori = @{}
-foreach ($key in $modules.Keys) {
-    $kategori[$key] = $modules[$key]
-}
+foreach ($key in $modules.Keys) { $kategori[$key] = $modules[$key] }
 
 $registry.projects[$slug] = @{
     path = $cleanPath
@@ -496,8 +366,8 @@ $registry.projects[$slug] = @{
     last_used = $today
 }
 
-New-Item -ItemType Directory -Path (Split-Path $REGISTRY_FILE -Parent) -Force | Out-Null
-$registry | ConvertTo-Json -Depth 5 | Set-Content -Path $REGISTRY_FILE -Encoding UTF8
+New-Item -ItemType Directory -Path (Split-Path $script:REGISTRY_FILE -Parent) -Force | Out-Null
+$registry | ConvertTo-Json -Depth 5 | Set-Content -Path $script:REGISTRY_FILE -Encoding UTF8
 
 Write-Host ""
 Write-Host "  Registry updated:" -ForegroundColor Green
@@ -512,7 +382,6 @@ Write-Host ""
 $contextFile = Join-Path $CONTEXT_DIR ($slug + ".md")
 if (-not (Test-Path $contextFile) -or $Force) {
     New-Item -ItemType Directory -Path $CONTEXT_DIR -Force | Out-Null
-
     $lines = @(
         "# $slug",
         "",

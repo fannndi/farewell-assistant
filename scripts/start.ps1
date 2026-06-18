@@ -5,47 +5,17 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
-$ROOT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
-$ECC_DIR = "$ROOT_DIR\ecc"
-$ROUTER_DIR = "$ROOT_DIR\9router"
-$OPENCODE_DIR = "$env:USERPROFILE\.config\opencode"
-$OPENCODE_CONFIG = "$OPENCODE_DIR\opencode.jsonc"
-$API_KEY_FILE = "$ROOT_DIR\api-key.txt"
-$API_URL = "http://localhost:20128"
-$COMBO_FILE = "$ROOT_DIR\.opencode\combo.json"
-$PROFILE_SRC = "$ROOT_DIR\profiles\combo\opencode.jsonc"
-$stateDir = "$ROOT_DIR\.opencode"
-
-# ── Helpers ──
-
-function Write-Step {
-    param([string]$Step, [string]$Message)
-    Write-Host ""
-    Write-Host "[$Step] $Message" -ForegroundColor Cyan
-}
-
-function Write-OK {
-    param([string]$Message)
-    Write-Host "  [OK] $Message" -ForegroundColor Green
-}
-
-function Write-Skip {
-    param([string]$Message)
-    Write-Host "  [SKIP] $Message" -ForegroundColor Yellow
-}
-
-function Write-Fail {
-    param([string]$Message)
-    Write-Host "  [FAIL] $Message" -ForegroundColor Red
-}
+. "$PSScriptRoot\common\helpers.ps1"
+. "$PSScriptRoot\common\config.ps1"
 
 function Write-UpdateCheck {
     param([string]$Repo, [string]$Dir, [string]$Remote, [string]$Branch)
     if (Test-Path "$Dir\.git") {
         Push-Location $Dir
-        git fetch $Remote 2>&1 | Out-Null
-        $behind = git rev-list --count "HEAD..$Remote/$Branch" 2>&1
-        Pop-Location
+        try {
+            git fetch $Remote 2>&1 | Out-Null
+            $behind = git rev-list --count "HEAD..$Remote/$Branch" 2>&1
+        } finally { Pop-Location }
         if ($behind -and $behind -gt 0) {
             Write-Host "  ${Repo}: $behind commit(s) behind" -ForegroundColor Yellow
             return $true
@@ -60,15 +30,15 @@ function Write-UpdateCheck {
 
 # ── Load API keys ──
 
-if (Test-Path $API_KEY_FILE) {
-    Get-Content $API_KEY_FILE | ForEach-Object {
+if (Test-Path $script:API_KEY_FILE) {
+    Get-Content $script:API_KEY_FILE | ForEach-Object {
         $line = $_.Trim()
         if ($line -match '^([A-Z_]+)=(.*)') {
             Set-Item -Path "env:$($matches[1])" -Value $matches[2]
         }
     }
     if ($env:NINEROUTER_API_KEY) {
-        try { setx NINEROUTER_API_KEY $env:NINEROUTER_API_KEY 2>&1 | Out-Null } catch {}
+        Write-Verbose "API key loaded (session-only, not persisted to registry)"
     }
 }
 
@@ -84,27 +54,27 @@ Write-Host ""
 
 Write-Step "0/8" "Auto-Setup"
 
-if (-not (Test-Path "$ECC_DIR\AGENTS.md")) {
+if (-not (Test-Path "$($script:ECC_DIR)\AGENTS.md")) {
     Write-Host "  Cloning ECC..." -ForegroundColor Gray
-    git clone https://github.com/affaan-m/ECC.git $ECC_DIR 2>&1 | Out-Null
+    git clone https://github.com/affaan-m/ECC.git $script:ECC_DIR 2>&1 | Out-Null
     Write-OK "ECC cloned"
 } else {
     Write-Skip "ECC already cloned"
 }
 
-if (-not (Test-Path "$ROUTER_DIR\package.json")) {
+if (-not (Test-Path "$($script:ROUTER_DIR)\package.json")) {
     Write-Host "  Cloning 9Router..." -ForegroundColor Gray
-    git clone https://github.com/decolua/9router.git $ROUTER_DIR 2>&1 | Out-Null
+    git clone https://github.com/decolua/9router.git $script:ROUTER_DIR 2>&1 | Out-Null
     Write-OK "9Router cloned"
 } else {
     Write-Skip "9Router already cloned"
 }
 
-if (-not (Test-Path "$ROUTER_DIR\node_modules")) {
+if (-not (Test-Path "$($script:ROUTER_DIR)\node_modules")) {
     Write-Host "  Installing 9Router dependencies..." -ForegroundColor Gray
-    Push-Location $ROUTER_DIR
-    npm install 2>&1 | Out-Null
-    Pop-Location
+    Push-Location $script:ROUTER_DIR
+    try { npm install 2>&1 | Out-Null }
+    finally { Pop-Location }
     Write-OK "Dependencies installed"
 } else {
     Write-Skip "9Router dependencies already installed"
@@ -116,37 +86,44 @@ Write-Step "1/8" "9Router Health"
 
 $routerRunning = $false
 try {
-    $null = Invoke-RestMethod -Uri "$API_URL/api/health" -TimeoutSec 3 -ErrorAction Stop
+    $null = Invoke-RestMethod -Uri "$($script:API_URL)/api/health" -TimeoutSec 3 -ErrorAction Stop
     $routerRunning = $true
     Write-OK "9Router is running"
 } catch {}
 
 if (-not $routerRunning) {
     Write-Host "  Starting 9Router..." -ForegroundColor Gray
-    if (-not (Test-Path "$ROUTER_DIR\.next\standalone\server.js")) {
+    if (-not (Test-Path "$($script:ROUTER_DIR)\.next\standalone\server.js")) {
         Write-Host "  Building 9Router (first time)..." -ForegroundColor Gray
-        Push-Location $ROUTER_DIR
-        npm run build 2>&1 | Out-Null
-        Pop-Location
+        Push-Location $script:ROUTER_DIR
+        try { npm run build 2>&1 | Out-Null }
+        finally { Pop-Location }
         Write-OK "9Router built"
     }
-    # Ensure static files exist in standalone output
-    if (-not (Test-Path "$ROUTER_DIR\.next\standalone\.next\static")) {
+    if (-not (Test-Path "$($script:ROUTER_DIR)\.next\standalone\.next\static")) {
         Write-Host "  Copying static files for standalone..." -ForegroundColor Gray
-        Copy-Item -Path "$ROUTER_DIR\.next\static" -Destination "$ROUTER_DIR\.next\standalone\.next\static" -Recurse -Force
+        Copy-Item -Path "$($script:ROUTER_DIR)\.next\static" -Destination "$($script:ROUTER_DIR)\.next\standalone\.next\static" -Recurse -Force
         Write-OK "Static files copied"
     }
     $env:PORT = "20128"
     $env:DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"
     $env:NODE_ENV = "production"
     $env:INITIAL_PASSWORD = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }
-    Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $ROUTER_DIR
-    Start-Sleep -Seconds 8
-    try {
-        $null = Invoke-RestMethod -Uri "$API_URL/api/health" -TimeoutSec 10 -ErrorAction Stop
-        Write-OK "9Router started successfully"
-    } catch {
-        Write-Fail "9Router started but not reachable yet"
+    Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $script:ROUTER_DIR
+
+    # Poll instead of fixed sleep
+    $maxWait = 15; $waited = 0
+    while ($waited -lt $maxWait) {
+        Start-Sleep -Seconds 1; $waited++
+        try {
+            $null = Invoke-RestMethod -Uri "$($script:API_URL)/api/health" -TimeoutSec 2 -ErrorAction Stop
+            Write-OK "9Router started successfully"
+            $routerRunning = $true
+            break
+        } catch {}
+    }
+    if (-not $routerRunning) {
+        Write-Fail "9Router started but not reachable after ${maxWait}s"
     }
 }
 
@@ -154,10 +131,9 @@ if (-not $routerRunning) {
 
 Write-Step "2/8" "Combo Setup"
 
-# Fetch combos from 9Router API
 $remoteCombos = @()
 try {
-    $models = Invoke-RestMethod -Uri "$API_URL/api/v1/models" -TimeoutSec 5 -ErrorAction Stop
+    $models = Invoke-RestMethod -Uri "$($script:API_URL)/api/v1/models" -TimeoutSec 5 -ErrorAction Stop
     $remoteCombos = $models.data | Where-Object { $_.owned_by -eq "combo" } | Select-Object -ExpandProperty id
 } catch {}
 
@@ -167,12 +143,9 @@ if ($remoteCombos.Count -gt 0) {
     Write-Host "  (Tidak ada combo terdeteksi - buat dulu di dashboard)" -ForegroundColor Gray
 }
 
-# Read saved combos
 $savedCombos = @()
-if (Test-Path $COMBO_FILE) {
-    try {
-        $savedCombos = Get-Content $COMBO_FILE -Raw | ConvertFrom-Json
-    } catch {}
+if (Test-Path $script:COMBO_FILE) {
+    try { $savedCombos = Get-Content $script:COMBO_FILE -Raw | ConvertFrom-Json } catch {}
 }
 
 $needsSetup = $savedCombos.Count -eq 0
@@ -196,8 +169,8 @@ if ($needsSetup) {
     } while ($ans -eq "y" -or $ans -eq "Y")
 
     if ($combos.Count -gt 0) {
-        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
-        $combos | ConvertTo-Json | Set-Content -Path $COMBO_FILE -Encoding UTF8
+        New-Item -ItemType Directory -Path $script:STATE_DIR -Force | Out-Null
+        $combos | ConvertTo-Json | Set-Content -Path $script:COMBO_FILE -Encoding UTF8
         $savedCombos = $combos
         Write-OK "Combo tersimpan: $($combos -join ', ')"
     }
@@ -212,7 +185,6 @@ if ($savedCombos.Count -gt 1) {
 
 Write-Step "3/8" "Apply Profile"
 
-# Generate models section
 $modelEntries = ""
 for ($i = 0; $i -lt $savedCombos.Count; $i++) {
     $name = $savedCombos[$i]
@@ -221,46 +193,28 @@ for ($i = 0; $i -lt $savedCombos.Count; $i++) {
 }
 $comboModels = "{$modelEntries`n    }"
 
-$config = Get-Content $PROFILE_SRC -Raw
-$config = $config -replace '\{project\}', ($ROOT_DIR -replace '\\', '/')
+$config = Get-Content $script:PROFILE_SRC -Raw
+$config = $config -replace '\{project\}', ($script:ROOT_DIR -replace '\\', '/')
 $config = $config -replace '\$\{COMBO_0\}', $savedCombos[0]
 $combo1 = if ($savedCombos.Count -gt 1) { $savedCombos[1] } else { $savedCombos[0] }
 $config = $config -replace '\$\{COMBO_1\}', $combo1
 $config = $config -replace '\$\{COMBO_MODELS\}', $comboModels
 
-New-Item -ItemType Directory -Path $OPENCODE_DIR -Force | Out-Null
-$config | Set-Content -Path $OPENCODE_CONFIG -Encoding UTF8
+New-Item -ItemType Directory -Path $script:OPENCODE_DIR -Force | Out-Null
+$config | Set-Content -Path $script:OPENCODE_CFG -Encoding UTF8
 Write-OK "Profile applied"
 
 # ── Step 4: LLM Mode Check ──
 
 Write-Step "4/8" "LLM Mode"
 
-$modeFile = "$stateDir\llm-mode.json"
-$mode = "eco"
-if (Test-Path $modeFile) {
-    try {
-        $state = Get-Content $modeFile -Raw | ConvertFrom-Json
-        $mode = $state.mode
-    } catch {}
-}
-
+$mode = Get-LLMMode
 Write-Host "  Mode: $mode" -ForegroundColor $(if ($mode -eq "eco") { "Green" } else { "Cyan" })
 
 if ($mode -ne "eco") {
-    $ollamaRunning = $false
-    try {
-        $null = Invoke-RestMethod -Uri "http://localhost:11434/api/tags" -TimeoutSec 3 -ErrorAction Stop
-        $ollamaRunning = $true
-    } catch {}
-    if (-not $ollamaRunning) {
-        Write-Host "  Starting Ollama..." -ForegroundColor Gray
-        Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Minimized
-        Start-Sleep -Seconds 3
-        Write-OK "Ollama started"
-    } else {
-        Write-OK "Ollama running"
-    }
+    $ollamaOk = Start-OllamaService
+    if ($ollamaOk) { Write-OK "Ollama running" }
+    else { Write-Fail "Ollama failed to start" }
 } else {
     Write-Skip "ECO mode - Ollama not needed"
 }
@@ -270,8 +224,8 @@ if ($mode -ne "eco") {
 Write-Step "5/8" "Update Check"
 
 $hasUpdates = $false
-if (Write-UpdateCheck "ECC" $ECC_DIR "origin" "main") { $hasUpdates = $true }
-if (Write-UpdateCheck "9Router" $ROUTER_DIR "origin" "master") { $hasUpdates = $true }
+if (Write-UpdateCheck "ECC" $script:ECC_DIR "origin" "main") { $hasUpdates = $true }
+if (Write-UpdateCheck "9Router" $script:ROUTER_DIR "origin" "master") { $hasUpdates = $true }
 
 if ($hasUpdates) {
     Write-Host ""
@@ -283,27 +237,27 @@ if ($hasUpdates) {
 
 Write-Step "6/8" "Changelog Sync"
 
-Push-Location $ECC_DIR
-$eccNew = git rev-list --count "HEAD..origin/main" 2>$null
-Pop-Location
+Push-Location $script:ECC_DIR
+try { $eccNew = git rev-list --count "HEAD..origin/main" 2>$null }
+finally { Pop-Location }
 
-Push-Location $ROUTER_DIR
-$routerNew = git rev-list --count "HEAD..origin/master" 2>$null
-Pop-Location
+Push-Location $script:ROUTER_DIR
+try { $routerNew = git rev-list --count "HEAD..origin/master" 2>$null }
+finally { Pop-Location }
 
 if ($eccNew -and $eccNew -gt 0) {
-    Push-Location $ECC_DIR
-    git show origin/main:CHANGELOG.md 2>$null | Out-File -FilePath "$ROOT_DIR\CHANGELOG_ECC.md" -Encoding UTF8
-    Pop-Location
+    Push-Location $script:ECC_DIR
+    try { git show origin/main:CHANGELOG.md 2>$null | Out-File -FilePath "$($script:ROOT_DIR)\CHANGELOG_ECC.md" -Encoding UTF8 }
+    finally { Pop-Location }
     Write-OK "CHANGELOG_ECC.md updated"
 } else {
     Write-Skip "ECC changelog already current"
 }
 
 if ($routerNew -and $routerNew -gt 0) {
-    Push-Location $ROUTER_DIR
-    git show origin/master:CHANGELOG.md 2>$null | Out-File -FilePath "$ROOT_DIR\CHANGELOG_9ROUTER.md" -Encoding UTF8
-    Pop-Location
+    Push-Location $script:ROUTER_DIR
+    try { git show origin/master:CHANGELOG.md 2>$null | Out-File -FilePath "$($script:ROOT_DIR)\CHANGELOG_9ROUTER.md" -Encoding UTF8 }
+    finally { Pop-Location }
     Write-OK "CHANGELOG_9ROUTER.md updated"
 } else {
     Write-Skip "9Router changelog already current"
@@ -325,4 +279,3 @@ Write-Host "  LLM Mode:    $mode" -ForegroundColor $(if ($mode -eq "eco") { "Gre
 Write-Host ""
 Write-Host "  >> Membuka opencode..." -ForegroundColor Cyan
 opencode
-

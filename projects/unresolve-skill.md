@@ -1,14 +1,23 @@
 # Unresolved Gaps
 
 > File: projects/unresolve-skill.md
-> Updated: 2026-06-17
+> Updated: 2026-06-18
 > Status: DEFERRED — not urgent, revisit after core gaps resolved
+
+---
+
+## Resolved
+
+| # | Gap | Resolved In | Date |
+|---|-----|-------------|------|
+| G1 | Tidak ada PowerShell-specific skill | `projects/skills/powershell-patterns/SKILL.md` | 2026-06-17 |
+| G2 | `self-heal.ps1` tidak auto-trigger | `scripts/hooks/hook-registry.json` (enabled: true) | 2026-06-17 |
 
 ---
 
 ## Gap 3 — Hooks Wiring (ECC → OpenCode)
 
-**Deskripsi:** ECC memiliki 20+ hooks lifecycle (PreToolUse, PostToolUse, SessionStart, Stop, dll) yang didefinisikan di `ecc/hooks/hooks.json`. Tapi hooks ini dirancang untuk **Claude Code CLI**, bukan OpenCode. Format dan eksekusinya berbeda.
+**Deskripsi:** ECC memiliki 20+ hooks lifecycle yang didefinisikan di `ecc/hooks/hooks.json`. Tapi hooks ini dirancang untuk **Claude Code CLI**, bukan OpenCode. Format dan eksekusinya berbeda.
 
 **Masalah:**
 - OpenCode tidak memiliki native hook system seperti Claude Code
@@ -69,8 +78,10 @@
 
 ## Ringkasan
 
-| Gap | Skill | Priority | Trigger |
-|-----|-------|----------|---------|
-| G3 | hooks-wiring | LOW | Infrastructure upgrade |
-| G6 | local-llm-ops | MEDIUM | Mode ON dipakai rutin |
-| G7 | ninerouter-ops | MEDIUM | Production deployment |
+| Gap | Skill | Status | Trigger |
+|-----|-------|--------|---------|
+| G1 | powershell-patterns | RESOLVED | — |
+| G2 | self-heal trigger | RESOLVED | — |
+| G3 | hooks-wiring | DEFERRED | Infrastructure upgrade |
+| G6 | local-llm-ops | DEFERRED | Mode ON dipakai rutin |
+| G7 | ninerouter-ops | DEFERRED | Production deployment |

@@ -4,31 +4,9 @@
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
-$ROOT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
-$ECC_DIR = "$ROOT_DIR\ecc"
-$ROUTER_DIR = "$ROOT_DIR\9router"
-$OPENCODE_DIR = "$env:USERPROFILE\.config\opencode"
+. "$PSScriptRoot\common\helpers.ps1"
+. "$PSScriptRoot\common\config.ps1"
 
-function Write-Step {
-    param([string]$Step, [string]$Message)
-    Write-Host ""
-    Write-Host "[$Step] $Message" -ForegroundColor Cyan
-}
-
-function Write-OK {
-    param([string]$Message)
-    Write-Host "  [OK] $Message" -ForegroundColor Green
-}
-
-function Write-Skip {
-    param([string]$Message)
-    Write-Host "  [SKIP] $Message" -ForegroundColor Yellow
-}
-
-function Write-Fail {
-    param([string]$Message)
-    Write-Host "  [FAIL] $Message" -ForegroundColor Red
-}
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Magenta
@@ -67,12 +45,10 @@ if (-not (Test-Path "$ROUTER_DIR\node_modules")) {
 
 # Step 3
 Write-Step "3/4" "Initialize State"
-$stateDir = "$ROOT_DIR\.opencode"
+$stateDir = "$($script:STATE_DIR)"
 New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
 $llmMode = @{ mode = "eco"; model = ""; updated_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz") }
-$llmMode | ConvertTo-Json | Set-Content -Path "$stateDir\llm-mode.json" -Encoding UTF8
-$llmStatus = @{ mode = "ECO"; model = ""; last_updated = (Get-Date -Format "yyyy-MM-ddTHH:mm:ss") }
-$llmStatus | ConvertTo-Json | Set-Content -Path "$stateDir\llm-status.json" -Encoding UTF8
+Write-JsonState -Path "$stateDir\llm-mode.json" -Data $llmMode
 Write-OK "State initialized (ECO mode)"
 
 # Step 4

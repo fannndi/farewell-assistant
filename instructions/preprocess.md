@@ -26,7 +26,7 @@ Setiap user input setelah Session Init:
    - Pertanyaan umum?       → SKIP ("apa itu", "jelaskan", "what is", "how to")
    - Selain itu             → Jalankan Invoke-LLMEnrich()
 8. JAWAB user dengan context + work mode
-9. APPEND footer (Session | Kategori | Mode | GPU | Work | Skills)
+9. APPEND footer (lihat Footer section di bawah)
 ```
 
 ## Kapan Enrichment Berguna
@@ -56,3 +56,39 @@ System harus validasi bahwa kategori di footer hanya berasal dari project aktif:
 | BUILD | orchestration, tdd, coding, security, deployment | read, bash, write, edit | Implementasi, test, commit |
 
 Default: BUILD.
+
+---
+
+## Footer Format
+
+Setelah setiap respons (kecuali Session Init), append 1 baris:
+
+```
+Session: farewell-assistant | Kategori: AUTOMATION | Mode: eco | GPU: off | Work: BUILD | Skills: ON - 23
+```
+
+### Dynamic Rendering
+
+Footer **harus** di-render secara dinamis berdasarkan registry + mode state:
+
+1. Baca `projects/registry.json` → ambil field `active`
+2. Baca `projects/<active>/kategori` → ambil semua unique values
+3. Sorted by importance: `WEB > MOBILE > AI_ML > DATA > INFRA > AUTOMATION`
+4. Baca `.opencode/llm-mode.json` → ambil field `mode`
+5. Infer GPU: mode == "on" → `GPU: on`, mode == "eco" → `GPU: off`
+6. Baca `.opencode/work-mode.json` → ambil field `mode`
+7. Baca `projects/skill-mode-index.json` → hitung total skill sesuai work mode
+8. Render: `Session: <active> | Kategori: <sorted kategori> | Mode: <mode> | GPU: <gpu> | Work: <work mode> | Skills: ON - <count>`
+
+### Behavioral Impact
+
+Footer ini bukan sekadar display — mempengaruhi behavior AI:
+
+| Mode | GPU | Work | Skills | AI Behavior |
+|------|-----|------|--------|-------------|
+| eco | off | BUILD | ON - 23 | Self-reliant, 23 skill aktif, execute mode |
+| eco | off | PLAN | ON - 20 | Read-only, 20 skill aktif, audit mode |
+| on | on | BUILD | ON - 23 | Local LLM + 23 skill, full power |
+| on | on | PLAN | ON - 20 | Local LLM + 20 skill, analyze mode |
+
+Footer bersifat informatif, sekaligus behavioral switch.

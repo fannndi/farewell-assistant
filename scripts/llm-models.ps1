@@ -14,9 +14,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$ROOT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
-$MODELS_DIR = "$ROOT_DIR\models"
-$OLLAMA_URL = "http://localhost:11434"
+
+. "$PSScriptRoot\common\helpers.ps1"
+. "$PSScriptRoot\common\config.ps1"
 
 # ============================================================
 # Model Profiles (GGUF from HuggingFace)
@@ -29,7 +29,7 @@ $PROFILES = [ordered]@{
         condition = "Outdoor, unplugged, high temp"
         hf_repo = "unsloth/Qwen3.5-0.8B-GGUF"
         hf_file = "Qwen3.5-0.8B-Q4_K_M.gguf"
-        modelfile = "$ROOT_DIR\Modelfile.qwen3.5-0.8b"
+        modelfile = "$($script:ROOT_DIR)\Modelfile.qwen3.5-0.8b"
         size_gb = 0.5
     }
     "eco" = @{
@@ -38,7 +38,7 @@ $PROFILES = [ordered]@{
         condition = "Indoor, unplugged"
         hf_repo = "Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF"
         hf_file = "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
-        modelfile = "$ROOT_DIR\Modelfile.qwen2.5-coder-1.5b"
+        modelfile = "$($script:ROOT_DIR)\Modelfile.qwen2.5-coder-1.5b"
         size_gb = 1.0
     }
     "balance" = @{
@@ -47,7 +47,7 @@ $PROFILES = [ordered]@{
         condition = "Indoor, plugged, AC"
         hf_repo = "unsloth/Qwen3.5-2B-GGUF"
         hf_file = "Qwen3.5-2B-Q4_K_M.gguf"
-        modelfile = "$ROOT_DIR\Modelfile.qwen3.5-2b"
+        modelfile = "$($script:ROOT_DIR)\Modelfile.qwen3.5-2b"
         size_gb = 1.4
     }
     "performance" = @{
@@ -56,7 +56,7 @@ $PROFILES = [ordered]@{
         condition = "Indoor, plugged, fan active"
         hf_repo = "unsloth/Qwen3.5-4B-GGUF"
         hf_file = "Qwen3.5-4B-Q4_K_M.gguf"
-        modelfile = "$ROOT_DIR\Modelfile.qwen3.5-4b"
+        modelfile = "$($script:ROOT_DIR)\Modelfile.qwen3.5-4b"
         size_gb = 2.5
     }
 }
@@ -65,60 +65,20 @@ $PROFILES = [ordered]@{
 # Helpers
 # ============================================================
 
-function Test-OllamaRunning {
-    try {
-        $null = Invoke-RestMethod -Uri "$OLLAMA_URL/api/tags" -TimeoutSec 3 -ErrorAction Stop
-        return $true
-    } catch { return $false }
-}
-
-function Start-Ollama {
-    if (-not (Test-OllamaRunning)) {
-        Write-Host "  [..] Starting Ollama..." -ForegroundColor Yellow
-        try {
-            Start-Process -FilePath "ollama" -ArgumentList "serve" -WindowStyle Minimized
-            Start-Sleep -Seconds 3
-            if (Test-OllamaRunning) {
-                Write-Host "  [OK] Ollama started" -ForegroundColor Green
-            } else {
-                Write-Host "  [FAIL] Ollama failed to start" -ForegroundColor Red
-            }
-        } catch {
-            Write-Host "  [FAIL] Cannot start Ollama: $_" -ForegroundColor Red
-        }
-    }
-}
-
 function Get-DownloadedModels {
     if (-not (Test-OllamaRunning)) { return @() }
     try {
-        $tags = Invoke-RestMethod -Uri "$OLLAMA_URL/api/tags" -TimeoutSec 5
+        $tags = Invoke-RestMethod -Uri "$($script:OLLAMA_URL)/api/tags" -TimeoutSec 5
         if ($tags.models) { return $tags.models } else { return @() }
     } catch { return @() }
 }
 
 function Get-GGUFFiles {
     $map = @{}
-    if (-not (Test-Path $MODELS_DIR)) { return $map }
-    $files = Get-ChildItem -Path $MODELS_DIR -Filter "*.gguf" -ErrorAction SilentlyContinue
+    if (-not (Test-Path $script:MODELS_DIR)) { return $map }
+    $files = Get-ChildItem -Path $script:MODELS_DIR -Filter "*.gguf" -ErrorAction SilentlyContinue
     foreach ($f in $files) { $map[$f.Name] = $f.FullName }
     return $map
-}
-
-function Get-GPUInfo {
-    try {
-        $gpuRaw = nvidia-smi --query-gpu=name,memory.used,memory.total,temperature.gpu --format=csv,noheader 2>$null
-        if ($gpuRaw) {
-            $parts = $gpuRaw.Trim() -split ','
-            return @{
-                name = $parts[0].Trim()
-                memory_used = [int]($parts[1].Trim().Replace(' MiB',''))
-                memory_total = [int]($parts[2].Trim().Replace(' MiB',''))
-                temperature = [int]($parts[3].Trim().Replace(' C',''))
-            }
-        }
-    } catch {}
-    return $null
 }
 
 # ============================================================
@@ -161,7 +121,7 @@ function Show-List {
 function Invoke-Pull {
     param([string]$TargetProfile)
 
-    New-Item -ItemType Directory -Path $MODELS_DIR -Force | Out-Null
+    New-Item -ItemType Directory -Path $script:MODELS_DIR -Force | Out-Null
 
     $ggufFiles = Get-GGUFFiles
 
@@ -180,20 +140,18 @@ function Invoke-Pull {
     foreach ($key in $targets.Keys) {
         $p = $targets[$key]
 
-        # Skip if already downloaded
         if ($ggufFiles.ContainsKey($p.hf_file)) {
             Write-Host "  [SKIP] $($p.hf_file) already downloaded" -ForegroundColor Yellow
             continue
         }
 
         $url = "https://huggingface.co/$($p.hf_repo)/resolve/main/$($p.hf_file)"
-        $outFile = "$MODELS_DIR\$($p.hf_file)"
+        $outFile = "$($script:MODELS_DIR)\$($p.hf_file)"
 
         Write-Host "  [PULL] $($p.model) (~$($p.size_gb)GB)..." -ForegroundColor Cyan
         Write-Host "         $url" -ForegroundColor DarkGray
 
         try {
-            # Use curl.exe for large file download (supports resume)
             $result = & curl.exe -L -C - -o $outFile $url 2>&1
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "  [OK] $($p.hf_file) downloaded" -ForegroundColor Green
@@ -206,10 +164,9 @@ function Invoke-Pull {
             continue
         }
 
-        # Create Ollama model from GGUF
         Write-Host "  [CREATE] Importing to Ollama..." -ForegroundColor Gray
         try {
-            Start-Ollama
+            Start-OllamaService | Out-Null
             & ollama create $p.model -f $p.modelfile
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "  [OK] $($p.model) imported to Ollama" -ForegroundColor Green
@@ -229,7 +186,7 @@ function Invoke-Pull {
 # ============================================================
 
 function Show-Status {
-    $gpu = Get-GPUInfo
+    $gpu = Get-GPUInfo -Fields "name,memory.used,memory.total,temperature.gpu"
     $ollama = Test-OllamaRunning
 
     Write-Host ""
@@ -237,7 +194,7 @@ function Show-Status {
     Write-Host "  =============" -ForegroundColor Cyan
     Write-Host ""
 
-    if ($gpu) {
+    if ($gpu.available) {
         $tempColor = if ($gpu.temperature -gt 70) { "Red" } elseif ($gpu.temperature -gt 55) { "Yellow" } else { "Green" }
         Write-Host "  GPU:       $($gpu.name)" -ForegroundColor White
         Write-Host "  VRAM:      $($gpu.memory_used)/$($gpu.memory_total) MB" -ForegroundColor Gray
@@ -278,10 +235,9 @@ function Show-Status {
 # ============================================================
 
 function Invoke-Remove {
-    # Remove from Ollama
     $downloaded = Get-DownloadedModels
     if ($downloaded.Count -gt 0) {
-        Start-Ollama
+        Start-OllamaService | Out-Null
         foreach ($m in $downloaded) {
             Write-Host "  [REMOVE] $($m.name) from Ollama..." -ForegroundColor Yellow
             try {
@@ -293,7 +249,6 @@ function Invoke-Remove {
         }
     }
 
-    # Remove GGUF files
     $ggufFiles = Get-GGUFFiles
     if ($ggufFiles.Count -gt 0) {
         foreach ($name in $ggufFiles.Keys) {

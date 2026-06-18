@@ -1,19 +1,14 @@
 # Check Enrichment - Verify enrichment pipeline is working
 # Usage: .\hooks\check-enrich.ps1 -Input "test input"
 
-param(
-    [string]$Input
-)
+param([string]$Input)
 
 $ErrorActionPreference = "Continue"
-$ROOT_DIR = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-$MODE_FILE = "$ROOT_DIR\.opencode\llm-mode.json"
-$ADAPTER = "$ROOT_DIR\scripts\llm-adapter.ps1"
 
-# Source adapter
-. $ADAPTER
+# Source adapter for its overridden Invoke-LLMEnrich with tracking
+. "$PSScriptRoot\..\llm-adapter.ps1"
 
-$mode = Get-OperatingMode
+$mode = Get-LLMMode
 $gpu = Get-GPUInfo
 
 Write-Host ""
@@ -28,7 +23,6 @@ if ($mode -eq "eco") {
     return
 }
 
-# Test enrichment
 Write-Host "  Testing enrichment with: $Input" -ForegroundColor Gray
 $start = Get-Date
 $result = Invoke-LLMEnrich -Text $Input -Force
@@ -40,7 +34,7 @@ if ($result -ne $Input) {
     Write-Host "  Enriched: $result" -ForegroundColor Gray
     Write-Host "  Time:     $([math]::Round($elapsed, 1))s" -ForegroundColor Gray
 } else {
-    Write-Host "  [SKIP] Input was short/simple — enrichment skipped (correct behavior)" -ForegroundColor Yellow
+    Write-Host "  [SKIP] Input was short/simple - enrichment skipped (correct behavior)" -ForegroundColor Yellow
 }
 
 Write-Host ""

@@ -17,13 +17,10 @@
   },
 
   "instructions": [
-    "{project}/.opencode/context.md",
     "{project}/.opencode/llm-mode.json",
     "{project}/.opencode/work-mode.json",
     "{project}/instructions/user-rules.md",
-    "{project}/instructions/preprocess.md",
-    "{project}/instructions/footer.md",
-    "{project}/scripts/hooks/hook-registry.json"
+    "{project}/instructions/preprocess.md"
   ],
 
   "skills": {

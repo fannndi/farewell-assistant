@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "updated_at": "2026-06-17",
+  "version": "1.1.0",
+  "updated_at": "2026-06-18",
 
   "plan": {
     "description": "Read-only mode: audit, research, analyze, no file modification",
@@ -76,7 +76,8 @@
       "agent_eng": [
         "agentic-engineering",
         "agentic-os",
-        "agent-harness-construction"
+        "agent-harness-construction",
+        "autonomous-agent-harness"
       ]
     },
     "agents": ["build", "tdd-guide", "code-reviewer", "security-reviewer", "build-error-resolver", "doc-updater"],

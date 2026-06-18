@@ -25,10 +25,10 @@ function Write-UpdateCheck {
 }
 
 # ============================================================
-#  Step 1/4: 9Router Health
+#  Step 1/5: 9Router Health
 # ============================================================
 
-Write-Step "1/4" "9Router Health"
+Write-Step "1/5" "9Router Health"
 
 $routerRunning = $false
 try {
@@ -52,10 +52,23 @@ if (-not $routerRunning) {
 }
 
 # ============================================================
-#  Step 2/4: Load Configuration
+#  Step 2/5: Update Check
 # ============================================================
 
-Write-Step "2/4" "Load Configuration"
+Write-Step "2/5" "Update Check"
+
+$eccBehind = Write-UpdateCheck -Repo "ECC" -Dir $script:ECC_DIR -Remote origin -Branch main
+$routerBehind = Write-UpdateCheck -Repo "9Router" -Dir $script:ROUTER_DIR -Remote origin -Branch master
+
+if ($eccBehind -or $routerBehind) {
+    Write-Host "  Run /owner to pull updates" -ForegroundColor Yellow
+}
+
+# ============================================================
+#  Step 3/5: Load Configuration
+# ============================================================
+
+Write-Step "3/5" "Load Configuration"
 
 $comboNames = @()
 if (Test-Path $script:API_KEY_FILE) {
@@ -82,10 +95,10 @@ if ($comboNames.Count -gt 0 -and -not (Test-Path $script:COMBO_FILE)) {
 }
 
 # ============================================================
-#  Step 3/4: Apply Profile
+#  Step 4/5: Apply Profile
 # ============================================================
 
-Write-Step "3/4" "Apply Profile"
+Write-Step "4/5" "Apply Profile"
 
 if ($comboNames.Count -eq 0) {
     Write-Fail "No combos found in api-key.txt or combo.json"
@@ -110,10 +123,10 @@ if ($comboNames.Count -eq 0) {
 }
 
 # ============================================================
-#  Step 4/4: Launch
+#  Step 5/5: Launch
 # ============================================================
 
-Write-Step "4/4" "Launch"
+Write-Step "5/5" "Launch"
 
 $mode = Get-LLMMode
 if ($mode -ne "eco") {

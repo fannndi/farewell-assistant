@@ -6,9 +6,8 @@ NINEROUTER_API_KEY=sk-your-api-key-here
 9ROUTER_PASSWORD=123456
 
 # === Combo Definitions ===
-# Format: COMBO_<numeric>=<model1>,<model2>,<model3>
+# Format: COMBO_<numeric>=model1,model2,model3  (no angle brackets)
 # Names must be numeric (COMBO_0, COMBO_1, ...) — parser uses COMBO_\d+
 # Create combos in 9Router dashboard, then list models here
 # Example: COMBO_0=oc/deepseek-v4-flash-free,oc/mimo-v2.5-free,mmf/mimo-auto
 # The script will validate these against 9Router API
-COMBO_0=<model1>,<model2>,<model3>

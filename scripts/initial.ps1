@@ -15,6 +15,21 @@ Write-Host "  farewell-assistant - Initial Setup" -ForegroundColor Magenta
 Write-Host "  =================================================" -ForegroundColor Magenta
 Write-Host ""
 
+# ── Guard: cegah re-run tanpa sengaja ──
+
+$alreadyInit = (Test-Path $script:LLM_MODE_FILE) -and (Test-Path $script:WORK_MODE_FILE) -and (Test-Path $script:COMBO_FILE)
+if ($alreadyInit) {
+    Write-Host "  WARNING: Initial setup appears to have already been completed." -ForegroundColor Yellow
+    Write-Host "  Re-running may overwrite existing configuration and combo validation." -ForegroundColor Yellow
+    $confirm = Read-Host "  Continue? [y/N]"
+    if ($confirm -notin @('y', 'Y')) {
+        Write-Host "  Exiting. Use .\scripts\start.ps1 for daily startup." -ForegroundColor Cyan
+        Write-TaskLog -Stage "INITIAL" -Action "Re-run cancelled by user" -Result "skipped"
+        exit 0
+    }
+    Write-Host ""
+}
+
 # ── Step 1/10: Clone ECC ──
 
 Write-Step "1/10" "Clone ECC"
@@ -172,10 +187,12 @@ if (-not $apiKey -or $apiKey -eq "sk-your-api-key-here") {
             $validModels = @()
             foreach ($m in $comboModels) {
                 $mTrim = $m.Trim()
-                if ($mTrim -in $availableModels) {
-                    $validModels += $mTrim
+                # Strip angle brackets in case user copied template format <model1>,<model2>
+                $mClean = $mTrim -replace '^<|>$', ''
+                if ($mClean -in $availableModels) {
+                    $validModels += $mClean
                 } else {
-                    Write-Info "  Model '$mTrim' not found in 9Router - skipping"
+                    Write-Info "  Model '$mClean' not found in 9Router - skipping"
                 }
             }
             if ($validModels.Count -gt 0) {

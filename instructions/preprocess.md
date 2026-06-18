@@ -1,33 +1,168 @@
-# Preprocess Pipeline
+# Preprocess Pipeline — Intent-Driven Architecture
 
 Setiap user input setelah Session Init:
 
 ```
-1. BACA projects/registry.json       → project aktif
-2. BACA projects/context/<slug>.md   → konteks project
-3. EXTRACT kategori dari registry:
-   - Ambil unique values dari registry → active → kategori
-   - Sort by importance: WEB > MOBILE > AI_ML > DATA > INFRA > AUTOMATION
-   - Simpan ke session state untuk footer
-4. READ MODE + GPU:
-   - Baca .opencode/llm-mode.json → ambil mode
-   - Infer GPU: eco → off, on → on
-5. READ WORK MODE:
-   - Baca .opencode/work-mode.json → ambil mode (plan / build)
-   - PLAN mode: gunakan skill audit, research, explore, planning
-   - BUILD mode: gunakan skill orchestration, tdd, coding, security, deployment, agent_eng
-6. COUNT SKILLS:
-   - Baca projects/skill-mode-index.json → skills[work_mode]
-   - Hitung total = sum semua skill di semua group
-   - Status: ON jika count > 0, OFF jika count = 0
-7. ENRICHMENT CHECK:
-   - Mode == eco?           → SKIP
-   - Input < 5 kata?        → SKIP
-   - Pertanyaan umum?       → SKIP ("apa itu", "jelaskan", "what is", "how to")
-   - Selain itu             → Jalankan Invoke-LLMEnrich()
-8. JAWAB user dengan context + work mode
-9. APPEND footer (lihat Footer section di bawah)
+1. INPUT           → User input masuk ke pipeline
+2. QUICK CLASSIFY  → Pattern-based intent detection (tanpa LLM, instan)
+3. STRUCTURED ENRICH → Ollama qwen2.5:1.5b klasifikasi intent secara presisi
+4. CACHE CHECK     → Skip enrichment kalau input sudah di-cache
+5. RULE CHECK      → Validasi permission vs work mode (PLAN/BUILD)
+6. SKILL CHAIN     → Bangun urutan skill berdasarkan intent + domain
+7. MODEL ROUTE     → Pilih model combo berdasarkan complexity
+8. PLANNING CHECK  → Apakah task perlu planning phase dulu?
+9. EXECUTE         → Jalankan skill chain dengan model yang dipilih
 ```
+
+---
+
+## Pipeline Detail
+
+### Step 1: Input
+
+```
+User: "bikin CRUD user dengan auth JWT"
+```
+
+### Step 2: Quick Classification
+
+Pattern-based (tanpa LLM, instan):
+
+| Pattern | Intent | Confidence |
+|---------|--------|------------|
+| fix/bug/error/crash | fix | 0.7 |
+| review/audit/check/inspect | review | 0.7 |
+| deploy/release/ship/publish | deploy | 0.7 |
+| research/search/find | research | 0.7 |
+| write/document/docs/readme | docs | 0.7 |
+| create/build/make/add/implement/bikin/buat | build | 0.8 |
+
+**Threshold:** Kalau confidence >= 0.7, langsung lanjut ke Step 5. Kalau < 0.7, lanjut ke Step 3 (structured enrichment).
+
+### Step 3: Structured Enrichment
+
+Ollama (`qwen2.5-coder-1.5b`) mengklasifikasi dengan **JSON output**:
+
+```
+Input: "bikin CRUD user dengan auth JWT"
+→
+{
+  "intent": "build",
+  "domain": "web",
+  "stack": ["fastapi", "postgresql"],
+  "complexity": "medium",
+  "confidence": 0.85
+}
+```
+
+**Skip conditions:** mode == eco, input < 3 kata, pertanyaan umum
+
+### Step 4: Cache Check
+
+Intent disimpan di session cache. Kalau input sama muncul lagi, skip enrichment.
+
+### Step 5: Rule Check
+
+| Work Mode | Allowed | Blocked |
+|-----------|---------|---------|
+| PLAN | research, docs, review, ask | build, fix, deploy |
+| BUILD | ALL | NONE |
+
+### Step 6: Skill Chain
+
+Mapping intent + domain → **urutan skill yang dieksekusi berurutan**:
+
+#### BUILD Chains
+
+| Domain | Chain | Steps |
+|--------|-------|-------|
+| web | build_web | orch-add-feature → api-design → backend-patterns → database-migrations → tdd-workflow → security-review → verification-loop → git-workflow |
+| mobile | build_mobile | orch-add-feature → dart-flutter-patterns → database-migrations → tdd-workflow → security-review → verification-loop → git-workflow |
+| infra | build_infra | orch-add-feature → deployment-patterns → docker-patterns → kubernetes-patterns → database-migrations → verification-loop → git-workflow |
+| data | build_data | orch-add-feature → postgres-patterns → database-migrations → tdd-workflow → verification-loop → git-workflow |
+| automation | build_automation | orch-add-feature → powershell-patterns → tdd-workflow → verification-loop → git-workflow |
+| ai_ml | build_ai_ml | orch-add-feature → pytorch-patterns → mle-workflow → tdd-workflow → verification-loop → git-workflow |
+
+#### FIX Chains
+
+| Intent | Chain | Steps |
+|--------|-------|-------|
+| fix (general) | fix | search-first → orch-fix-defect → verification-loop |
+| fix (security) | fix_security | repo-scan → security-review → safety-guard → verification-loop → git-workflow |
+| fix (bug) | fix_bug | search-first → orch-fix-defect → ai-regression-testing → verification-loop → git-workflow |
+
+#### REVIEW Chains
+
+| Intent | Chain | Steps |
+|--------|-------|-------|
+| review (code) | review_code | coding-standards → error-handling → security-review → codehealth-mcp → verification-loop |
+| review (security) | review_security | repo-scan → security-bounty-hunter → security-scan → verification-loop |
+
+#### DEPLOY Chain
+
+| Intent | Chain | Steps |
+|--------|-------|-------|
+| deploy | deploy | production-audit → deployment-patterns → canary-watch → git-workflow |
+
+#### RESEARCH Chains
+
+| Intent | Chain | Steps |
+|--------|-------|-------|
+| research | research | research-ops → documentation-lookup |
+| research (deep) | research_deep | research-ops → deep-research → documentation-lookup → competitive-platform-analysis |
+
+#### DOCS Chains
+
+| Intent | Chain | Steps |
+|--------|-------|-------|
+| docs | docs | codebase-onboarding → article-writing → knowledge-ops |
+| docs (code) | docs_code | codebase-onboarding → code-tour → architecture-decision-records → article-writing |
+
+### Step 7: Model Route
+
+| Complexity | Primary | Secondary | Heavy |
+|------------|---------|-----------|-------|
+| low | Free | Free | Free |
+| medium | Free | Free | Free |
+| high | Free | Emergency | Emergency |
+| critical | Emergency | Emergency | Emergency |
+
+**Free combo:** deepseek-v4-flash-free, mimo-v2.5-free, mmf/mimo-auto (3 models, fast)
+**Emergency combo:** big-pickle, north-mini-code-free (2 models, stronger reasoning)
+
+### Step 8: Planning Check
+
+Kalau complexity == "high" AND intent == "build":
+- Aktifkan planning phase dulu (planner agent)
+- Decompose task → acceptance criteria → implementasi
+
+Kalau complexity != "high":
+- Langsung eksekusi
+
+### Step 9: Execute
+
+Skill chain dijalankan berurutan. Setiap skill:
+1. Terima input dari skill sebelumnya
+2. Load context dari session
+3. Ejekusi dengan model route yang dipilih
+4. Output → input ke skill berikutnya
+
+---
+
+## Performance Profile
+
+Enrichment menggunakan model lokal yang sesuai power profile:
+
+| Profile | Model | VRAM | Speed | Enrichment Time |
+|---------|-------|------|-------|-----------------|
+| Hot | Qwen3.5-0.8B | 600MB | 15-25 tok/s | ~4-7s |
+| Eco | Qwen2.5-Coder-1.5B | 1GB | 8-15 tok/s | ~7-13s |
+| Balance | Qwen3.5-2B | 1.4GB | 5-10 tok/s | ~10-20s |
+| Performance | Qwen3.5-4B | 2.5GB hybrid | 2-5 tok/s | ~40-100s |
+
+**Eco mode:** Enrichment dimatikan (hemat GPU). Quick classification tetap jalan.
+
+---
 
 ## Kapan Enrichment Berguna
 
@@ -40,18 +175,12 @@ Setiap user input setelah Session Init:
 | "apa itu closure?" | Tidak | Pertanyaan umum |
 | "fix typo line 45" | Tidak | Simple task |
 
-## Kategori Validasi
-
-System harus validasi bahwa kategori di footer hanya berasal dari project aktif:
-
-- `farewell-assistant` → hanya `AUTOMATION`
-- `service-hub` → `AUTOMATION - DATA - INFRA - MOBILE - WEB`
-- Tidak ada project → jangan tampilkan footer
+---
 
 ## Mode Behavior
 
-| Mode | Skill Groups | Allowed Tools | Behavior |
-|------|-------------|---------------|----------|
+| Mode | Skill Groups | Tools | Behavior |
+|------|-------------|-------|----------|
 | PLAN | audit, research, explore, planning | read, bash | Read-only, tidak edit file |
 | BUILD | orchestration, tdd, coding, security, deployment, agent_eng | read, bash, write, edit | Implementasi, test, commit |
 
@@ -80,19 +209,6 @@ Footer **harus** di-render secara dinamis berdasarkan registry + mode state:
 7. Baca `projects/skill-mode-index.json` → hitung total skill sesuai work mode
 8. Render: `Session: <active> | Kategori: <sorted kategori> | Mode: <mode> | GPU: <gpu> | Work: <work mode> | Skills: ON - <count>`
 
-### Behavioral Impact
-
-Footer ini bukan sekadar display — mempengaruhi behavior AI:
-
-| Mode | GPU | Work | Skills | AI Behavior |
-|------|-----|------|--------|-------------|
-| eco | off | BUILD | ON - 24 | Self-reliant, 24 skill aktif, execute mode |
-| eco | off | PLAN | ON - 20 | Read-only, 20 skill aktif, audit mode |
-| on | on | BUILD | ON - 24 | Local LLM + 24 skill, full power |
-| on | on | PLAN | ON - 20 | Local LLM + 20 skill, analyze mode |
-
-Footer bersifat informatif, sekaligus behavioral switch.
-
 ---
 
 ## ROLE Enforcement
@@ -116,4 +232,3 @@ AI **WAJIB** log setiap task stage ke file logging.md (project root, gitignored)
 ```
 [timestamp] STAGE: <nama_stage> | ACTION: <apa yg dilakukan> | RESULT: <success/fail> | FILES: <file yg disentuh>
 ```
-

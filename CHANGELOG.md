@@ -4,6 +4,36 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.4.0] - 2026-06-19 - Intent-Driven Architecture (Phase 1-4)
+
+### Added — Phase 1: Structured Enrichment
+- **enrichment-pipeline.ps1**: `Invoke-StructuredEnrichment` — Ollama (`qwen2.5:1.5b`) mengklasifikasi intent sebagai JSON terstruktur: `{intent, domain, stack, complexity, confidence}`.
+- **Get-QuickIntent**: Pattern-based fallback tanpa LLM (regex matching untuk fix/build/review/deploy/research/docs).
+- **Intent cache**: Skip enrichment kalau input sama sudah di-cache.
+
+### Added — Phase 2: Intent Router + Skill Chains
+- **intent-router.ps1**: `Invoke-IntentRouter` — pipeline lengkap: classify → permission check → skill chain → model route.
+- **skill-chain.ps1**: `Get-SkillChain` — mapping intent+domain → urutan skill. 12 built-in chains: build_web, build_mobile, build_infra, build_data, build_automation, build_ai_ml, fix, fix_bug, fix_security, review, review_code, review_security, deploy, research, docs.
+- **Chain validation**: `Test-SkillChain` cek skill existence di disk.
+
+### Added — Phase 3: Dynamic Model Routing
+- **config.ps1**: `MODEL_ROUTES` — routing complexity → combo (low/medium → Free, high → Emergency, critical → Emergency).
+- **Select-ModelRoute**: Dynamic model selection berdasarkan complexity + profile.
+- **Intent cache**: Session-scoped cache untuk enrichment results.
+
+### Changed — Phase 4: Pipeline Integration
+- **preprocess.md**: Full rewrite — Intent-Driven Pipeline (9 steps). Skill chain tables untuk semua intent+domain. Performance profile table.
+- **config.ps1**: +`ENRICHMENT`, `PIPELINE`, skill chain paths. Port configurable via env vars.
+- **helpers.ps1**: +`Get-SkillCount`, `Get-ComboDetails` shared functions (Phase 1 dari audit fix).
+
+### Architecture
+```
+Input → Quick Classify → Structured Enrich (Ollama) → Cache → Rule Check
+  → Skill Chain Builder → Model Route → Planning Check → Execute
+```
+
+---
+
 ## [1.3.4] - 2026-06-19 - Audit fix: critical bugs, docs sync, redundant deps
 
 ### Fixed (Critical)

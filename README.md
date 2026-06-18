@@ -30,41 +30,58 @@ Aman dijalankan setiap boot — guard skip langkah yang sudah selesai.
 ## Apa Ini?
 
 Seperti punya asisten coding yang:
-- **Tau project apa yang sedang kamu kerjakan** — auto-detect stack dan context
-- **Hemat token** — instruksi hanya ~800 token (bukan 5000+)
-- **Pakai GPU lokal** — enrichment via Ollama saat butuh (opsional)
+- **Mengerti intent** — auto-classify build/fix/review/deploy/docs dari input
+- **Skill chain otomatis** — urutan skill yang presisi untuk setiap task
+- **Hemat token** — instruksi terstruktur, enrichment via local LLM
+- **Pakai GPU lokal** — 4 power profile sesuai kondisi hardware
 - **Handle semua project** — Flutter, Go, Node, PHP, Python, Rust, .NET
 
 ```
-User Input >> Project Detect >> Enrich (opsional) >> Execute >> Response
-    │              │                  │                │
-    │              │                  │                └─ Cloud AI (9Router)
-    │              │                  └─ Local GPU (MX150, qwen2.5:1.5b)
-    │              └─ registry.json + context/<slug>.md
-    └─ "bikin CRUD user"
+User Input → Quick Classify → Enrich (Ollama) → Skill Chain → Model Route → Execute
+    │              │                │                 │              │            │
+    │              │                │                 │              │            └─ Cloud AI (9Router)
+    │              │                │                 │              └─ Free/Emergency combo
+    │              │                │                 └─ build_web: api-design→backend→tdd→security
+    │              │                └─ {intent:"build", domain:"web", complexity:"medium"}
+    │              └─ Pattern match (instant, no LLM)
+    └─ "bikin CRUD user dengan auth JWT"
 ```
 
 ---
 
 ## Arsitektur
 
-### Pipeline: 3 Langkah
+### Pipeline: Intent-Driven Architecture (9 Langkah)
 
-| Step | Fungsi | Keterangan |
-|------|--------|------------|
-| 1. Project Detect | Load project context | Registry + auto-detect |
-| 2. Enrichment | Preprocess input (opsional) | Local GPU, smart-skip |
-| 3. Execute | Cloud AI kerja | Via 9Router |
+| Step | Fungsi | Engine |
+|------|--------|--------|
+| 1. Input | User input masuk | Terminal |
+| 2. Quick Classify | Pattern-based intent detection | Regex (instant) |
+| 3. Structured Enrich | Klasifikasi intent + domain + stack | Ollama `qwen2.5:1.5b` |
+| 4. Cache Check | Skip kalau input sudah di-cache | Session memory |
+| 5. Rule Check | Validasi permission vs work mode | work-mode.json |
+| 6. Skill Chain | Bangun urutan skill berdasarkan intent | skill-chain.ps1 |
+| 7. Model Route | Pilih model combo berdasarkan complexity | config.ps1 |
+| 8. Planning Check | Kompleks tinggi → planning phase dulu | planner agent |
+| 9. Execute | Jalankan skill chain dengan model yang tepat | 9Router + ECC |
 
-### GPU: MX150 (2GB VRAM)
+### Power Profiles: GPU-Aware LLM
 
-| Mode | Model | VRAM | Speed |
-|------|-------|------|-------|
-| eco | none | 0 | — |
-| on | qwen2.5:1.5b-s | ~1GB | ~6.5 tok/s |
-| hot | qwen3.5-0.8b | ~600MB | ~10 tok/s |
-| balance | qwen3.5-2b | ~1.4GB | ~8 tok/s |
-| performance | qwen3.5-4b | ~2.5GB | ~5 tok/s |
+| Profile | Condition | Model | VRAM | Speed |
+|---------|-----------|-------|------|-------|
+| Hot | Outdoor, unplugged, high temp | Qwen3.5-0.8B | ~600MB | ~15-25 tok/s |
+| Eco | Indoor, unplugged | Qwen2.5-Coder-1.5B | ~1GB | ~8-15 tok/s |
+| Balance | Indoor, plugged, AC | Qwen3.5-2B | ~1.4GB | ~5-10 tok/s |
+| Performance | Indoor, plugged, fan active | Qwen3.5-4B | ~2.5GB hybrid | ~2-5 tok/s |
+
+### Model Routing
+
+| Complexity | Primary | Secondary | Heavy |
+|------------|---------|-----------|-------|
+| low | Free (3 models) | Free | Free |
+| medium | Free (3 models) | Free | Free |
+| high | Free (3 models) | Emergency (2 models) | Emergency |
+| critical | Emergency (2 models) | Emergency | Emergency |
 
 ---
 
@@ -141,9 +158,12 @@ farewell-assistant/
 │   ├── workmode.ps1               # Switch work mode
 │   ├── detect-project.ps1         # Project type detection
 │   ├── common/
-│   │   ├── config.ps1             # URLs, paths, constants (port configurable via env)
+│   │   ├── config.ps1             # URLs, paths, constants, model routes, pipeline settings
 │   │   ├── helpers.ps1            # Start-9Router, Ollama, GPU, LLM, Get-SkillCount, Get-ComboDetails
 │   │   ├── log.ps1                # Write-TaskLog, Sync-SessionState
+│   │   ├── enrichment-pipeline.ps1 # ★ Structured enrichment (JSON intent classification)
+│   │   ├── intent-router.ps1      # ★ Intent → Skill Chain → Model Route
+│   │   ├── skill-chain.ps1        # ★ Skill chain builder (12 built-in chains)
 │   │   └── start-9router-bg.ps1   # Hidden wrapper for Scheduled Task
 │   └── hooks/
 │       ├── self-heal.ps1          # Post-edit typecheck (project-aware)
@@ -151,7 +171,7 @@ farewell-assistant/
 ├── profiles/combo/opencode.jsonc
 ├── instructions/
 │   ├── user-rules.md
-│   └── preprocess.md
+│   └── preprocess.md              # Intent-Driven Pipeline (9 steps)
 ├── commands/
 │   ├── start.md, autostart.md, llm-setup.md, setup.md
 │   ├── workmode.md, detect.md, go.md, enrich-check.md
@@ -167,7 +187,7 @@ farewell-assistant/
 │   ├── llm-mode.json, work-mode.json, combo.json, 9router.pid
 │   ├── session-state.json, context.md
 │   └── logs/
-├── api-key.txt                    # Multi-key storage (gitignored)
+├── api-key.txt                    # NINEROUTER_API_KEY, 9ROUTER_PASSWORD, COMBO_* (gitignored)
 ├── api-key.example.txt
 ├── mcp-config.example.json
 ├── Modelfile.qwen2.5-coder-1.5b
@@ -186,27 +206,29 @@ farewell-assistant/
 
 | Metric | opencode-setup | farewell-assistant |
 |--------|---------------|-------------------|
-| Total tracked files | ~150+ | ~35 |
-| Scripts | 64 | 5 (+4 common, +3 hooks) |
+| Total tracked files | ~150+ | ~45 |
+| Scripts | 64 | 5 (+7 common, +2 hooks) |
 | Commands | ~50 | 8 (custom) + ECC |
-| Instructions | 19 | 2 |
-| Pipeline steps | 8+ | 3 |
+| Instructions | 19 | 2 (comprehensive) |
+| Pipeline steps | 8+ | **9 (Intent-Driven)** |
+| Intent classification | Manual | **Auto (LLM + regex)** |
+| Skill routing | Manual | **12 built-in chains** |
+| Model routing | Static | **Dynamic (complexity-based)** |
 | Multi-project | Overcomplicated | Simple registry |
 | Startup command | Manual | 1 perintah: `/start` |
 
 ---
 
-## Operating Modes
+## Power Profiles
 
-| Mode | GPU | Enrichment | Use When |
-|------|-----|------------|----------|
-| `eco` | Off | Disabled | Battery, gaming, simple tasks |
-| `on` | ~1GB | Active | Complex tasks, multi-project work |
-| `hot` | ~600MB | Active | Outdoor, unplugged, high temp |
-| `balance` | ~1.4GB | Active | Indoor, plugged, AC |
-| `performance` | ~2.5GB | Active | Indoor, plugged, fan active |
+| Profile | Condition | Model | VRAM | Speed | Use When |
+|---------|-----------|-------|------|-------|----------|
+| `hot` | Outdoor, unplugged, high temp | Qwen3.5-0.8B | ~600MB | ~15-25 tok/s | Outdoor, low battery |
+| `eco` | Indoor, unplugged | Qwen2.5-Coder-1.5B | ~1GB | ~8-15 tok/s | Normal mobile work |
+| `balance` | Indoor, plugged, AC | Qwen3.5-2B | ~1.4GB | ~5-10 tok/s | Desk work, comfortable |
+| `performance` | Indoor, plugged, fan active | Qwen3.5-4B | ~2.5GB hybrid | ~2-5 tok/s | Heavy tasks, max power |
 
-Switch: `/setup eco` / `/setup on` / `/setup hot` / `/setup balance` / `/setup performance`
+Switch: `/setup hot` / `/setup eco` / `/setup balance` / `/setup performance`
 
 ---
 
@@ -215,10 +237,11 @@ Switch: `/setup eco` / `/setup on` / `/setup hot` / `/setup balance` / `/setup p
 | Component | Role | Source |
 |-----------|------|--------|
 | OpenCode | AI coding assistant | Anomaly Co. |
-| 9Router | AI gateway (free models) | Local |
+| 9Router | AI gateway (12 models, 4 strategies) | Local |
 | ECC | 270+ skills, 64 agents | affaan-m/ECC |
-| Ollama | Local LLM runtime | ollama.ai |
-| qwen2.5:1.5b-s | Enrichment model | Qwen |
+| Ollama | Local LLM runtime (4 models) | ollama.ai |
+| Intent Router | Structured intent classification | Custom |
+| Skill Chain | Skill sequence builder | Custom |
 
 ---
 

@@ -38,3 +38,35 @@ $script:PROFILE_SRC     = "$($script:ROOT_DIR)\profiles\combo\opencode.jsonc"
 # -- Scheduled Task --
 $script:TASK_NAME       = "FarewellAssistant-9Router"
 $script:TASK_BG_SCRIPT  = "$($script:ROOT_DIR)\scripts\common\start-9router-bg.ps1"
+
+# -- Intent-Driven Pipeline --
+$script:ENRICHMENT_SCRIPT = "$($script:ROOT_DIR)\scripts\common\enrichment-pipeline.ps1"
+$script:INTENT_ROUTER_SCRIPT = "$($script:ROOT_DIR)\scripts\common\intent-router.ps1"
+$script:SKILL_CHAIN_SCRIPT = "$($script:ROOT_DIR)\scripts\common\skill-chain.ps1"
+
+# -- Model Routing by Complexity --
+$script:MODEL_ROUTES = @{
+    "low"    = @{ primary = "Free"; secondary = "Free";    heavy = "Free" }
+    "medium" = @{ primary = "Free"; secondary = "Free";    heavy = "Free" }
+    "high"   = @{ primary = "Free"; secondary = "Emergency"; heavy = "Emergency" }
+    "critical" = @{ primary = "Emergency"; secondary = "Emergency"; heavy = "Emergency" }
+}
+
+# -- Intent-Driven Skill Chains (per domain) --
+# Loaded dynamically by skill-chain.ps1
+
+# -- Enrichment Settings --
+$script:ENRICHMENT = @{
+    min_words = 3
+    max_tokens = 150
+    temperature = 0.1
+    timeout = 45
+    cache_ttl = 3600
+}
+
+# -- Pipeline Settings --
+$script:PIPELINE = @{
+    enabled = $true
+    skip_keywords = @("apa itu", "jelaskan", "what is", "how to", "hai", "ok", "thanks")
+    complex_threshold = "high"
+}

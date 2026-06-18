@@ -4,6 +4,24 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.3.2] - 2026-06-19 - Fix combo handling + regex
+
+### Fixed
+- **Combo handling**: `COMBO_Free=model1,model2,...` diganti `COMBO_0=NamaCombo`. Sekarang value adalah nama combo dari dashboard 9Router, bukan raw model IDs. 9Router menerima `model: "Free"` → detek combo → fallback internal.
+- **Regex parsing**: `^([A-Z_]+)=` tidak bisa match `COMBO_0` karena digit `0` tidak di `[A-Z_]`. Fix ke `[A-Z_0-9]` di 3 file (`start.ps1` x2, `start-9router-bg.ps1`).
+- **Combo ordering**: Sort keys di `start.ps1` untuk deterministic ordering COMBO_0 → COMBO_1.
+- **Combo display badge**: Ganti dari index key ke nama combo.
+
+### Changed
+- `api-key.example.txt`: Update format dokumentasi combo baru (numeric index + combo name).
+- `api-key.txt`: (gitignored) format baru — user perlu update manual.
+
+### Notes
+- `api-key.txt` gitignored — setelah pull, jalankan `/start` untuk regenerate profile.
+- Profile di `%USERPROFILE%\.config\opencode\opencode.jsonc` sudah regenerate dengan `"model": "9router/Free"` dan `"small_model": "9router/Emergency"`.
+
+---
+
 ## [1.3.1] - 2026-06-17 - Fix standalone static, dashboard
 
 ### Fixed

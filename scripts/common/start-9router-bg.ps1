@@ -53,7 +53,7 @@ if (Test-Path $script:API_KEY_FILE) {
     try {
         Get-Content $script:API_KEY_FILE | ForEach-Object {
             $line = $_.Trim()
-            if ($line -match '^([A-Z_]+)=(.*)' -and $line -notmatch '^\s*#') {
+            if ($line -match '^([A-Z_0-9]+)=(.*)' -and $line -notmatch '^\s*#') {
                 Set-Item -Path "env:$($matches[1])" -Value $matches[2]
             }
         }

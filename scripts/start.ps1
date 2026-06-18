@@ -147,7 +147,7 @@ if ($needsInit) {
     if (Test-Path $script:API_KEY_FILE) {
         Get-Content $script:API_KEY_FILE | ForEach-Object {
             $line = $_.Trim()
-            if ($line -match '^([A-Z_]+)=(.*)') {
+            if ($line -match '^([A-Z_0-9]+)=(.*)') {
                 $key = $matches[1]; $val = $matches[2]
                 if ($key -eq "NINEROUTER_API_KEY") { $apiKey = $val }
                 if ($key -match '^COMBO_(.+)$' -and $val) { $comboEntries += @{ name = $key; combo = $matches[1]; value = $val } }
@@ -316,7 +316,7 @@ $comboBadges = @()
 if (Test-Path $script:API_KEY_FILE) {
     Get-Content $script:API_KEY_FILE | ForEach-Object {
         $line = $_.Trim()
-        if ($line -match '^([A-Z_]+)=(.*)') {
+        if ($line -match '^([A-Z_0-9]+)=(.*)') {
             $key = $matches[1]; $val = $matches[2]
             Set-Item -Path "env:$key" -Value $val -ErrorAction SilentlyContinue
             if ($key -eq "NINEROUTER_API_KEY") { $apiKeyInFile = $val }
@@ -345,10 +345,13 @@ if (Test-Path $script:API_KEY_FILE) {
         $currentCombos[$entry.name] = $models
     }
 
+    # Sort keys: numeric first (COMBO_0, COMBO_1), then alpha
+    $sortedComboKeys = $currentCombos.Keys | Sort-Object
+
     # Diff vs cached
     $changed = @()
     $newCombos = @()
-    foreach ($cn in $currentCombos.Keys) {
+    foreach ($cn in $sortedComboKeys) {
         $cachedEntry = $cached | Where-Object { $_.name -eq $cn }
         if (-not $cachedEntry) {
             $newCombos += $cn
@@ -358,7 +361,8 @@ if (Test-Path $script:API_KEY_FILE) {
             if ($cachedModels -ne $currentModels) { $changed += $cn }
         }
         $comboNamesFromFile += ($currentCombos[$cn] -join ',')
-        $comboBadges += "$cn($($currentCombos[$cn].Count) model)"
+        $comboNameDisplay = ($currentCombos[$cn] -join ',')
+        $comboBadges += "$comboNameDisplay"
     }
 
     # Show status
@@ -378,7 +382,7 @@ if (Test-Path $script:API_KEY_FILE) {
     # Save current combos to combo.json for next-run diff
     if ($comboNamesFromFile.Count -gt 0) {
         $saveCombos = @()
-        foreach ($cn in $currentCombos.Keys) {
+        foreach ($cn in ($currentCombos.Keys | Sort-Object)) {
             $saveCombos += @{ name = $cn; models = $currentCombos[$cn] }
         }
         New-Item -ItemType Directory -Path $script:STATE_DIR -Force | Out-Null

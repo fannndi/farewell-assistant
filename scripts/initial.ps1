@@ -281,7 +281,7 @@ if (Test-Path $mcpConfig) {
     Write-Host ""
     Write-Host "  MCP servers configured:" -ForegroundColor Cyan
     Write-Host "    - context7: live docs lookup (no auth needed)" -ForegroundColor White
-    Write-Host "    - github: GitHub ops (REQUIRES PAT — edit mcp-config.json)" -ForegroundColor White
+    Write-Host "    - github: GitHub ops (REQUIRES PAT -- edit mcp-config.json)" -ForegroundColor White
     Write-Host "    - sequential-thinking: chain-of-thought" -ForegroundColor White
     Write-Host "    - memory: persistent memory across sessions" -ForegroundColor White
     Write-Host ""

@@ -25,6 +25,7 @@ $script:ROOT_DIR = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
 . "$PSScriptRoot\common\helpers.ps1"
 . "$PSScriptRoot\common\config.ps1"
+. "$PSScriptRoot\common\log.ps1"
 
 $PROFILES = [ordered]@{
     "hot" = @{
@@ -66,13 +67,19 @@ $MODEL_MAP = [ordered]@{
 
 function Set-LLMMode {
     param([string]$Mode)
-    $state = Get-LLMState
+    $state = Read-JsonState -Path $script:LLM_MODE_FILE -Default { return @{} }
     if (-not $state) { $state = @{} }
     $state["mode"] = $Mode
     $state["updated_at"] = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
     $model = $MODEL_MAP[$Mode]
     if ($model) { $state["model"] = $model }
-    Write-JsonState -Path "$($script:ROOT_DIR)\.opencode\llm-mode.json" -Data $state
+    Write-JsonState -Path $script:LLM_MODE_FILE -Data $state
+    if (Get-Command Sync-SessionState -ErrorAction SilentlyContinue) {
+        Sync-SessionState
+    }
+    if (Get-Command Write-TaskLog -ErrorAction SilentlyContinue) {
+        Write-TaskLog -Stage "LLM" -Action "Set mode to $Mode" -Result "success"
+    }
 }
 
 function Get-GGUFPath {

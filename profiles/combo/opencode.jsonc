@@ -98,12 +98,24 @@
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\start.ps1\" $ARGUMENTS"
     },
     "setup": {
-      "description": "Set LLM mode (eco/on/hot/balance/performance)",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\setup.ps1\" $ARGUMENTS"
+      "description": "Set LLM mode (eco/on/hot/balance/performance) — redirects to llm-setup",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\llm-setup.ps1\" $ARGUMENTS"
     },
     "owner": {
       "description": "Maintenance - pull update + changelog + analysis + doctor",
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\owner.ps1\" $ARGUMENTS"
+    },
+    "autostart": {
+      "description": "Manage 9Router Windows autostart: enable / disable / status / run",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\autostart.ps1\" $ARGUMENTS"
+    },
+    "enrich-check": {
+      "description": "Verify enrichment pipeline (local LLM preprocessor)",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\hooks\\check-enrich.ps1\" $ARGUMENTS"
+    },
+    "detect": {
+      "description": "Detect project type from directory markers (Flutter/Node/Go/Rust/PHP/Python/.NET/...)",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\detect-project.ps1\" $ARGUMENTS"
     },
     "llm-setup": {
       "description": "LLM config: auto/list/pull/status/remove + eco/on/hot/balance/performance",

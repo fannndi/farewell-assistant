@@ -1,15 +1,12 @@
 # Common Configuration - Centralized URLs, paths, and constants
 # Usage: . "$PSScriptRoot\config.ps1"
+#
+# ROOT_DIR is resolved deterministically from this file's location:
+#   scripts/common/config.ps1 -> up two levels -> project root.
+# This avoids $MyInvocation fragility under nested dot-source.
 
 if (-not $script:ROOT_DIR) {
-    # Use the calling script's location to find project root
-    $callingScript = $MyInvocation.ScriptName
-    if ($callingScript) {
-        $script:ROOT_DIR = Split-Path -Parent (Split-Path -Parent $callingScript)
-    } else {
-        # Fallback: go up two levels from this config file (common/config.ps1)
-        $script:ROOT_DIR = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-    }
+    $script:ROOT_DIR = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 }
 
 # ── URLs ──
@@ -26,6 +23,8 @@ $script:CONTEXT_DIR   = "$($script:ROOT_DIR)\projects\context"
 
 # ── State Files ──
 $script:STATE_DIR       = "$($script:ROOT_DIR)\.opencode"
+$script:LOG_DIR         = "$($script:STATE_DIR)\logs"
+$script:ROUTER_PID_FILE = "$($script:STATE_DIR)\9router.pid"
 $script:LLM_MODE_FILE   = "$($script:STATE_DIR)\llm-mode.json"
 $script:WORK_MODE_FILE  = "$($script:STATE_DIR)\work-mode.json"
 $script:COMBO_FILE      = "$($script:STATE_DIR)\combo.json"
@@ -33,3 +32,7 @@ $script:REGISTRY_FILE   = "$($script:ROOT_DIR)\projects\registry.json"
 $script:SKILL_IDX_FILE  = "$($script:ROOT_DIR)\projects\skill-mode-index.json"
 $script:API_KEY_FILE    = "$($script:ROOT_DIR)\api-key.txt"
 $script:PROFILE_SRC     = "$($script:ROOT_DIR)\profiles\combo\opencode.jsonc"
+
+# ── Scheduled Task ──
+$script:TASK_NAME       = "FarewellAssistant-9Router"
+$script:TASK_BG_SCRIPT  = "$($script:ROOT_DIR)\scripts\common\start-9router-bg.ps1"

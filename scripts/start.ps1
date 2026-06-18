@@ -6,6 +6,7 @@ $ProgressPreference = "SilentlyContinue"
 
 . "$PSScriptRoot\common\helpers.ps1"
 . "$PSScriptRoot\common\config.ps1"
+. "$PSScriptRoot\common\log.ps1"
 
 function Write-UpdateCheck {
     param([string]$Repo, [string]$Dir, [string]$Remote, [string]$Branch)
@@ -126,5 +127,8 @@ Write-Host "  9Router:    $(if ($routerRunning) { 'Running' } else { 'Check manu
 Write-Host "  Combos:     $($comboNames -join ', ')" -ForegroundColor White
 Write-Host "  LLM Mode:   $mode" -ForegroundColor $(if ($mode -eq "eco") { "Green" } else { "Cyan" })
 Write-Host ""
+
+Sync-SessionState
+Write-TaskLog -Stage "START" -Action "Daily startup completed" -Result "success"
 
 opencode

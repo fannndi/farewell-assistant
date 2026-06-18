@@ -1,8 +1,8 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "hooks": {
     "post-edit": {
-      "description": "Run self-heal after file edits to check for type errors",
+      "description": "Run self-heal after file edits — project-aware typecheck (tsc/flutter/ruff)",
       "trigger": "after Edit or Write tool",
       "script": "{project}/scripts/hooks/self-heal.ps1",
       "args": {
@@ -13,9 +13,20 @@
       "enabled": true
     },
     "pre-bash-gate": {
-      "description": "Fact-forcing before destructive commands",
+      "description": "Fact-forcing before destructive commands (gateguard-style)",
       "trigger": "before Bash tool with dangerous commands",
       "enabled": false
     }
-  }
+  },
+  "diagnostic_commands": {
+    "enrich-check": {
+      "description": "Verify enrichment pipeline end-to-end (manual, not a hook)",
+      "script": "{project}/scripts/hooks/check-enrich.ps1",
+      "invocation": "/enrich-check -Input \"test input\""
+    }
+  },
+  "notes": [
+    "check-enrich.ps1 was previously listed as a hook but had a broken reference (..\\llm-adapter.ps1). It is now a diagnostic command sourced via common/helpers.ps1.",
+    "self-heal.ps1 is project-aware: it only runs tsc/flutter/ruff if the corresponding project markers are present in ProjectPath."
+  ]
 }

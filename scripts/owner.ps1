@@ -6,6 +6,7 @@ $ProgressPreference = "SilentlyContinue"
 
 . "$PSScriptRoot\common\helpers.ps1"
 . "$PSScriptRoot\common\config.ps1"
+. "$PSScriptRoot\common\log.ps1"
 
 # ============================================================
 # Banner
@@ -72,26 +73,78 @@ function Write-Pull9Router {
     try {
         git fetch origin 2>&1 | Out-Null
         $before = git rev-parse HEAD 2>$null
-        $beforePkg = Get-FileHash "package.json" 2>$null
         $behind = git rev-list --count "HEAD..origin/master" 2>&1
         if ($behind -and $behind -gt 0) {
             Write-Host "  9Router: $behind commit(s) behind" -ForegroundColor Yellow
             Write-ChangelogDiff "9Router" $script:ROUTER_DIR "master" $before
+            # Snapshot key markers BEFORE pull to detect source-level changes (not just package.json)
+            $beforeSrcHash = $null
+            $srcPaths = @("src", "next.config.mjs", "custom-server.js", "package.json", "cli")
+            foreach ($p in $srcPaths) {
+                if (Test-Path $p) {
+                    $items = Get-ChildItem -Path $p -Recurse -File -ErrorAction SilentlyContinue
+                    if ($items) {
+                        $hashInput = ($items | Get-FileHash | ForEach-Object { "$($_.Path):$($_.Hash)" }) -join "`n"
+                        $beforeSrcHash += (Get-FileHash -InputStream ([System.IO.MemoryStream]::new([System.Text.Encoding]::UTF8.GetBytes($hashInput))).Hash)
+                    }
+                }
+            }
             git pull --ff-only 2>&1 | Out-Null
             $afterShort = git log --oneline -1 2>$null
             Write-Host "  9Router updated >> $afterShort" -ForegroundColor Green
             git show origin/master:CHANGELOG.md 2>$null | Out-File -FilePath "$($script:ROOT_DIR)\CHANGELOG_9ROUTER.md" -Encoding UTF8
             Write-OK "CHANGELOG_9ROUTER.md synced"
-            $afterPkg = Get-FileHash "package.json" 2>$null
-            if ($beforePkg.Hash -ne $afterPkg.Hash) {
+
+            $afterSrcHash = $null
+            foreach ($p in $srcPaths) {
+                if (Test-Path $p) {
+                    $items = Get-ChildItem -Path $p -Recurse -File -ErrorAction SilentlyContinue
+                    if ($items) {
+                        $hashInput = ($items | Get-FileHash | ForEach-Object { "$($_.Path):$($_.Hash)" }) -join "`n"
+                        $afterSrcHash += (Get-FileHash -InputStream ([System.IO.MemoryStream]::new([System.Text.Encoding]::UTF8.GetBytes($hashInput))).Hash)
+                    }
+                }
+            }
+
+            $needsRebuild = $false
+            $pkgChanged = $false
+            $beforePkg = $null; $afterPkg = $null
+            try { $beforePkg = (Get-FileHash "package.json" -ErrorAction SilentlyContinue).Hash } catch {}
+            if (-not $beforePkg) { $beforePkg = "none" }
+
+            if ($beforeSrcHash -ne $afterSrcHash) {
+                $needsRebuild = $true
+                Write-Host "  Source changed, rebuilding 9Router..." -ForegroundColor Gray
+            }
+
+            try { $afterPkg = (Get-FileHash "package.json" -ErrorAction SilentlyContinue).Hash } catch {}
+            if ($beforePkg -ne $afterPkg) {
+                $pkgChanged = $true
                 Write-Host "  package.json changed, updating npm..." -ForegroundColor Gray
                 npm install 2>&1 | Out-Null
                 Write-OK "npm dependencies updated"
-            } else {
-                Write-Skip "package.json unchanged, npm skipped"
+                $needsRebuild = $true
             }
-            Write-Host "  Restarting 9Router..." -ForegroundColor Gray
-            Start-9Router
+
+            if ($needsRebuild) {
+                Write-Host "  Building standalone..." -ForegroundColor Gray
+                npm run build 2>&1 | Out-Null
+                if (Test-Path ".next\standalone\server.js") {
+                    Write-OK "9Router rebuilt"
+                } else {
+                    Write-Fail "Build failed - standalone/server.js missing"
+                }
+            } else {
+                Write-Skip "No source/package.json change, skipping rebuild"
+            }
+
+            # Guard: only restart if standalone build is present
+            if (Test-Path ".next\standalone\server.js") {
+                Write-Host "  Restarting 9Router..." -ForegroundColor Gray
+                Start-9Router
+            } else {
+                Write-Fail "Cannot restart - standalone build missing"
+            }
         } else {
             Write-Skip "9Router: already up to date"
         }
@@ -247,3 +300,5 @@ if ($issues.Count -eq 0) {
     Write-Host "  $($issues.Count) issue(s) found. Fix above." -ForegroundColor Yellow
 }
 Write-Host ""
+
+Write-TaskLog -Stage "OWNER" -Action "Maintenance completed ($($issues.Count) issues)" -Result $(if ($issues.Count -eq 0) { "success" } else { "fail" })

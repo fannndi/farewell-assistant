@@ -7,6 +7,7 @@ $ProgressPreference = "SilentlyContinue"
 
 . "$PSScriptRoot\common\helpers.ps1"
 . "$PSScriptRoot\common\config.ps1"
+. "$PSScriptRoot\common\log.ps1"
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Magenta
@@ -14,9 +15,9 @@ Write-Host "  farewell-assistant - Initial Setup" -ForegroundColor Magenta
 Write-Host "  =================================================" -ForegroundColor Magenta
 Write-Host ""
 
-# ── Step 1/8: Clone ECC ──
+# ── Step 1/10: Clone ECC ──
 
-Write-Step "1/8" "Clone ECC"
+Write-Step "1/10" "Clone ECC"
 
 if (Test-Path "$($script:ECC_DIR)\AGENTS.md") {
     Write-Skip "ECC already cloned"
@@ -26,9 +27,9 @@ if (Test-Path "$($script:ECC_DIR)\AGENTS.md") {
     Write-OK "ECC cloned"
 }
 
-# ── Step 2/8: Clone 9Router ──
+# ── Step 2/10: Clone 9Router ──
 
-Write-Step "2/8" "Clone 9Router"
+Write-Step "2/10" "Clone 9Router"
 
 if (Test-Path "$($script:ROUTER_DIR)\package.json") {
     Write-Skip "9Router already cloned"
@@ -51,9 +52,9 @@ if (-not (Test-Path "$($script:ROUTER_DIR)\node_modules")) {
     Write-Skip "Dependencies already installed"
 }
 
-# ── Step 3/8: Build 9Router ──
+# ── Step 3/10: Build 9Router ──
 
-Write-Step "3/8" "Build 9Router"
+Write-Step "3/10" "Build 9Router"
 
 if (Test-Path "$($script:ROUTER_DIR)\.next\standalone\server.js") {
     Write-Skip "9Router already built"
@@ -68,9 +69,9 @@ if (Test-Path "$($script:ROUTER_DIR)\.next\standalone\server.js") {
     Write-OK "9Router built"
 }
 
-# ── Step 4/8: Start 9Router ──
+# ── Step 4/10: Start 9Router ──
 
-Write-Step "4/8" "Start 9Router"
+Write-Step "4/10" "Start 9Router"
 
 $routerRunning = $false
 try {
@@ -87,9 +88,9 @@ if (-not $routerRunning) {
     }
 }
 
-# ── Step 5/8: Dashboard & API Key ──
+# ── Step 5/10: Dashboard & API Key ──
 
-Write-Step "5/8" "Dashboard & API Key"
+Write-Step "5/10" "Dashboard & API Key"
 
 if (-not (Test-Path $script:API_KEY_FILE)) {
     if (Test-Path "$($script:ROOT_DIR)\api-key.example.txt") {
@@ -121,9 +122,9 @@ Write-Host "    4. Edit api-key.txt with your actual API key and combo definitio
 Write-Host ""
 Read-Host "  Press Enter when done"
 
-# ── Step 6/8: Validate Keys ──
+# ── Step 6/10: Validate Keys ──
 
-Write-Step "6/8" "Validate API Key & Combos"
+Write-Step "6/10" "Validate API Key & Combos"
 
 $apiKey = $null
 $comboEntries = @()
@@ -144,6 +145,8 @@ if (Test-Path $script:API_KEY_FILE) {
 
 if (-not $apiKey -or $apiKey -eq "sk-your-api-key-here") {
     Write-Fail "NINEROUTER_API_KEY is not set in api-key.txt"
+} elseif (-not ($apiKey -match '^sk-')) {
+    Write-Fail "NINEROUTER_API_KEY looks invalid (expected to start with 'sk-'): $apiKey"
 } else {
     Write-Info "Testing API key against 9Router..."
     $modelsOk = $false
@@ -193,9 +196,9 @@ if (-not $apiKey -or $apiKey -eq "sk-your-api-key-here") {
     }
 }
 
-# ── Step 7/8: Initialize State ──
+# ── Step 7/10: Initialize State ──
 
-Write-Step "7/8" "Initialize State"
+Write-Step "7/10" "Initialize State"
 
 New-Item -ItemType Directory -Path $script:STATE_DIR -Force | Out-Null
 
@@ -214,9 +217,9 @@ $workMode = @{
 Write-JsonState -Path $script:WORK_MODE_FILE -Data $workMode
 Write-OK "work-mode.json set to build"
 
-# ── Step 8/8: LLM Setup ──
+# ── Step 8/10: LLM Setup ──
 
-Write-Step "8/8" "LLM Setup"
+Write-Step "8/10" "LLM Setup"
 
 $gpu = Get-GPUInfo -Fields "name,memory.total"
 
@@ -240,11 +243,66 @@ if ($gpu.available) {
     }
 
     Write-Host ""
-    Write-Info "To enable local LLM, run: .\scripts\llm-mode.ps1 on"
+    Write-Info "To enable local LLM, run: .\scripts\llm-setup.ps1 on"
 } else {
     Write-Skip "No NVIDIA GPU detected"
     Write-Info "Local LLM not available - use eco mode (cloud only)"
-    Write-Info "To change mode later, run: .\scripts\llm-mode.ps1"
+    Write-Info "To change mode later, run: .\scripts\llm-setup.ps1"
+}
+
+# ── Step 9/10: MCP Configuration ──
+
+Write-Step "9/10" "MCP Configuration"
+
+$mcpConfig = "$($script:STATE_DIR)\mcp-config.json"
+$mcpExample = "$($script:ROOT_DIR)\mcp-config.example.json"
+
+if (Test-Path $mcpConfig) {
+    Write-Skip "mcp-config.json already exists"
+    try {
+        $mcpContent = Get-Content $mcpConfig -Raw
+        if ($mcpContent -match "YOUR_GITHUB_PAT_HERE") {
+            Write-Host "  WARNING: mcp-config.json has GitHub PAT placeholder." -ForegroundColor Yellow
+            Write-Host "  Either set GITHUB_PERSONAL_ACCESS_TOKEN or remove the github server." -ForegroundColor Yellow
+        }
+    } catch {}
+} elseif (Test-Path $mcpExample) {
+    Write-Info "Copying mcp-config.example.json to .opencode/mcp-config.json..."
+    Copy-Item -Path $mcpExample -Destination $mcpConfig -Force
+    Write-OK "mcp-config.json created from example"
+    Write-Host ""
+    Write-Host "  MCP servers configured:" -ForegroundColor Cyan
+    Write-Host "    - context7: live docs lookup (no auth needed)" -ForegroundColor White
+    Write-Host "    - github: GitHub ops (REQUIRES PAT — edit mcp-config.json)" -ForegroundColor White
+    Write-Host "    - sequential-thinking: chain-of-thought" -ForegroundColor White
+    Write-Host "    - memory: persistent memory across sessions" -ForegroundColor White
+    Write-Host ""
+    Write-Host "  To get a GitHub PAT:" -ForegroundColor Cyan
+    Write-Host "    1. https://github.com/settings/tokens (classic or fine-grained)" -ForegroundColor White
+    Write-Host "    2. Scope: repo (for PR/issue ops)" -ForegroundColor White
+    Write-Host "    3. Edit .opencode/mcp-config.json -> replace YOUR_GITHUB_PAT_HERE" -ForegroundColor White
+    Write-Host "    4. Or remove the 'github' server entirely if not needed" -ForegroundColor White
+    Write-Host ""
+} else {
+    Write-Skip "No mcp-config.example.json found (skipping MCP setup)"
+}
+
+# ── Step 10/10: Autostart Recommendation ──
+
+Write-Step "10/10" "Autostart (optional)"
+
+Write-Host "  To auto-start 9Router on Windows logon:" -ForegroundColor Cyan
+Write-Host "    .\scripts\autostart.ps1 -Action enable" -ForegroundColor White
+Write-Host "  Manages Scheduled Task 'FarewellAssistant-9Router':" -ForegroundColor Gray
+Write-Host "    - Trigger: AtLogon (no admin required)" -ForegroundColor Gray
+Write-Host "    - Restart: 3x at 5-min interval on failure" -ForegroundColor Gray
+Write-Host "    - Logs: .opencode/logs/autostart.log" -ForegroundColor Gray
+Write-Host ""
+$enableAutostart = Read-Host "  Enable autostart now? [y/N]"
+if ($enableAutostart -eq "y" -or $enableAutostart -eq "Y") {
+    & "$($script:ROOT_DIR)\scripts\autostart.ps1" -Action enable
+} else {
+    Write-Skip "Autostart skipped (enable later: .\scripts\autostart.ps1 -Action enable)"
 }
 
 # ── Completion ──
@@ -259,6 +317,8 @@ Write-Host "    ECC:        $(if (Test-Path "$($script:ECC_DIR)\AGENTS.md") { 'C
 Write-Host "    9Router:    $(if ($routerRunning) { 'Running' } else { 'Not running' })" -ForegroundColor $(if ($routerRunning) { "Green" } else { "Yellow" })
 Write-Host "    LLM Mode:   eco" -ForegroundColor Green
 Write-Host "    Work Mode:  build" -ForegroundColor Green
+Write-Host "    MCP:        $(if (Test-Path $mcpConfig) { 'Configured' } else { 'Not configured' })" -ForegroundColor $(if (Test-Path $mcpConfig) { "Green" } else { "Yellow" })
+Write-Host "    Autostart:  $(if ($enableAutostart -eq 'y' -or $enableAutostart -eq 'Y') { 'Enabled' } else { 'Skipped' })" -ForegroundColor $(if ($enableAutostart -eq 'y' -or $enableAutostart -eq 'Y') { "Green" } else { "Gray" })
 Write-Host ""
 Write-Host "  Next step: Run .\scripts\start.ps1 to start daily session" -ForegroundColor Cyan
 Write-Host ""

@@ -10,6 +10,7 @@ $ErrorActionPreference = "Stop"
 $script:ROOT_DIR = $PSScriptRoot | Split-Path -Parent
 . "$PSScriptRoot\common\helpers.ps1"
 . "$PSScriptRoot\common\config.ps1"
+. "$PSScriptRoot\common\log.ps1"
 
 $ModeDefs = @{
     plan = @{
@@ -79,5 +80,7 @@ switch ($Action) {
         Write-JsonState -Path $script:WORK_MODE_FILE -Data $state
         Write-OK "Work mode set to $($Action.ToUpper())"
         Show-ModeInfo -Mode $Action
+        Sync-SessionState
+        Write-TaskLog -Stage "WORKMODE" -Action "Switch to $($Action.ToUpper())" -Result "success"
     }
 }

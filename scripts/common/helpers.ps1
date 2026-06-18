@@ -110,33 +110,96 @@ function Stop-OllamaModels {
 
 # ── 9Router Helpers ──
 
-function Start-9Router {
-    $nodePids = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match [regex]::Escape($script:ROUTER_DIR) } | Select-Object -ExpandProperty ProcessId
-    if ($nodePids) {
-        $nodePids | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
-        Start-Sleep -Seconds 2
+function Get-9RouterPid {
+    try {
+        if (Test-Path $script:ROUTER_PID_FILE) {
+            $pidVal = [int](Get-Content $script:ROUTER_PID_FILE -Raw).Trim()
+            $proc = Get-Process -Id $pidVal -ErrorAction SilentlyContinue
+            if ($proc -and $proc.ProcessName -eq "node") { return $pidVal }
+        }
+    } catch {}
+    return $null
+}
+
+function Stop-9Router {
+    $existingPid = Get-9RouterPid
+    if ($existingPid) {
+        try { Stop-Process -Id $existingPid -Force -ErrorAction Stop; Start-Sleep -Seconds 1 } catch {}
     }
+    # Fallback: kill whatever owns port 20128 (precision, not regex over all node.exe)
+    try {
+        $conns = Get-NetTCPConnection -LocalPort 20128 -State Listen -ErrorAction SilentlyContinue
+        foreach ($c in $conns) {
+            if ($c.OwningProcess -and $c.OwningProcess -ne 0) {
+                $proc = Get-Process -Id $c.OwningProcess -ErrorAction SilentlyContinue
+                if ($proc -and $proc.ProcessName -eq "node") {
+                    Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue
+                    Start-Sleep -Seconds 1
+                }
+            }
+        }
+    } catch {}
+    if (Test-Path $script:ROUTER_PID_FILE) {
+        Remove-Item $script:ROUTER_PID_FILE -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Start-9Router {
+    if (-not (Test-Path "$($script:ROUTER_DIR)\.next\standalone\server.js")) {
+        Write-Fail "9Router standalone build missing. Run: .\scripts\owner.ps1"
+        return $false
+    }
+
+    # Kill stale instance first (precision by PID + port, no regex false-positives)
+    Stop-9Router
+
+    # Ensure static assets present in standalone build
     if (-not (Test-Path "$($script:ROUTER_DIR)\.next\standalone\.next\static")) {
         if (Test-Path "$($script:ROUTER_DIR)\.next\static") {
             Copy-Item -Path "$($script:ROUTER_DIR)\.next\static" -Destination "$($script:ROUTER_DIR)\.next\standalone\.next\static" -Recurse -Force
         }
     }
+
+    # Logs dir for stdout/stderr (autostart + manual start share this)
+    New-Item -ItemType Directory -Path $script:LOG_DIR -Force | Out-Null
+    $logOut = "$($script:LOG_DIR)\9router.log"
+    $logErr = "$($script:LOG_DIR)\9router-error.log"
+
     $env:PORT = "20128"
     $env:NODE_ENV = "production"
     $env:DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"
     $env:INITIAL_PASSWORD = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }
-    Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $script:ROUTER_DIR
 
-    $maxWait = 15; $waited = 0
-    while ($waited -lt $maxWait) {
-        Start-Sleep -Seconds 1; $waited++
+    $startArgs = @{
+        FilePath               = "node"
+        ArgumentList           = ".next/standalone/server.js"
+        WorkingDirectory       = $script:ROUTER_DIR
+        WindowStyle            = "Hidden"
+        RedirectStandardOutput = $logOut
+        RedirectStandardError  = $logErr
+        PassThru               = $true
+    }
+    $proc = Start-Process @startArgs
+    if ($proc -and $proc.Id) {
+        Set-Content -Path $script:ROUTER_PID_FILE -Value $proc.Id -Encoding UTF8
+    }
+
+    # Health-check with backoff: 2s, 3s, 5s, 8s, 12s, 15s (max ~45s)
+    # First /api/health hit on a cold Next.js standalone build triggers route
+    # compilation, so the first request can take several seconds — use 10s
+    # timeout per probe (not 2s) to avoid false-negative on slow cold start.
+    $waits = @(2, 3, 5, 8, 12, 15)
+    $total = 0
+    foreach ($w in $waits) {
+        Start-Sleep -Seconds $w
+        $total += $w
         try {
-            $null = Invoke-RestMethod -Uri "$($script:API_URL)/api/health" -TimeoutSec 2 -ErrorAction Stop
-            Write-OK "9Router started (${waited}s)"
+            $null = Invoke-RestMethod -Uri "$($script:API_URL)/api/health" -TimeoutSec 10 -ErrorAction Stop
+            Write-OK "9Router started (${total}s, PID: $($proc.Id))"
             return $true
         } catch {}
     }
-    Write-Fail "9Router not reachable after ${maxWait}s"
+    Write-Fail "9Router not reachable after ${total}s (see $($script:LOG_DIR)\9router-error.log)"
     return $false
 }
 

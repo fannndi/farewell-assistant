@@ -1,12 +1,14 @@
 # Check Enrichment - Verify enrichment pipeline is working
 # Usage: .\hooks\check-enrich.ps1 -Input "test input"
+# Diagnostic command (not a hook). Validates Invoke-LLMEnrich end-to-end.
 
 param([string]$Input)
 
 $ErrorActionPreference = "Continue"
 
-# Source adapter for its overridden Invoke-LLMEnrich with tracking
-. "$PSScriptRoot\..\llm-adapter.ps1"
+$script:ROOT_DIR = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+. "$PSScriptRoot\..\common\helpers.ps1"
+. "$PSScriptRoot\..\common\config.ps1"
 
 $mode = Get-LLMMode
 $gpu = Get-GPUInfo

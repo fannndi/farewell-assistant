@@ -66,8 +66,14 @@ cd farewell-assistant
 # 2. Edit api-key.txt — isi key 9Router & key lain
 #    (key dari dashboard: http://localhost:20128/dashboard)
 
-# 3. Start — auto semua, nanti pilih combo
+# 3. Initial setup — clone ECC + 9Router, build, init state
+.\scripts\initial.ps1
+
+# 4. Daily start
 .\scripts\start.ps1
+
+# 5. (Optional) Enable 9Router autostart on Windows logon
+.\scripts\autostart.ps1 -Action enable
 ```
 
 ### Dashboard 9Router
@@ -80,11 +86,18 @@ Password ada di `api-key.txt` (baris `9ROUTER_PASSWORD`).
 | Command | Fungsi |
 |---------|--------|
 | `/start` | Daily startup + auto-setup |
-| `/admin` | Maintenance + pull update |
-| `/llm eco` | Turn off GPU |
-| `/llm on` | Turn on GPU |
-| `/llm status` | Check mode |
-| `/detect` | Detect project type |
+| `/owner` | Maintenance + pull update |
+| `/autostart enable` | Register Windows Scheduled Task (9Router on logon) |
+| `/autostart status` | Cek state scheduled task + 9Router health |
+| `/autostart disable` | Unregister scheduled task |
+| `/setup eco` | Turn off GPU (alias `/llm-setup eco`) |
+| `/setup on` | Turn on GPU (alias `/llm-setup on`) |
+| `/setup status` | Check mode (alias `/llm-setup status`) |
+| `/llm-setup <mode>` | Full LLM config (eco/on/hot/balance/performance/auto/list/pull/remove) |
+| `/detect` | Detect project type dari directory markers |
+| `/enrich-check` | Verify enrichment pipeline (diagnostic) |
+| `/workmode plan\|build` | Switch work mode |
+| `/initial` | One-time install untuk new laptop |
 | `/go "task"` | Universal task |
 
 ---
@@ -94,11 +107,13 @@ Password ada di `api-key.txt` (baris `9ROUTER_PASSWORD`).
 ### Auto-Detect
 
 ```powershell
-# Detect project type dari working directory
-.\scripts\detect-project.ps1 -Path "C:\my-project"
+# Detect project type dari working directory (atau path tertentu)
+.\scripts\detect-project.ps1                          # current dir
+.\scripts\detect-project.ps1 -Path "C:\my-project"   # specific path
+.\scripts\detect-project.ps1 -Path "..." -EmitContext  # + emit context template
 ```
 
-Detects: Flutter, Node.js, Go, PHP/Laravel, Python, Rust, .NET, Ruby.
+Detects: Flutter, Node (Next/Nuxt/Vue/React/Express/NestJS/Svelte), Go, PHP/Laravel/Symfony, Python, Rust, .NET, Ruby, Java/Kotlin, Elixir.
 
 ### Multi-Project
 
@@ -122,39 +137,57 @@ Registry di `projects/registry.json` track project aktif.
 
 ```
 farewell-assistant/
-├── scripts/                    # 6 scripts (bukan 64)
-│   ├── setup.ps1               # First install
-│   ├── start.ps1               # ✨ Daily startup (auto-setup + combo)
-│   ├── llm-adapter.ps1         # Ollama API + enrichment
-│   ├── llm-mode.ps1            # Mode switch (eco/on)
-│   ├── admin.ps1               # Maintenance + pull update
-│   ├── detect-project.ps1      # Project auto-detect
+├── scripts/                       # PowerShell automation
+│   ├── initial.ps1                # One-time install (clone ECC+9Router, build, init state)
+│   ├── start.ps1                  # Daily startup (health + load config + apply profile + launch)
+│   ├── owner.ps1                  # Maintenance (pull updates, changelog, doctor, restart)
+│   ├── autostart.ps1              # Windows Scheduled Task manager (enable/disable/status/run)
+│   ├── llm-setup.ps1              # LLM config (eco/on/hot/balance/performance + auto/list/pull/remove)
+│   ├── workmode.ps1               # Switch work mode (plan/build/status)
+│   ├── detect-project.ps1         # Project type detection from markers
+│   ├── common/
+│   │   ├── config.ps1             # Centralized URLs, paths, constants
+│   │   ├── helpers.ps1            # Write helpers, JSON state, Ollama, Start-9Router (robust), LLM
+│   │   ├── log.ps1                # Write-TaskLog → logging.md
+│   │   └── start-9router-bg.ps1   # Hidden wrapper for Scheduled Task
 │   └── hooks/
-│       ├── check-enrich.ps1    # Enrichment verification
-│       └── self-heal.ps1       # Post-edit typecheck
+│       ├── check-enrich.ps1       # Enrichment diagnostic command
+│       ├── self-heal.ps1          # Post-edit typecheck (project-aware)
+│       └── hook-registry.json     # Hook metadata
 ├── profiles/
-│   └── combo/opencode.jsonc    # Single profile template
-├── instructions/               # AI behavior (3 files)
-│   ├── user-rules.md           # Core rules
-│   ├── preprocess.md           # Enrichment pipeline
-│   └── footer.md               # Footer format
-├── commands/                   # 4 custom commands
-│   ├── setup.md
-│   ├── start.md
-│   ├── admin.md
-│   └── go.md
-├── projects/                   # Multi-project management
-│   ├── registry.json           # Project index
-│   └── context/                # Per-project context
-├── CHANGELOG.md                # Project changelog
-├── CHANGELOG_ECC.md            # ECC upstream changelog (auto-sync)
-├── CHANGELOG_9ROUTER.md        # 9Router upstream changelog (auto-sync)
-├── .opencode/                  # Runtime state (gitignored)
-├── api-key.txt                 # Multi-key storage (gitignored)
-└── Modelfile.qwen2-1.5b       # GPU model config
+│   └── combo/opencode.jsonc       # Single profile template (combo-based)
+├── instructions/                  # AI behavior
+│   ├── user-rules.md              # Core rules + ROLE enforcement
+│   └── preprocess.md              # Enrichment pipeline + footer format
+├── commands/                      # Custom command docs
+│   ├── initial.md, start.md, owner.md, autostart.md
+│   ├── setup.md (alias llm-setup), llm-setup.md
+│   ├── workmode.md, detect.md, go.md, enrich-check.md
+├── projects/                      # Multi-project management
+│   ├── registry.json              # Project index
+│   ├── skill-mode-index.json      # Skills per work mode
+│   └── context/                   # Per-project context
+├── 9router/                       # 9Router (gitignored, cloned by /initial)
+├── ecc/                           # ECC skills (gitignored, cloned by /initial)
+├── models/                        # GGUF model files (gitignored)
+├── .opencode/                     # Runtime state (gitignored)
+│   ├── llm-mode.json, work-mode.json, combo.json, 9router.pid
+│   ├── session-state.json, context.md
+│   ├── mcp-config.json
+│   └── logs/                      # 9router.log, 9router-error.log, autostart.log
+├── api-key.txt                    # Multi-key storage (gitignored)
+├── api-key.example.txt            # Template (committed)
+├── Modelfile.qwen2.5-coder-1.5b   # GPU model configs (eco/on)
+├── Modelfile.qwen3.5-0.8b         # hot
+├── Modelfile.qwen3.5-2b           # balance
+├── Modelfile.qwen3.5-4b           # performance
+├── CHANGELOG.md                   # Project changelog
+├── CHANGELOG_ECC.md               # ECC upstream (auto-sync via /owner)
+├── CHANGELOG_9ROUTER.md           # 9Router upstream (auto-sync via /owner)
+└── logging.md                     # Task log (gitignored)
 ```
 
-**Total: ~30 files** (dari ~150+ di project lama).
+**Total tracked: ~40 files** (9router/, ecc/, models/, .opencode/ gitignored).
 
 ---
 
@@ -162,13 +195,44 @@ farewell-assistant/
 
 | Metric | opencode-setup | farewell-assistant |
 |--------|---------------|-------------------|
-| Total files | ~150+ | ~30 |
-| Scripts | 64 | 7 |
-| Commands | ~50 | 14 (5 custom + 9 ECC) |
-| Instructions loaded | 19 | 5 |
+| Total tracked files | ~150+ | ~40 |
+| Scripts | 64 | 8 (+3 common, +3 hooks) |
+| Commands | ~50 | 16 (custom + ECC) |
+| Instructions loaded | 19 | 4 |
 | Instruction tokens | ~5000+ | ~800 |
 | Pipeline steps | 8+ | 3 |
 | Multi-project | Overcomplicated | Simple registry |
+| 9Router autostart | Manual | Scheduled Task (logon + restart-on-failure) |
+
+---
+
+## Auto-start Setup (Windows)
+
+9Router bisa auto-start pas Windows logon via Scheduled Task (no admin required).
+
+```powershell
+# Register scheduled task
+.\scripts\autostart.ps1 -Action enable
+
+# Cek state
+.\scripts\autostart.ps1 -Action status
+
+# Trigger manual (test)
+.\scripts\autostart.ps1 -Action run
+
+# Unregister
+.\scripts\autostart.ps1 -Action disable
+```
+
+**Cara kerja:**
+- Scheduled Task `FarewellAssistant-9Router` trigger `AtLogon` (user context)
+- Action: `pwsh.exe -WindowStyle Hidden -File scripts\common\start-9router-bg.ps1`
+- Restart-on-failure: 3x dengan interval 5 menit
+- Logs: `.opencode\logs\autostart.log`, `9router.log`, `9router-error.log`
+- PID tracking: `.opencode\9router.pid` (precision kill, no regex false-positive)
+- Stale VBS di Startup folder auto-dihapus pas `enable`
+
+Ollama punya autostart sendiri via `.lnk` di Startup folder (tidak dikelola farewell).
 
 ---
 
@@ -180,7 +244,7 @@ farewell-assistant/
 | `CHANGELOG_ECC.md` | [affaan-m/ECC](https://github.com/affaan-m/ECC) | ✅ tiap `start.ps1` |
 | `CHANGELOG_9ROUTER.md` | [decolua/9router](https://github.com/decolua/9router) | ✅ tiap `start.ps1` |
 
-Update manual: `.\scripts\admin.ps1`
+Update manual: `.\scripts\owner.ps1` (pull ECC + 9Router, rebuild standalone kalau source berubah, sync changelogs, doctor check)
 
 ---
 
@@ -190,8 +254,11 @@ Update manual: `.\scripts\admin.ps1`
 |------|-----|------------|----------|
 | `eco` | Off | Disabled | Battery, gaming, simple tasks |
 | `on` | ~1GB | Active | Complex tasks, multi-project work |
+| `hot` | ~600MB | Active | Outdoor, unplugged, high temp |
+| `balance` | ~1.4GB | Active | Indoor, plugged, AC |
+| `performance` | ~2.5GB | Active | Indoor, plugged, fan active |
 
-Switch: `/llm eco` or `/llm on`
+Switch: `/setup eco` / `/setup on` / `/setup hot` / `/setup balance` / `/setup performance` / `/setup auto`
 
 ---
 

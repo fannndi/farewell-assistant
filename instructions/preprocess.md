@@ -35,13 +35,13 @@ Pattern-based (tanpa LLM, instan):
 | deploy/release/ship/publish | deploy | 0.7 |
 | research/search/find | research | 0.7 |
 | write/document/docs/readme | docs | 0.7 |
-| create/build/make/add/implement/bikin/buat | build | 0.8 |
+| create/build/make/add/implement/bikin/buat/tambah | build | 0.8 |
 
 **Threshold:** Kalau confidence >= 0.7, langsung lanjut ke Step 5. Kalau < 0.7, lanjut ke Step 3 (structured enrichment).
 
 ### Step 3: Structured Enrichment
 
-Ollama (`qwen2.5-coder-1.5b`) mengklasifikasi dengan **JSON output**:
+Ollama (model sesuai active profile: eco=qwen2.5:1.5b, balance=qwen3.5:2b, performance=qwen3.5:4b) mengklasifikasi dengan **JSON output**:
 
 ```
 Input: "bikin CRUD user dengan auth JWT"
@@ -232,15 +232,6 @@ User Input
   → Sync-TurnState (tulis ke pipeline-result.json + context.md)
   → AI reads context.md (lihat semua data)
   → AI execute (dengan konteks lengkap)
-```
-
----
-
-## Footer Format
-
-Footer compact untuk display (opsional):
-```
-Intent: build | Chain: 4 steps | Model: Free | Work: BUILD | Turn: 12
 ```
 
 ---

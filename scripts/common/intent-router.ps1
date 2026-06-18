@@ -186,7 +186,7 @@ function Sync-TurnState {
     if ($Result.success) {
         $pipelineData.intent = $Result.intent.intent
         $pipelineData.domain = $Result.intent.domain
-        $pipelineData.stack = $Result.intent.stack
+        $pipelineData.stack = @($Result.intent.stack)
         $pipelineData.complexity = $Result.intent.complexity
         $pipelineData.confidence = $Result.intent.confidence
         $pipelineData.source = $Result.intent.source
@@ -294,14 +294,6 @@ function Sync-TurnState {
 - **Planning:** $planningDisplay
 - **Blocked:** $blockedDisplay
 - **Turn:** $turnCount
-
-# Pipeline Status
-
-- **Enrichment:** $(if ($Result.intent.source -eq "structured") { "OK (structured)" } else { "fallback (quick)" })
-- **Classification:** $(if ($Result.success) { "OK" } else { "BLOCKED - $($Result.reason)" })
-- **Skill Chain:** $(if ($chainDisplay) { "OK ($($Result.skill_chain.Count) steps)" } else { "N/A" })
-- **Model Route:** $(if ($Result.success) { "OK ($($Result.model_route.primary)/$($Result.model_route.heavy))" } else { "N/A" })
-- **Timestamp:** $(Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz')
 "@
 
     $contextPath = Join-Path $stateDir "context.md"

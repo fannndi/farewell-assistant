@@ -153,7 +153,7 @@ if (Test-Path $script:API_KEY_FILE) {
             $key = $matches[1]
             $val = $matches[2]
             if ($key -eq "NINEROUTER_API_KEY") { $apiKey = $val }
-            if ($key -match '^COMBO_(.+)$' -and $val -and $val -ne '<model1>,<model2>,<model3>') {
+            if ($key -match '^COMBO_(.+)$' -and $val) {
                 $comboEntries += @{ name = $key; combo = $matches[1]; value = $val }
             }
         }
@@ -176,24 +176,13 @@ if (-not $apiKey -or $apiKey -eq "sk-your-api-key-here") {
     }
 
     if ($modelsOk -and $comboEntries.Count -gt 0) {
-        $availableModels = @()
-        if ($models.data) {
-            $availableModels = $models.data | Select-Object -ExpandProperty id
-        }
-
         $validCombos = @()
         foreach ($entry in $comboEntries) {
             $comboModels = $entry.value -split ','
             $validModels = @()
             foreach ($m in $comboModels) {
-                $mTrim = $m.Trim()
-                # Strip angle brackets in case user copied template format <model1>,<model2>
-                $mClean = $mTrim -replace '^<|>$', ''
-                if ($mClean -in $availableModels) {
-                    $validModels += $mClean
-                } else {
-                    Write-Info "  Model '$mClean' not found in 9Router - skipping"
-                }
+                $mClean = $m.Trim() -replace '^<|>$', ''
+                if ($mClean) { $validModels += $mClean }
             }
             if ($validModels.Count -gt 0) {
                 $validCombos += @{ name = $entry.combo; models = $validModels }

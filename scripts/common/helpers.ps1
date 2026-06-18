@@ -108,6 +108,38 @@ function Stop-OllamaModels {
     } catch {}
 }
 
+# ── 9Router Helpers ──
+
+function Start-9Router {
+    $nodePids = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match [regex]::Escape($script:ROUTER_DIR) } | Select-Object -ExpandProperty ProcessId
+    if ($nodePids) {
+        $nodePids | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+        Start-Sleep -Seconds 2
+    }
+    if (-not (Test-Path "$($script:ROUTER_DIR)\.next\standalone\.next\static")) {
+        if (Test-Path "$($script:ROUTER_DIR)\.next\static") {
+            Copy-Item -Path "$($script:ROUTER_DIR)\.next\static" -Destination "$($script:ROUTER_DIR)\.next\standalone\.next\static" -Recurse -Force
+        }
+    }
+    $env:PORT = "20128"
+    $env:NODE_ENV = "production"
+    $env:DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"
+    $env:INITIAL_PASSWORD = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }
+    Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $script:ROUTER_DIR
+
+    $maxWait = 15; $waited = 0
+    while ($waited -lt $maxWait) {
+        Start-Sleep -Seconds 1; $waited++
+        try {
+            $null = Invoke-RestMethod -Uri "$($script:API_URL)/api/health" -TimeoutSec 2 -ErrorAction Stop
+            Write-OK "9Router started (${waited}s)"
+            return $true
+        } catch {}
+    }
+    Write-Fail "9Router not reachable after ${maxWait}s"
+    return $false
+}
+
 # ── GPU Helpers ──
 
 function Get-GPUInfo {

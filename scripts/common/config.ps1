@@ -2,7 +2,14 @@
 # Usage: . "$PSScriptRoot\config.ps1"
 
 if (-not $script:ROOT_DIR) {
-    $script:ROOT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
+    # Use the calling script's location to find project root
+    $callingScript = $MyInvocation.ScriptName
+    if ($callingScript) {
+        $script:ROOT_DIR = Split-Path -Parent (Split-Path -Parent $callingScript)
+    } else {
+        # Fallback: go up two levels from this config file (common/config.ps1)
+        $script:ROOT_DIR = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+    }
 }
 
 # ── URLs ──

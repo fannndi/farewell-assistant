@@ -45,31 +45,8 @@ if (-not $routerRunning) {
         finally { Pop-Location }
         Write-OK "9Router built"
     }
-    $standaloneStatic = "$($script:ROUTER_DIR)\.next\standalone\.next\static"
-    if (-not (Test-Path $standaloneStatic)) {
-        Write-Info "Copying static files for standalone..."
-        Copy-Item -Path "$($script:ROUTER_DIR)\.next\static" -Destination $standaloneStatic -Recurse -Force
-        Write-OK "Static files copied"
-    }
-
-    $env:PORT = "20128"
-    $env:DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"
-    $env:NODE_ENV = "production"
-    $env:INITIAL_PASSWORD = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }
-    Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $script:ROUTER_DIR
-
-    $maxWait = 15; $waited = 0
-    while ($waited -lt $maxWait) {
-        Start-Sleep -Seconds 1; $waited++
-        try {
-            $null = Invoke-RestMethod -Uri "$($script:API_URL)/api/health" -TimeoutSec 2 -ErrorAction Stop
-            Write-OK "9Router started successfully"
-            $routerRunning = $true
-            break
-        } catch {}
-    }
-    if (-not $routerRunning) {
-        Write-Fail "9Router not reachable after ${maxWait}s"
+    if (Start-9Router) {
+        $routerRunning = $true
     }
 }
 

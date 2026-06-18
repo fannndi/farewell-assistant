@@ -15,6 +15,9 @@ api-key.txt
 ecc/
 9router/
 
+# Model files (large GGUF binaries, not tracked)
+models/
+
 # OS
 Thumbs.db
 Desktop.ini

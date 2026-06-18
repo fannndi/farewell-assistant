@@ -91,17 +91,7 @@ function Write-Pull9Router {
                 Write-Skip "package.json unchanged, npm skipped"
             }
             Write-Host "  Restarting 9Router..." -ForegroundColor Gray
-            $nodePids = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -match [regex]::Escape($script:ROUTER_DIR) } | Select-Object -ExpandProperty ProcessId
-            if ($nodePids) {
-                $nodePids | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
-                Start-Sleep -Seconds 2
-            }
-            if (-not (Test-Path "$($script:ROUTER_DIR)\.next\standalone\.next\static")) {
-                Copy-Item -Path "$($script:ROUTER_DIR)\.next\static" -Destination "$($script:ROUTER_DIR)\.next\standalone\.next\static" -Recurse -Force
-            }
-            $pw = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }
-            Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $script:ROUTER_DIR -Environment @{ PORT = "20128"; NODE_ENV = "production"; DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"; INITIAL_PASSWORD = "$pw" }
-            Write-OK "9Router restarted with new version"
+            Start-9Router
         } else {
             Write-Skip "9Router: already up to date"
         }
@@ -220,6 +210,27 @@ if ($issues.Count -eq 0) {
 } else {
     foreach ($issue in $issues) {
         Write-Fail $issue
+    }
+}
+
+# ============================================================
+#  Step 3b/4: Ensure 9Router Running
+# ============================================================
+
+Write-Step "3b/4" "Ensure 9Router Running"
+
+$routerHealthy = $false
+try {
+    $null = Invoke-RestMethod -Uri "$($script:API_URL)/api/health" -TimeoutSec 3 -ErrorAction Stop
+    $routerHealthy = $true
+    Write-OK "9Router is healthy"
+} catch {}
+
+if (-not $routerHealthy) {
+    Write-Host "  9Router not running, starting..." -ForegroundColor Yellow
+    if (Start-9Router) {
+        Write-OK "9Router started successfully"
+        $issues = $issues | Where-Object { $_ -notmatch "9Router not running" }
     }
 }
 

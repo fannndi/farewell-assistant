@@ -26,7 +26,7 @@ Universal goal-based command. Satu command untuk semua task.
 ## Constraints
 
 Otomatis dari system:
-- Profile: dari session (gratis/go)
+- Profile: dari session (Free/Emergency combo)
 - Project: dari registry (active)
 - Mode: dari llm-mode.json (eco/on)
 

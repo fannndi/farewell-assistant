@@ -1,6 +1,5 @@
 # Runtime state
 .opencode/
-!projects/context/.gitkeep
 
 # Logging
 logging.md

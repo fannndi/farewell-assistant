@@ -89,31 +89,14 @@ function Write-StartReport {
 
     # Work mode & skills
     $workMode = Get-WorkMode
-    $skillCount = 0
-    if (Test-Path $script:SKILL_IDX_FILE) {
-        try {
-            $idx = Get-Content $script:SKILL_IDX_FILE -Raw | ConvertFrom-Json
-            $md = $idx.$workMode
-            if ($md -and $md.skills) { foreach ($g in $md.skills.PSObject.Properties) { $skillCount += $g.Value.Count } }
-        } catch {}
-    }
+    $skillCount = Get-SkillCount -WorkMode $workMode
 
     # Autostart
     $taskExists = $false
     try { $taskExists = (Get-ScheduledTask -TaskName $script:TASK_NAME -ErrorAction Stop) -ne $null } catch {}
 
     # Read combo models from 9Router SQLite
-    $comboDbModels = @()
-    $dbPath = "$env:USERPROFILE\AppData\Roaming\9router\db\data.sqlite"
-    if (Test-Path $dbPath -ErrorAction SilentlyContinue -PathType Leaf) {
-        try {
-            $dbPathFs = $dbPath -replace '\\', '/'
-            Push-Location $script:ROUTER_DIR
-            $nodeScript = "const Database = require('better-sqlite3'); const db = new Database('$dbPathFs', {readonly: true}); const combos = db.prepare('SELECT name, kind, models FROM combos ORDER BY createdAt ASC').all(); combos.forEach(c => console.log(JSON.stringify({name:c.name, kind:c.kind, models:JSON.parse(c.models||'[]')}))); db.close();"
-            $comboDbModels = node -e $nodeScript 2>$null | Where-Object { $_ -match '^\{"name"' } | ForEach-Object { try { $_ | ConvertFrom-Json } catch {} }
-            Pop-Location
-        } catch { Pop-Location }
-    }
+    $comboDbModels = Get-ComboDetails
 
     # Agent-to-combo mapping
     $agentMap = @{}

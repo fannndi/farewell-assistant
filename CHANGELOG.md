@@ -4,6 +4,39 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.3.4] - 2026-06-19 - Audit fix: critical bugs, docs sync, redundant deps
+
+### Fixed (Critical)
+- **llm-setup.ps1**: `ROOT_DIR` computation wrong — `Split-Path -Parent` dipanggil 2x dari `scripts/`, hasilnya parent folder project. Fix ke 1 level.
+- **check-enrich.ps1**: `$Input` parameter name shadowing PowerShell automatic variable. Rename ke `$InputText`.
+- **check-enrich.ps1**: Wrong file reference `llm-mode.ps1` → `llm-setup.ps1`.
+
+### Fixed (Docs sync)
+- **preprocess.md**: BUILD skill count 23 → 24 (actual count). Plus behavioral impact table + footer example.
+- **preprocess.md**: Missing skill groups di step 5 (planning, deployment, agent_eng).
+- **preprocess.md**: Dynamic rendering path `projects/<active>/kategori` → `projects/registry.json → projects[active].kategori`.
+- **context.md**: Remove ghost file refs (`initial.ps1`, `owner.ps1`). Add missing files (`skill-index.json`, hooks/, commands/).
+- **go.md**: Profile reference `gratis/go` → `Free/Emergency combo`.
+- **api-key.example.txt**: Remove plaintext default password `123456` → `CHANGE_ME`.
+- **registry.json**: Update `last_used` dates `2026-06-17` → `2026-06-19`.
+
+### Added (Shared functions)
+- **helpers.ps1**: `Get-SkillCount` — centralized skill counting, replaces 3x duplicate logic in start.ps1, log.ps1, workmode.ps1.
+- **helpers.ps1**: `Get-ComboDetails` — read combo models from 9Router SQLite, replaces inline Node.js script in start.ps1.
+- **commands/workmode.md**: New command doc file (was ghost).
+- **commands/enrich-check.md**: New command doc file (was ghost).
+
+### Changed
+- **config.ps1**: Port 20128/11434 now configurable via `$env:ROUTER_PORT` / `$env:OLLAMA_PORT`.
+- **mcp-config.example.json**: Remove retired `sequential-thinking` MCP (ECC 2.0.0), keep context7/github/memory.
+- **.gitignore**: Remove redundant `!projects/context/.gitkeep` (no-op). Remove `.opencode/.gitignore` (whole dir already ignored by root).
+
+### Cleanup
+- **context/farewell-assistant.md**: +hook scripts, +skill-index.json, +all command docs to "Key files" list.
+- **CHANGELOG.md 1.0.0**: Fix internal count errors (8 vs 7 scripts, 7 vs 5 custom commands).
+
+---
+
 ## [1.3.3] - 2026-06-19 - Full Status Report + Model Health Ping
 
 ### Added
@@ -99,7 +132,7 @@ Semua perubahan penting di farewell-assistant.
 - Multi-project support via registry + context files
 - Smart enrichment: auto-skip untuk input sederhana
 
-### Scripts (7)
+### Scripts (8)
 - **setup.ps1** - First install: clone ECC, 9Router, apply profile
 - **start.ps1** - Daily startup: health check, apply profile
 - **llm-adapter.ps1** - Ollama API wrapper + smart enrichment
@@ -113,13 +146,12 @@ Semua perubahan penting di farewell-assistant.
 - **gratis** - Free models via 9Router
 - **go** - Paid models via 9Router
 
-### Instructions (3 files, ~800 tokens)
-- **user-rules.md** - Core rules (presisi, max 2 tanya)
-- **preprocess.md** - Enrichment pipeline (smart-skip)
-- **footer.md** - Footer format (1 baris)
+### Instructions (2 files)
+- **user-rules.md** - Core rules + ROLE enforcement
+- **preprocess.md** - Enrichment pipeline + footer format
 
-### Commands (14)
-- Custom (5): setup, start-free, start-go, admin, go, llm, detect
+### Commands (16)
+- Custom (7): setup, start-free, start-go, admin, go, llm, detect
 - ECC (9): plan, tdd, code-review, security-scan, build-fix, verify, update-docs
 
 ### Agents (7)

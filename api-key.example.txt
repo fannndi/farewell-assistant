@@ -2,8 +2,8 @@
 # Get API key from: http://localhost:20128/dashboard
 NINEROUTER_API_KEY=sk-your-api-key-here
 
-# Dashboard password (default: 123456)
-9ROUTER_PASSWORD=123456
+# Dashboard password — SET THIS to a strong password in 9Router dashboard
+9ROUTER_PASSWORD=CHANGE_ME
 
 # === Combo Definitions ===
 # Format: COMBO_<numeric>=<9router_combo_name>

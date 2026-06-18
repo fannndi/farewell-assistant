@@ -14,8 +14,8 @@ Setiap user input setelah Session Init:
    - Infer GPU: eco → off, on → on
 5. READ WORK MODE:
    - Baca .opencode/work-mode.json → ambil mode (plan / build)
-   - PLAN mode: gunakan skill audit, research, explore
-   - BUILD mode: gunakan skill orchestration, tdd, coding, security
+   - PLAN mode: gunakan skill audit, research, explore, planning
+   - BUILD mode: gunakan skill orchestration, tdd, coding, security, deployment, agent_eng
 6. COUNT SKILLS:
    - Baca projects/skill-mode-index.json → skills[work_mode]
    - Hitung total = sum semua skill di semua group
@@ -53,7 +53,7 @@ System harus validasi bahwa kategori di footer hanya berasal dari project aktif:
 | Mode | Skill Groups | Allowed Tools | Behavior |
 |------|-------------|---------------|----------|
 | PLAN | audit, research, explore, planning | read, bash | Read-only, tidak edit file |
-| BUILD | orchestration, tdd, coding, security, deployment | read, bash, write, edit | Implementasi, test, commit |
+| BUILD | orchestration, tdd, coding, security, deployment, agent_eng | read, bash, write, edit | Implementasi, test, commit |
 
 Default: BUILD.
 
@@ -64,7 +64,7 @@ Default: BUILD.
 Setelah setiap respons (kecuali Session Init), append 1 baris:
 
 ```
-Session: farewell-assistant | Kategori: AUTOMATION | Mode: eco | GPU: off | Work: BUILD | Skills: ON - 23
+Session: farewell-assistant | Kategori: AUTOMATION | Mode: eco | GPU: off | Work: BUILD | Skills: ON - 24
 ```
 
 ### Dynamic Rendering
@@ -72,7 +72,7 @@ Session: farewell-assistant | Kategori: AUTOMATION | Mode: eco | GPU: off | Work
 Footer **harus** di-render secara dinamis berdasarkan registry + mode state:
 
 1. Baca `projects/registry.json` → ambil field `active`
-2. Baca `projects/<active>/kategori` → ambil semua unique values
+2. Baca `projects/registry.json` → projects[active].kategori → ambil semua unique values
 3. Sorted by importance: `WEB > MOBILE > AI_ML > DATA > INFRA > AUTOMATION`
 4. Baca `.opencode/llm-mode.json` → ambil field `mode`
 5. Infer GPU: mode == "on" → `GPU: on`, mode == "eco" → `GPU: off`
@@ -86,9 +86,9 @@ Footer ini bukan sekadar display — mempengaruhi behavior AI:
 
 | Mode | GPU | Work | Skills | AI Behavior |
 |------|-----|------|--------|-------------|
-| eco | off | BUILD | ON - 23 | Self-reliant, 23 skill aktif, execute mode |
+| eco | off | BUILD | ON - 24 | Self-reliant, 24 skill aktif, execute mode |
 | eco | off | PLAN | ON - 20 | Read-only, 20 skill aktif, audit mode |
-| on | on | BUILD | ON - 23 | Local LLM + 23 skill, full power |
+| on | on | BUILD | ON - 24 | Local LLM + 24 skill, full power |
 | on | on | PLAN | ON - 20 | Local LLM + 20 skill, analyze mode |
 
 Footer bersifat informatif, sekaligus behavioral switch.

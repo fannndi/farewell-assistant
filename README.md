@@ -135,20 +135,19 @@ Atau di dalam opencode: `/start`
 ```
 farewell-assistant/
 ├── scripts/
-│   ├── start.ps1                  # ★ Konsolidasi: 7-step bootstrap + update + config + launch
+│   ├── start.ps1                  # ★ Konsolidasi: 7-step bootstrap + update + config + report + launch
 │   ├── autostart.ps1              # Scheduled Task manager
 │   ├── llm-setup.ps1              # LLM config (eco/on/hot/balance/performance)
 │   ├── workmode.ps1               # Switch work mode
 │   ├── detect-project.ps1         # Project type detection
 │   ├── common/
-│   │   ├── config.ps1             # URLs, paths, constants
-│   │   ├── helpers.ps1            # Start-9Router, Stop-9Router, Ollama, GPU, LLM enrichment
+│   │   ├── config.ps1             # URLs, paths, constants (port configurable via env)
+│   │   ├── helpers.ps1            # Start-9Router, Ollama, GPU, LLM, Get-SkillCount, Get-ComboDetails
 │   │   ├── log.ps1                # Write-TaskLog, Sync-SessionState
 │   │   └── start-9router-bg.ps1   # Hidden wrapper for Scheduled Task
 │   └── hooks/
 │       ├── self-heal.ps1          # Post-edit typecheck (project-aware)
-│       ├── check-enrich.ps1       # Enrichment diagnostic
-│       └── hook-registry.json
+│       └── check-enrich.ps1       # Enrichment diagnostic
 ├── profiles/combo/opencode.jsonc
 ├── instructions/
 │   ├── user-rules.md
@@ -159,6 +158,7 @@ farewell-assistant/
 ├── projects/
 │   ├── registry.json
 │   ├── skill-mode-index.json
+│   ├── skill-index.json
 │   └── context/
 ├── 9router/                       # Clone (gitignored)
 ├── ecc/                           # ECC skills (gitignored)
@@ -187,10 +187,9 @@ farewell-assistant/
 | Metric | opencode-setup | farewell-assistant |
 |--------|---------------|-------------------|
 | Total tracked files | ~150+ | ~35 |
-| Scripts | 64 | 5 (+3 common, +3 hooks) |
-| Commands | ~50 | 10 (custom + ECC) |
-| Instructions loaded | 19 | 4 |
-| Instruction tokens | ~5000+ | ~800 |
+| Scripts | 64 | 5 (+4 common, +3 hooks) |
+| Commands | ~50 | 8 (custom) + ECC |
+| Instructions | 19 | 2 |
 | Pipeline steps | 8+ | 3 |
 | Multi-project | Overcomplicated | Simple registry |
 | Startup command | Manual | 1 perintah: `/start` |

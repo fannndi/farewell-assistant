@@ -2,7 +2,7 @@
   "projects": {
     "farewell-assistant": {
       "type": "powershell",
-      "last_used": "2026-06-17",
+      "last_used": "2026-06-19",
       "context_file": "context/farewell-assistant.md",
       "kategori": {
         "ecc/": "AUTOMATION",
@@ -18,7 +18,7 @@
       "dominan": "AUTOMATION"
     },
     "service-hub": {
-      "last_used": "2026-06-17",
+      "last_used": "2026-06-19",
       "context_file": "context/service-hub.md",
       "kategori": {
         ".github/": "AUTOMATION",

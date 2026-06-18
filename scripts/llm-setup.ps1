@@ -21,7 +21,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$script:ROOT_DIR = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$script:ROOT_DIR = Split-Path -Parent $PSScriptRoot
 
 . "$PSScriptRoot\common\helpers.ps1"
 . "$PSScriptRoot\common\config.ps1"

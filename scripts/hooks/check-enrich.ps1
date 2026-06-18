@@ -1,8 +1,8 @@
 # Check Enrichment - Verify enrichment pipeline is working
-# Usage: .\hooks\check-enrich.ps1 -Input "test input"
+# Usage: .\hooks\check-enrich.ps1 -InputText "test input"
 # Diagnostic command (not a hook). Validates Invoke-LLMEnrich end-to-end.
 
-param([string]$Input)
+param([string]$InputText)
 
 $ErrorActionPreference = "Continue"
 
@@ -21,18 +21,18 @@ Write-Host ""
 
 if ($mode -eq "eco") {
     Write-Host "  [ECO] Enrichment disabled. Switch to ON mode:" -ForegroundColor Yellow
-    Write-Host "    .\scripts\llm-mode.ps1 on" -ForegroundColor Gray
+    Write-Host "    .\scripts\llm-setup.ps1 on" -ForegroundColor Gray
     return
 }
 
-Write-Host "  Testing enrichment with: $Input" -ForegroundColor Gray
+Write-Host "  Testing enrichment with: $InputText" -ForegroundColor Gray
 $start = Get-Date
-$result = Invoke-LLMEnrich -Text $Input -Force
+$result = Invoke-LLMEnrich -Text $InputText -Force
 $elapsed = ((Get-Date) - $start).TotalSeconds
 
-if ($result -ne $Input) {
+if ($result -ne $InputText) {
     Write-Host "  [OK] Enrichment working" -ForegroundColor Green
-    Write-Host "  Input:    $Input" -ForegroundColor Gray
+    Write-Host "  Input:    $InputText" -ForegroundColor Gray
     Write-Host "  Enriched: $result" -ForegroundColor Gray
     Write-Host "  Time:     $([math]::Round($elapsed, 1))s" -ForegroundColor Gray
 } else {

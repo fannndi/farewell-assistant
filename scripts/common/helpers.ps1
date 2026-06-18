@@ -316,6 +316,50 @@ function Invoke-LLM {
     return $null
 }
 
+# -- Shared Helpers (extracted from duplicate logic) --
+
+function Get-SkillCount {
+    param([string]$WorkMode)
+    $count = 0
+    if (Test-Path $script:SKILL_IDX_FILE) {
+        try {
+            $idx = Get-Content $script:SKILL_IDX_FILE -Raw | ConvertFrom-Json
+            $md = $idx.$WorkMode
+            if ($md -and $md.skills) { foreach ($g in $md.skills.PSObject.Properties) { $count += $g.Value.Count } }
+        } catch { Write-Verbose "Get-SkillCount failed: $_" }
+    }
+    return $count
+}
+
+function Parse-ApiKeyFile {
+    $entries = @()
+    if (-not (Test-Path $script:API_KEY_FILE)) { return $entries }
+    Get-Content $script:API_KEY_FILE | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -match '^([A-Z_0-9]+)=(.*)') {
+            $key = $matches[1]; $val = $matches[2]
+            Set-Item -Path "env:$key" -Value $val -ErrorAction SilentlyContinue
+            if ($key -eq "NINEROUTER_API_KEY") { $entries = @{ key = $key; value = $val } + $entries; return }
+            $entries += @{ key = $key; value = $val }
+        }
+    }
+    return $entries
+}
+
+function Get-ComboDetails {
+    $combos = @()
+    $dbPath = "$env:USERPROFILE\AppData\Roaming\9router\db\data.sqlite"
+    if (-not (Test-Path $dbPath -PathType Leaf)) { return $combos }
+    try {
+        $dbPathFs = $dbPath -replace '\\', '/'
+        $nodeScript = "const Database = require('better-sqlite3'); const db = new Database('$dbPathFs', {readonly:true}); const combos = db.prepare('SELECT name,kind,models FROM combos ORDER BY createdAt ASC').all(); combos.forEach(c => console.log(JSON.stringify({name:c.name,kind:c.kind,models:JSON.parse(c.models||'[]')}))); db.close();"
+        Push-Location $script:ROUTER_DIR
+        $combos = node -e $nodeScript 2>$null | Where-Object { $_ -match '^\{"name"' } | ForEach-Object { try { $_ | ConvertFrom-Json } catch {} }
+        Pop-Location
+    } catch { Pop-Location }
+    return $combos
+}
+
 # -- Smart Enrichment --
 
 function Invoke-LLMEnrich {

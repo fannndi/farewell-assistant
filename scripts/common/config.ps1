@@ -9,9 +9,11 @@ if (-not $script:ROOT_DIR) {
     $script:ROOT_DIR = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 }
 
-# -- URLs --
-$script:OLLAMA_URL = "http://localhost:11434"
-$script:API_URL    = "http://localhost:20128"
+# -- URLs (configurable via env vars) --
+$script:OLLAMA_PORT = $env:OLLAMA_PORT ?? "11434"
+$script:ROUTER_PORT = $env:ROUTER_PORT ?? "20128"
+$script:OLLAMA_URL = "http://localhost:$($script:OLLAMA_PORT)"
+$script:API_URL    = "http://localhost:$($script:ROUTER_PORT)"
 
 # -- Directories --
 $script:ECC_DIR       = "$($script:ROOT_DIR)\ecc"

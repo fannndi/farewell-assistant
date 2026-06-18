@@ -56,18 +56,7 @@ function Sync-SessionState {
         $gpu = if ($mode -eq "eco") { "off" } else { "on" }
 
         # Skill count from skill-mode-index.json
-        $skillCount = 0
-        if (Test-Path $script:SKILL_IDX_FILE) {
-            try {
-                $idx = Get-Content $script:SKILL_IDX_FILE -Raw | ConvertFrom-Json
-                $modeData = $idx.$work
-                if ($modeData -and $modeData.skills) {
-                    foreach ($g in $modeData.skills.PSObject.Properties) {
-                        $skillCount += $g.Value.Count
-                    }
-                }
-            } catch {}
-        }
+        $skillCount = Get-SkillCount -WorkMode $work
 
         # Write session-state.json
         $state = @{

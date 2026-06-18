@@ -60,12 +60,12 @@ function Write-JsonState {
 
 function Get-LLMMode {
     $state = Read-JsonState -Path $script:LLM_MODE_FILE -Default { return @{ mode = "eco"; model = "" } }
-    return if ($state.mode) { $state.mode } else { "eco" }
+    if ($state.mode) { return $state.mode } else { return "eco" }
 }
 
 function Get-WorkMode {
     $state = Read-JsonState -Path $script:WORK_MODE_FILE -Default { return @{ mode = "build" } }
-    return if ($state.mode) { $state.mode } else { "build" }
+    if ($state.mode) { return $state.mode } else { return "build" }
 }
 
 function Get-LLMModel {

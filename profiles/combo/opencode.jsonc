@@ -85,6 +85,10 @@
   },
 
   "command": {
+    "workmode": {
+      "description": "Switch work mode: plan / build / status",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\workmode.ps1\" $ARGUMENTS"
+    },
     "initial": {
       "description": "One-time install for new laptop",
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\initial.ps1\" $ARGUMENTS"
@@ -155,3 +159,4 @@
     "mcp_*": "ask"
   }
 }
+

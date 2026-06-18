@@ -93,3 +93,27 @@ Footer ini bukan sekadar display — mempengaruhi behavior AI:
 
 Footer bersifat informatif, sekaligus behavioral switch.
 
+---
+
+## ROLE Enforcement
+
+Work mode (plan/build) adalah **role** yang ditentukan user. AI **DILARANG** mengganti mode sendiri.
+
+### Aturan Keras
+1. AI **TIDAK BOLEH** auto-switch work mode - hanya user yang bisa via /workmode
+2. Jika user minta eksekusi (/go, edit, write) tapi mode = PLAN -> **HENTIKAN** dan minta user switch mode
+3. Jika user minta analisa/audit tapi mode = BUILD -> **TETAP EKSEKUSI** (BUILD bisa semua)
+4. Mode switch hanya melalui /workmode plan atau /workmode build - tidak ada cara lain
+
+### Refusal Pattern
+```
+User: /go bikin CRUD user
+AI:   "Anda sedang dalam PLAN mode. Untuk eksekusi, gunakan /workmode build terlebih dahulu."
+```
+
+### Logging Rule
+AI **WAJIB** log setiap task stage ke file logging.md (project root, gitignored):
+```
+[timestamp] STAGE: <nama_stage> | ACTION: <apa yg dilakukan> | RESULT: <success/fail> | FILES: <file yg disentuh>
+```
+

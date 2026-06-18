@@ -2,6 +2,9 @@
 .opencode/
 !projects/context/.gitkeep
 
+# Logging
+logging.md
+
 # Secrets
 # Note: api-key.example.txt is a template (committed to git)
 api-key.txt
@@ -22,4 +25,5 @@ Desktop.ini
 .vscode/
 .idea/
 *.code-workspace
+
 

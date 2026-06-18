@@ -63,16 +63,13 @@ Mode: `eco` (GPU off) atau `on` (GPU active, ~1GB VRAM).
 git clone https://github.com/fannndi/farewell-assistant.git
 cd farewell-assistant
 
-# 2. Edit api-key.txt — isi key 9Router & key lain
-#    (key dari dashboard: http://localhost:20128/dashboard)
-
-# 3. Initial setup — clone ECC + 9Router, build, init state
+# 2. Initial setup — clone ECC + 9Router, build, guide you through config
 .\scripts\initial.ps1
 
-# 4. Daily start
+# 3. Daily start
 .\scripts\start.ps1
 
-# 5. (Optional) Enable 9Router autostart on Windows logon
+# 4. (Optional) Enable 9Router autostart on Windows logon
 .\scripts\autostart.ps1 -Action enable
 ```
 

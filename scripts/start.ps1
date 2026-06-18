@@ -40,7 +40,7 @@ try {
 if (-not $routerRunning) {
     $standaloneJs = "$($script:ROUTER_DIR)\.next\standalone\server.js"
     if (-not (Test-Path $standaloneJs)) {
-        Write-Info "Building 9Router..."
+        Write-Info "Building 9Router (may take 1-2 min)..."
         Push-Location $script:ROUTER_DIR
         try { npm run build 2>&1 | Out-Null }
         finally { Pop-Location }

@@ -104,7 +104,9 @@ if (-not (Test-Path $script:API_KEY_FILE)) {
 NINEROUTER_API_KEY=sk-your-api-key-here
 9ROUTER_PASSWORD=123456
 # === Combo Definitions ===
-# Format: COMBO_<Name>=<model1>,<model2>,<model3>
+# Format: COMBO_<numeric>=<model1>,<model2>,<model3>
+# COMBO_0, COMBO_1, ... (parser uses COMBO_\d+)
+COMBO_0=<model1>,<model2>,<model3>
 "@ | Set-Content -Path $script:API_KEY_FILE -Encoding UTF8
         Write-OK "api-key.txt created"
     }

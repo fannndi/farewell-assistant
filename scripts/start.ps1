@@ -576,6 +576,16 @@ if ($comboNamesFromFile.Count -gt 0) {
     $config = $config -replace '\$\{COMBO_1\}', $combo1
     $config = $config -replace '\$\{COMBO_MODELS\}', $comboModels
 
+    # Resolve context_file from registry
+    $contextSlug = "farewell-assistant"
+    try {
+        if (Test-Path $script:REGISTRY_FILE) {
+            $reg = Get-Content $script:REGISTRY_FILE -Raw | ConvertFrom-Json
+            if ($reg.active) { $contextSlug = $reg.active }
+        }
+    } catch {}
+    $config = $config -replace '\{context_file\}', $contextSlug
+
     New-Item -ItemType Directory -Path $script:OPENCODE_DIR -Force | Out-Null
     $config | Set-Content -Path $script:OPENCODE_CFG -Encoding UTF8
     Write-OK "Profile applied"

@@ -2,6 +2,9 @@
 # Usage: . "$PSScriptRoot\intent-router.ps1"
 # Depends on: enrichment-pipeline.ps1, skill-chain.ps1, helpers.ps1, config.ps1
 
+# -- Turn Counter --
+$script:TurnCount = 0
+
 # -- Main Router Function --
 
 function Invoke-IntentRouter {
@@ -16,6 +19,9 @@ function Invoke-IntentRouter {
     # Default values
     if (-not $WorkMode) { $WorkMode = Get-WorkMode }
     if (-not $ActiveProfile) { $ActiveProfile = Get-LLMMode }
+
+    # Increment turn counter
+    $script:TurnCount++
 
     # Step 1: Classify intent (structured or quick)
     $classified = Get-CachedIntent -Input $TextInput
@@ -33,11 +39,13 @@ function Invoke-IntentRouter {
     # Step 2: Check permissions against work mode
     $permission = Test-TaskPermission -Intent $classified -WorkMode $WorkMode
     if (-not $permission.allowed) {
-        return @{
+        $result = @{
             success = $false
             reason = $permission.reason
             intent = $classified
         }
+        Sync-TurnState -Result $Result
+        return $result
     }
 
     # Step 3: Build skill chain
@@ -49,7 +57,11 @@ function Invoke-IntentRouter {
     # Step 5: Determine if planning phase is needed
     $needsPlanning = $classified.complexity -eq "high" -and $classified.intent -eq "build"
 
-    return @{
+    # Step 6: Build blocked intents list
+    $blocked = @()
+    if ($WorkMode -eq "plan") { $blocked = @("build", "fix", "deploy") }
+
+    $result = @{
         success = $true
         intent = $classified
         skill_chain = $chain
@@ -57,7 +69,15 @@ function Invoke-IntentRouter {
         needs_planning = $needsPlanning
         work_mode = $WorkMode
         profile = $ActiveProfile
+        turn = $script:TurnCount
+        blocked = $blocked
+        chain_summary = ($chain | ForEach-Object { $_.name }) -join " → "
     }
+
+    # Step 7: Persist to context files
+    Sync-TurnState -Result $result -Input $TextInput
+
+    return $result
 }
 
 # -- Permission Check --
@@ -143,4 +163,125 @@ function Show-IntentRouterResult {
     Write-Host ""
     Write-Host "  =================================================" -ForegroundColor Cyan
     Write-Host ""
+}
+
+# -- Persist Turn State to Context Files --
+
+function Sync-TurnState {
+    param($Result, [string]$Input = "")
+
+    $stateDir = if ($script:STATE_DIR) { $script:STATE_DIR } else { "$($script:ROOT_DIR)\.opencode" }
+
+    # 1. Write pipeline-result.json (structured, machine-readable)
+    $pipelineData = @{
+        timestamp = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
+        input = $Input
+        turn = $Result.turn ?? $script:TurnCount
+    }
+
+    if ($Result.success) {
+        $pipelineData.intent = $Result.intent.intent
+        $pipelineData.domain = $Result.intent.domain
+        $pipelineData.stack = $Result.intent.stack
+        $pipelineData.complexity = $Result.intent.complexity
+        $pipelineData.confidence = $Result.intent.confidence
+        $pipelineData.source = $Result.intent.source
+        $pipelineData.needs_planning = $Result.needs_planning
+        $pipelineData.model_primary = $Result.model_route.primary
+        $pipelineData.model_heavy = $Result.model_route.heavy
+        $pipelineData.chain = ($Result.skill_chain | ForEach-Object { $_.name })
+        $pipelineData.chain_summary = $Result.chain_summary
+        $pipelineData.blocked = $Result.blocked
+        $pipelineData.work_mode = $Result.work_mode
+        $pipelineData.profile = $Result.profile
+    } else {
+        $pipelineData.blocked = $true
+        $pipelineData.reason = $Result.reason
+        $pipelineData.intent = $Result.intent.intent
+    }
+
+    $pipelineJson = $pipelineData | ConvertTo-Json -Depth 5
+    $pipelinePath = Join-Path $stateDir "pipeline-result.json"
+    try {
+        New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+        $pipelineJson | Set-Content -Path $pipelinePath -Encoding UTF8
+    } catch { Write-Verbose "Sync-TurnState: Failed to write pipeline-result.json: $_" }
+
+    # 2. Update context.md (human-readable, AI-injectable)
+    $mode = "eco"
+    $work = "BUILD"
+    try {
+        $modeData = Get-Content (Join-Path $stateDir "llm-mode.json") -Raw | ConvertFrom-Json
+        if ($modeData.mode) { $mode = $modeData.mode }
+    } catch {}
+    try {
+        $workData = Get-Content (Join-Path $stateDir "work-mode.json") -Raw | ConvertFrom-Json
+        if ($workData.mode) { $work = $workData.mode.ToUpper() }
+    } catch {}
+
+    $active = "farewell-assistant"
+    $kategori = "AUTOMATION"
+    try {
+        if (Test-Path "$($script:ROOT_DIR)\projects\registry.json") {
+            $reg = Get-Content "$($script:ROOT_DIR)\projects\registry.json" -Raw | ConvertFrom-Json
+            if ($reg.active) { $active = $reg.active }
+            if ($reg.projects.$active.kategori) {
+                $katValues = @()
+                foreach ($kv in $reg.projects.$active.kategori.PSObject.Properties) { $katValues += $kv.Value }
+                $kategori = ($katValues | Select-Object -Unique) -join " > "
+            }
+        }
+    } catch {}
+
+    # Build chain display
+    $chainDisplay = ""
+    $intentDisplay = ""
+    $complexityDisplay = ""
+    $confidenceDisplay = ""
+    $stackDisplay = ""
+    $planningDisplay = ""
+    $blockedDisplay = ""
+    $modelDisplay = ""
+
+    if ($Result.success) {
+        $chainDisplay = $Result.chain_summary
+        $intentDisplay = $Result.intent.intent
+        $complexityDisplay = $Result.intent.complexity
+        $confidenceDisplay = "$([math]::Round($Result.intent.confidence * 100))%($($Result.intent.source))"
+        $stackDisplay = if ($Result.intent.stack.Count -gt 0) { ($Result.intent.stack -join ', ') } else { "-" }
+        $planningDisplay = if ($Result.needs_planning) { "yes" } else { "no" }
+        $blockedDisplay = if ($Result.blocked.Count -gt 0) { ($Result.blocked -join ', ') } else { "none" }
+        $modelDisplay = "$($Result.model_route.primary)/$($Result.model_route.heavy)"
+    } else {
+        $intentDisplay = "BLOCKED"
+        $blockedDisplay = $Result.reason
+    }
+
+    $turnCount = $Result.turn ?? $script:TurnCount
+    $contextContent = @"
+# Session State
+
+- **Project:** $active
+- **Kategori:** $kategori
+- **Mode:** $mode
+- **Work:** $work
+- **Started:** $(Get-Date -Format 'yyyy-MM-ddTHH:mm:sszzz')
+
+# Turn State
+
+- **Intent:** $intentDisplay
+- **Complexity:** $complexityDisplay
+- **Confidence:** $confidenceDisplay
+- **Stack:** $stackDisplay
+- **Chain:** $chainDisplay
+- **Model:** $modelDisplay
+- **Planning:** $planningDisplay
+- **Blocked:** $blockedDisplay
+- **Turn:** $turnCount
+"@
+
+    $contextPath = Join-Path $stateDir "context.md"
+    try {
+        $contextContent | Set-Content -Path $contextPath -Encoding UTF8
+    } catch { Write-Verbose "Sync-TurnState: Failed to write context.md: $_" }
 }

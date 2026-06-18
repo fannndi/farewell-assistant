@@ -188,26 +188,60 @@ Default: BUILD.
 
 ---
 
+## Context Injection (Precision Context System)
+
+Setiap turn, pipeline menghasilkan context yang di-inject ke AI melalui 2 file:
+
+### 1. `pipeline-result.json` (machine-readable)
+Ditulis oleh `Invoke-IntentRouter` setelah klasifikasi:
+```json
+{
+  "intent": "build",
+  "domain": "automation",
+  "stack": ["powershell"],
+  "complexity": "medium",
+  "confidence": 0.85,
+  "chain": ["orch-add-feature", "powershell-patterns", "tdd-workflow"],
+  "model_primary": "Free",
+  "needs_planning": false,
+  "turn": 12
+}
+```
+
+### 2. `context.md` (AI-readable, injected via instructions array)
+Berisi session state + turn state yang diupdate setiap turn:
+```markdown
+# Session State
+- **Project:** farewell-assistant
+- **Mode:** eco
+- **Work:** BUILD
+
+# Turn State
+- **Intent:** build
+- **Complexity:** medium
+- **Chain:** orch-add-feature → powershell-patterns → tdd-workflow
+- **Model:** Free/Free
+- **Turn:** 12
+```
+
+### Data Flow
+
+```
+User Input
+  → Invoke-IntentRouter (classify + route)
+  → Sync-TurnState (tulis ke pipeline-result.json + context.md)
+  → AI reads context.md (lihat semua data)
+  → AI execute (dengan konteks lengkap)
+```
+
+---
+
 ## Footer Format
 
-Setelah setiap respons (kecuali Session Init), append 1 baris:
-
+Footer compact untuk display (opsional):
 ```
-Session: farewell-assistant | Kategori: AUTOMATION | Mode: eco | GPU: off | Work: BUILD | Skills: ON - 24
+Intent: build | Chain: 4 steps | Model: Free | Work: BUILD | Turn: 12
 ```
-
-### Dynamic Rendering
-
-Footer **harus** di-render secara dinamis berdasarkan registry + mode state:
-
-1. Baca `projects/registry.json` → ambil field `active`
-2. Baca `projects/registry.json` → projects[active].kategori → ambil semua unique values
-3. Sorted by importance: `WEB > MOBILE > AI_ML > DATA > INFRA > AUTOMATION`
-4. Baca `.opencode/llm-mode.json` → ambil field `mode`
-5. Infer GPU: mode == "on" → `GPU: on`, mode == "eco" → `GPU: off`
-6. Baca `.opencode/work-mode.json` → ambil field `mode`
-7. Baca `projects/skill-mode-index.json` → hitung total skill sesuai work mode
-8. Render: `Session: <active> | Kategori: <sorted kategori> | Mode: <mode> | GPU: <gpu> | Work: <work mode> | Skills: ON - <count>`
 
 ---
 

@@ -15,9 +15,16 @@ Key files:
   - scripts/common/helpers.ps1  — Start-9Router, Ollama, GPU, LLM, Get-SkillCount, Get-ComboDetails
   - scripts/common/log.ps1      — Write-TaskLog + Sync-SessionState
   - scripts/common/enrichment-pipeline.ps1 — ★ Structured enrichment (JSON intent classification via Ollama)
-  - scripts/common/intent-router.ps1      — ★ Intent → permission check → skill chain → model route
+  - scripts/common/intent-router.ps1      — ★ Intent → permission check → skill chain → model route + Sync-TurnState
   - scripts/common/skill-chain.ps1        — ★ Skill chain builder (12 built-in chains)
   - scripts/common/start-9router-bg.ps1   — hidden wrapper for Scheduled Task
+
+Runtime context files (written per-turn):
+  - .opencode/pipeline-result.json — ★ Machine-readable pipeline output (intent, domain, chain, model, turn)
+  - .opencode/context.md           — ★ AI-readable context (Session State + Turn State)
+  - .opencode/llm-mode.json        — Current LLM mode (eco/hot/balance/performance)
+  - .opencode/work-mode.json       — Current work mode (plan/build)
+  - .opencode/session-state.json   — Session metadata + task history
   - scripts/hooks/check-enrich.ps1 — enrichment pipeline diagnostic
   - scripts/hooks/self-heal.ps1 — auto-fix on file change
   - commands/go.md                — universal task execution template
@@ -37,6 +44,7 @@ Key files:
   - api-key.txt                 — NINEROUTER_API_KEY, 9ROUTER_PASSWORD, COMBO_* definitions (gitignored)
 
 Conventions:
+  - Precision Context System: pipeline writes to pipeline-result.json + context.md → AI reads
   - Intent-Driven Pipeline: Input → Quick Classify → Structured Enrich → Rule Check → Skill Chain → Model Route → Execute
   - Work mode (PLAN/BUILD) adalah ROLE — AI tidak boleh auto-switch, hanya user via /workmode
   - Skill chains: 12 built-in chains mapping intent+domain → sequential skill execution

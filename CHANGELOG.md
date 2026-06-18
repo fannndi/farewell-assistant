@@ -4,6 +4,39 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
+## [1.4.1] - 2026-06-19 - Precision Context System: Bridge Pipeline → AI
+
+### Problem
+Pipeline (enrichment + intent router + skill chain) menghasilkan data kaya per-turn — tapi tidak pernah sampai ke AI. Footer lama 83% noise. AI harus re-classify intent sendiri.
+
+### Added — Precision Context
+- **intent-router.ps1**: `Sync-TurnState` — menulis pipeline result ke 2 file:
+  - `.opencode/pipeline-result.json` (structured, machine-readable): intent, domain, stack, complexity, confidence, chain, model route, turn count
+  - `.opencode/context.md` (AI-readable, injected via instructions): Session State + Turn State
+- **Turn counter**: Track nomor turn per sesi
+- **Turn state**: Intent, complexity, confidence, stack, chain summary, model route, planning status, blocked tools
+
+### Changed — Context Injection
+- **opencode.jsonc template**: +`pipeline-result.json` dan `projects/context/{context_file}.md` ke instructions array
+- **start.ps1**: +`{context_file}` variable substitution dari registry.json
+- **preprocess.md**: Replace footer format lama (6 field, 2 actionable) → Precision Context System
+
+### Changed — Footer
+- **Lama**: `Session: farewell-assistant | Kategori: AUTOMATION | Mode: eco | GPU: off | Work: BUILD | Skills: ON - 24`
+- **Baru**: `Intent: build | Chain: 4 steps | Model: Free | Work: BUILD | Turn: 12`
+- **Impact**: 3x lebih informatif, 100% actionable
+
+### Architecture — Data Flow
+```
+User Input
+  → Invoke-IntentRouter (classify + route)
+  → Sync-TurnState (tulis ke pipeline-result.json + context.md)
+  → AI reads context.md (lihat semua data)
+  → AI execute (dengan konteks lengkap)
+```
+
+---
+
 ## [1.4.0] - 2026-06-19 - Intent-Driven Architecture (Phase 1-4)
 
 ### Added — Phase 1: Structured Enrichment

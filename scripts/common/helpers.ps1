@@ -70,7 +70,7 @@ function Get-WorkMode {
 
 function Get-LLMModel {
     $state = Read-JsonState -Path $script:LLM_MODE_FILE -Default { return @{ model = "" } }
-    return if ($state.model) { $state.model } else { "" }
+    if ($state.model) { return $state.model } else { return "" }
 }
 
 # -- Ollama Helpers --

@@ -176,7 +176,7 @@ function Sync-TurnState {
     $pipelineData = @{
         timestamp = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
         input = $Input
-        turn = $Result.turn ?? $script:TurnCount
+        turn = if ($Result.turn) { $Result.turn } else { $script:TurnCount }
     }
 
     if ($Result.success) {
@@ -257,7 +257,7 @@ function Sync-TurnState {
         $blockedDisplay = $Result.reason
     }
 
-    $turnCount = $Result.turn ?? $script:TurnCount
+    $turnCount = if ($Result.turn) { $Result.turn } else { $script:TurnCount }
     $contextContent = @"
 # Session State
 

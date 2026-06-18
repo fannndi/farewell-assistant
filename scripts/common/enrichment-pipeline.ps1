@@ -67,6 +67,8 @@ Rules:
         $stack = @()
         if ($parsed.stack -is [array]) { $stack = $parsed.stack }
         elseif ($parsed.stack) { $stack = @($parsed.stack) }
+        # Strip angle brackets from stack items
+        $stack = $stack | ForEach-Object { $_ -replace '^<|>$', '' } | Where-Object { $_ }
         $confidence = if ($parsed.confidence -gt 0) { [math]::Min(1.0, [math]::Max(0.0, $parsed.confidence)) } else { 0.5 }
 
         return @{

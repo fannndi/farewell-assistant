@@ -10,8 +10,8 @@ if (-not $script:ROOT_DIR) {
 }
 
 # -- URLs (configurable via env vars) --
-$script:OLLAMA_PORT = $env:OLLAMA_PORT ?? "11434"
-$script:ROUTER_PORT = $env:ROUTER_PORT ?? "20128"
+$script:OLLAMA_PORT = if ($env:OLLAMA_PORT) { $env:OLLAMA_PORT } else { "11434" }
+$script:ROUTER_PORT = if ($env:ROUTER_PORT) { $env:ROUTER_PORT } else { "20128" }
 $script:OLLAMA_URL = "http://localhost:$($script:OLLAMA_PORT)"
 $script:API_URL    = "http://localhost:$($script:ROUTER_PORT)"
 

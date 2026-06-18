@@ -89,21 +89,13 @@
       "description": "Switch work mode: plan / build / status",
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\workmode.ps1\" $ARGUMENTS"
     },
-    "initial": {
-      "description": "One-time install for new laptop",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\initial.ps1\" $ARGUMENTS"
-    },
     "start": {
-      "description": "Daily startup - check health + apply profile + launch",
+      "description": "★ Consolidated: git pull + bootstrap + update + health + config + autostart + launch",
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\start.ps1\" $ARGUMENTS"
     },
     "setup": {
       "description": "Set LLM mode (eco/on/hot/balance/performance) — redirects to llm-setup",
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\llm-setup.ps1\" $ARGUMENTS"
-    },
-    "owner": {
-      "description": "Maintenance - pull update + changelog + analysis + doctor",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\owner.ps1\" $ARGUMENTS"
     },
     "autostart": {
       "description": "Manage 9Router Windows autostart: enable / disable / status / run",

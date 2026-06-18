@@ -138,8 +138,9 @@ if (-not $routerRunning) {
     }
     $env:PORT = "20128"
     $env:DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"
-    $pw = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }
-    Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $ROUTER_DIR -Environment @{ PORT = "20128"; NODE_ENV = "production"; DATA_DIR = "$env:USERPROFILE\AppData\Roaming\9router"; INITIAL_PASSWORD = "$pw" }
+    $env:NODE_ENV = "production"
+    $env:INITIAL_PASSWORD = if ($env:9ROUTER_PASSWORD) { $env:9ROUTER_PASSWORD } else { "" }
+    Start-Process -FilePath "node" -ArgumentList ".next/standalone/server.js" -WindowStyle Hidden -WorkingDirectory $ROUTER_DIR
     Start-Sleep -Seconds 8
     try {
         $null = Invoke-RestMethod -Uri "$API_URL/api/health" -TimeoutSec 10 -ErrorAction Stop

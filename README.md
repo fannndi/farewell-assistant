@@ -56,22 +56,121 @@ Mode: `eco` (GPU off) atau `on` (GPU active, ~1GB VRAM).
 
 ---
 
-## Quick Setup
+## After Clone — First-Time Setup
 
 ```powershell
-# 1. Clone
+# Prerequisites: Node.js 18+, git, npm
 git clone https://github.com/fannndi/farewell-assistant.git
 cd farewell-assistant
-
-# 2. Initial setup — clone ECC + 9Router, build, guide you through config
-.\scripts\initial.ps1
-
-# 3. Daily start
-.\scripts\start.ps1
-
-# 4. (Optional) Enable 9Router autostart on Windows logon
-.\scripts\autostart.ps1 -Action enable
 ```
+
+Jalankan satu perintah — sisanya diarahkan oleh script:
+
+```powershell
+.\scripts\initial.ps1
+```
+
+| Step | Aksi | Catatan |
+|------|------|---------|
+| 1/10 | Clone ECC + 9Router | Otomatis, butuh internet |
+| 2/10 | npm install + build 9Router | ~1-2 menit (Next.js standalone) |
+| 3/10 | Start 9Router | Health-check sampai responsive (~20-45s) |
+| 4/10 | **Dashboard** | Buka `http://localhost:20128/dashboard` — set password, buat API key + combo |
+| 5/10 | Validasi key + combo | Script cek langsung ke 9Router API |
+| 6/10 | Init state | eco mode + build work mode |
+| 7/10 | Deteksi GPU | Rekomendasi model (LLM lokal) |
+| 8/10 | MCP config | Auto-copy template ke `.opencode/mcp-config.json` |
+| 9/10 | Autostart | Prompt [y/N] — register Scheduled Task |
+| 10/10 | Summary | Status semua komponen |
+
+**Setelah selesai:** edit `api-key.txt` — isi combo models sesuai yang dibuat di dashboard:
+
+```
+COMBO_0=oc/deepseek-v4-flash-free,oc/mimo-v2.5-free
+```
+
+Lalu jalankan daily start:
+
+```powershell
+.\scripts\start.ps1
+```
+
+---
+
+## Daily Routine — Pagi Hari Setelah Buka Laptop
+
+### Kalau autostart ENABLED
+
+9Router sudah running otomatis via Scheduled Task (`FarewellAssistant-9Router`).
+Cukup buka terminal dan:
+
+```powershell
+.\scripts\start.ps1
+```
+
+Selesai. Langsung masuk opencode.
+
+### Kalau autostart TIDAK aktif
+
+```powershell
+.\scripts\start.ps1
+```
+
+Start.ps1 akan:
+1. Cek 9Router health → start kalau belum running (build standalone + backoff ~45s)
+2. Load `api-key.txt` → set env + extract combo
+3. Generate `opencode.jsonc` dari template (dengan combo model)
+4. Cek LLM mode → start Ollama kalau bukan `eco`
+5. Sync session state → launch opencode
+
+### Cek status (opsional)
+
+```powershell
+.\scripts\autostart.ps1 -Action status    # Scheduled Task + 9Router health
+.\scripts\llm-setup.ps1 -Action status     # GPU + Ollama + models
+```
+
+---
+
+## Owner Notes — Maintenance Berkala
+
+```powershell
+.\scripts\owner.ps1
+```
+
+Jalankan secara berkala (seminggu sekali atau setelah ada notifikasi update).
+
+### Yang Dilakukan owner.ps1
+
+| Langkah | Aksi |
+|---------|------|
+| 1/4 | **Pull ECC + 9Router** — source change detection (hash src/ + cli/ + package.json), rebuild standalone kalau ada commit baru, npm install kalau package.json berubah |
+| 2/4 | **Changelog analysis** — scan breaking keywords, kasih warning kalau ada migration/deprecation |
+| 3/4 | **Doctor check** — ECC exist?, 9Router exist + standalone build?, config?, health?, Ollama? |
+| 4/4 | **Ensure 9Router running** — auto-start kalau mati + summary |
+
+### Manual Override
+
+```powershell
+.\scripts\autostart.ps1 -Action status     # Cek state + health
+.\scripts\autostart.ps1 -Action run         # Trigger task manual
+.\scripts\autostart.ps1 -Action disable     # Hentikan autostart
+.\scripts\autostart.ps1 -Action enable      # Daftarkan ulang
+
+.\scripts\llm-setup.ps1 -Action pull        # Download GGUF models (butuh ~1-2.5GB)
+.\scripts\llm-setup.ps1 -Action remove      # Hapus semua model lokal
+.\scripts\detect-project.ps1 -EmitContext   # Generate context template untuk project baru
+```
+
+### Logs & Debug
+
+| File | Isi |
+|------|-----|
+| `.opencode/logs/9router.log` | 9Router stdout |
+| `.opencode/logs/9router-error.log` | 9Router stderr |
+| `.opencode/logs/autostart.log` | Log Scheduled Task runs |
+| `.opencode/9router.pid` | PID 9Router process |
+| `logging.md` | Task log semua operasi (gitignored) |
 
 ### Dashboard 9Router
 

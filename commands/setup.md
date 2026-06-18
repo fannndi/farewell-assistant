@@ -1,16 +1,11 @@
 ---
-description: Setup — first install
+description: Setup — set LLM mode
 ---
 
 # Setup
 
-Jalankan `.\scripts\setup.ps1` untuk install pertama kali.
+Configure LLM mode for current session.
 
-Flow:
-1. Clone ECC (expert knowledge base)
-2. Clone 9Router (AI gateway)
-3. Install npm dependencies
-4. Apply profile ke ~/.config/opencode/
-5. Initialize state (ECO mode)
+## Usage
 
-Setelah setup, edit `api-key.txt` dengan key dari 9Router dashboard, lalu jalankan `/start`.
+Run interactively to set: eco / on / hot / balance / performance

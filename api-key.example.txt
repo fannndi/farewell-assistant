@@ -1,0 +1,13 @@
+# === 9Router Configuration ===
+# Get API key from: http://localhost:20128/dashboard
+NINEROUTER_API_KEY=sk-your-api-key-here
+
+# Dashboard password (default: 123456)
+9ROUTER_PASSWORD=123456
+
+# === Combo Definitions ===
+# Format: COMBO_<Name>=<model1>,<model2>,<model3>
+# Create combos in 9Router dashboard, then list models here
+# Example: COMBO_Free=oc/deepseek-v4-flash-free,oc/mimo-v2.5-free,mmf/mimo-auto
+# The script will validate these against 9Router API
+COMBO_YourComboName=<model1>,<model2>,<model3>

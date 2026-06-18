@@ -1,4 +1,4 @@
-# Setup - First Install
+# Setup - LLM Mode
 # Usage: .\setup.ps1
 
 $ErrorActionPreference = "Stop"
@@ -7,60 +7,82 @@ $ProgressPreference = "SilentlyContinue"
 . "$PSScriptRoot\common\helpers.ps1"
 . "$PSScriptRoot\common\config.ps1"
 
+$MODEL_MAP = @{
+    "eco"         = $null
+    "on"          = "qwen2.5-coder-1.5b"
+    "hot"         = "qwen3.5-0.8b"
+    "balance"     = "qwen3.5-2b"
+    "performance" = "qwen3.5-4b"
+}
+
+$VALID_MODES = $MODEL_MAP.Keys -join ", "
+$CURRENT = Get-LLMMode
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Magenta
-Write-Host "  farewell-assistant - First Install" -ForegroundColor Magenta
+Write-Host "  LLM Mode Setup" -ForegroundColor Magenta
 Write-Host "  =================================================" -ForegroundColor Magenta
 Write-Host ""
+Write-OK "Current mode: $CURRENT"
 
-# Step 1
-Write-Step "1/4" "ECC (Expert Knowledge Base)"
-if (Test-Path "$ECC_DIR\AGENTS.md") {
-    Write-Skip "ECC already cloned"
+Write-Step "INPUT" "Select LLM mode"
+
+try {
+    $MODE = Read-Host "  Enter mode [$VALID_MODES]"
+    $MODE = $MODE.Trim().ToLower()
+} catch {
+    Write-Fail "Input error: $_"
+    exit 1
+}
+
+if (-not $MODEL_MAP.ContainsKey($MODE)) {
+    Write-Fail "Invalid mode '$MODE'. Valid: $VALID_MODES"
+    exit 1
+}
+
+$MODEL = $MODEL_MAP[$MODE]
+
+if ($MODE -ne "eco") {
+    Write-Step "OLLAMA" "Starting Ollama service"
+    if (Start-OllamaService) {
+        Write-OK "Ollama is running"
+    } else {
+        Write-Fail "Could not start Ollama"
+        exit 1
+    }
+
+    if ($MODEL) {
+        Write-Step "MODEL" "Warming up model: $MODEL"
+        try {
+            $null = ollama run $MODEL --keep-alive 10m 2>&1
+            Start-Sleep -Seconds 2
+            Write-OK "Model $MODEL ready"
+        } catch {
+            Write-Fail "Model warm-up failed: $_"
+            exit 1
+        }
+    }
 } else {
-    Write-Host "  Cloning ECC..." -ForegroundColor Gray
-    git clone https://github.com/affaan-m/ECC.git $ECC_DIR 2>&1 | Out-Null
-    Write-OK "ECC cloned"
+    Write-Step "ECO" "Stopping running models"
+    Stop-OllamaModels
+    Write-OK "Models stopped"
 }
 
-# Step 2
-Write-Step "2/4" "9Router (AI Gateway)"
-if (Test-Path "$ROUTER_DIR\package.json") {
-    Write-Skip "9Router already cloned"
-} else {
-    Write-Host "  Cloning 9Router..." -ForegroundColor Gray
-    git clone https://github.com/decolua/9router.git $ROUTER_DIR 2>&1 | Out-Null
-    Write-OK "9Router cloned"
+Write-Step "SAVE" "Writing LLM mode"
+
+$state = @{
+    mode       = $MODE
+    model      = $MODEL
+    updated_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
 }
+Write-JsonState -Path $script:LLM_MODE_FILE -Data $state
+Write-OK "Mode saved: $MODE"
 
-# Step 2b
-if (-not (Test-Path "$ROUTER_DIR\node_modules")) {
-    Write-Host "  Installing npm dependencies..." -ForegroundColor Gray
-    Push-Location $ROUTER_DIR
-    npm install 2>&1 | Out-Null
-    Pop-Location
-    Write-OK "Dependencies installed"
-}
-
-# Step 3
-Write-Step "3/4" "Initialize State"
-$stateDir = "$($script:STATE_DIR)"
-New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
-$llmMode = @{ mode = "eco"; model = ""; updated_at = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz") }
-Write-JsonState -Path "$stateDir\llm-mode.json" -Data $llmMode
-Write-OK "State initialized (ECO mode)"
-
-# Step 4
-Write-Step "4/4" "Setup Complete"
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Green
-Write-Host "  Setup Complete!" -ForegroundColor Green
+Write-Host "  LLM mode set to: $MODE" -ForegroundColor Green
+if ($MODEL) {
+    Write-Host "  Model: $MODEL" -ForegroundColor Green
+}
 Write-Host "  =================================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Next steps:" -ForegroundColor Cyan
-Write-Host "    1. Edit api-key.txt - isi dengan key dari 9Router" -ForegroundColor White
-Write-Host "       Dashboard: http://localhost:20128/dashboard" -ForegroundColor Gray
-Write-Host "    2. Jalankan: .\scripts\start.ps1" -ForegroundColor White
-Write-Host ""
-

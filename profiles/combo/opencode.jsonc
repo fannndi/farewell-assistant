@@ -85,36 +85,28 @@
   },
 
   "command": {
-    "setup": {
-      "description": "First install — clone ECC, 9Router, apply profile",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\setup.ps1\" $ARGUMENTS"
+    "initial": {
+      "description": "One-time install for new laptop",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\initial.ps1\" $ARGUMENTS"
     },
     "start": {
-      "description": "Daily startup — all-in-one",
+      "description": "Daily startup - check health + apply profile + launch",
       "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\start.ps1\" $ARGUMENTS"
     },
-    "admin": {
-      "description": "Maintenance — pull repos, changelog, doctor",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\admin.ps1\" $ARGUMENTS"
+    "setup": {
+      "description": "Set LLM mode (eco/on/hot/balance/performance)",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\setup.ps1\" $ARGUMENTS"
     },
-    "llm": {
-      "description": "Mode switch: eco / on / hot / balance / performance / status",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\llm-mode.ps1\" $ARGUMENTS"
+    "owner": {
+      "description": "Maintenance - pull update + changelog + analysis + doctor",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\owner.ps1\" $ARGUMENTS"
     },
-    "models": {
-      "description": "Model management: list / pull / status / remove",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\llm-models.ps1\" $ARGUMENTS"
-    },
-    "mode": {
-      "description": "Work mode: plan / build / status",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\mode-switch.ps1\" $ARGUMENTS"
-    },
-    "detect": {
-      "description": "Auto-detect project type",
-      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\detect-project.ps1\" $ARGUMENTS"
+    "llm-setup": {
+      "description": "LLM config: auto/list/pull/status/remove + eco/on/hot/balance/performance",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\llm-setup.ps1\" $ARGUMENTS"
     },
     "go": {
-      "description": "Universal task — goal-based execution",
+      "description": "Universal task - goal-based execution",
       "template": "{file:{project}/commands/go.md}\n\n$ARGUMENTS"
     },
     "plan": {

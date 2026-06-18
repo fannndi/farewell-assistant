@@ -3,7 +3,9 @@
 !projects/context/.gitkeep
 
 # Secrets
+# Note: api-key.example.txt is a template (committed to git)
 api-key.txt
+!api-key.example.txt
 .env
 
 # Dependencies (cloned, not committed)
@@ -20,3 +22,4 @@ Desktop.ini
 .vscode/
 .idea/
 *.code-workspace
+

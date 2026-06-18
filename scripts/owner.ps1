@@ -1,7 +1,5 @@
-# Admin - Maintenance
-# Usage: .\admin.ps1 [--doctor]
-
-param([switch]$Doctor)
+# Owner - Daily Maintenance
+# Usage: .\owner.ps1
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
@@ -15,15 +13,13 @@ $ProgressPreference = "SilentlyContinue"
 
 Write-Host ""
 Write-Host "  =================================================" -ForegroundColor Magenta
-Write-Host "  farewell-assistant - Maintenance" -ForegroundColor Magenta
+Write-Host "  farewell-assistant - Owner" -ForegroundColor Magenta
 Write-Host "  =================================================" -ForegroundColor Magenta
 Write-Host ""
 
 # ============================================================
-# Step 1: Pull Repos
+# Inline Functions
 # ============================================================
-
-Write-Step "1/4" "Pull Latest Changes"
 
 function Write-ChangelogDiff {
     param([string]$Repo, [string]$Dir, [string]$Branch, [string]$Before)
@@ -32,7 +28,7 @@ function Write-ChangelogDiff {
     try {
         $behind = git rev-list --count "$Before..origin/$Branch" 2>&1
         if ($behind -and $behind -gt 0) {
-            Write-Host "  ── $Repo ($behind new commit(s)) ──" -ForegroundColor Cyan
+            Write-Host "  -- $Repo ($behind new commit(s)) --" -ForegroundColor Cyan
             git log "$Before..origin/$Branch" --oneline --no-decorate 2>$null | Select-Object -First 10 | ForEach-Object {
                 Write-Host "    $_" -ForegroundColor Gray
             }
@@ -42,6 +38,12 @@ function Write-ChangelogDiff {
         }
     } finally { Pop-Location }
 }
+
+# ============================================================
+# Step 1/4: Pull Latest Changes
+# ============================================================
+
+Write-Step "1/4" "Pull Latest Changes"
 
 function Write-PullECC {
     if (-not (Test-Path "$($script:ECC_DIR)\.git")) { Write-Skip "ECC not cloned"; return }
@@ -110,10 +112,71 @@ Write-PullECC
 Write-Pull9Router
 
 # ============================================================
-# Step 2: Doctor Check
+# Step 2/4: Changelog Analysis
 # ============================================================
 
-Write-Step "2/4" "Doctor Check"
+Write-Step "2/4" "Changelog Analysis"
+
+$changelogEcc = "$($script:ROOT_DIR)\CHANGELOG_ECC.md"
+$changelogRouter = "$($script:ROOT_DIR)\CHANGELOG_9ROUTER.md"
+
+$breakingKeywords = @("breaking", "migration", "deprecated", "removed", "skill", "agent", "config")
+$changelogIssues = @()
+
+if (Test-Path $changelogEcc) {
+    Write-Info "CHANGELOG_ECC.md"
+    $eccLines = Get-Content $changelogEcc -First 15 -ErrorAction SilentlyContinue
+    if ($eccLines) {
+        foreach ($line in $eccLines) {
+            Write-Host "    $line" -ForegroundColor Gray
+        }
+    }
+    $eccContent = Get-Content $changelogEcc -Raw -ErrorAction SilentlyContinue
+    if ($eccContent) {
+        foreach ($kw in $breakingKeywords) {
+            if ($eccContent -match "(?i)$kw") {
+                $changelogIssues += "ECC changelog mentions: $kw"
+            }
+        }
+    }
+} else {
+    Write-Skip "CHANGELOG_ECC.md not found"
+}
+
+if (Test-Path $changelogRouter) {
+    Write-Info "CHANGELOG_9ROUTER.md"
+    $routerLines = Get-Content $changelogRouter -First 15 -ErrorAction SilentlyContinue
+    if ($routerLines) {
+        foreach ($line in $routerLines) {
+            Write-Host "    $line" -ForegroundColor Gray
+        }
+    }
+    $routerContent = Get-Content $changelogRouter -Raw -ErrorAction SilentlyContinue
+    if ($routerContent) {
+        foreach ($kw in $breakingKeywords) {
+            if ($routerContent -match "(?i)$kw") {
+                $changelogIssues += "9Router changelog mentions: $kw"
+            }
+        }
+    }
+} else {
+    Write-Skip "CHANGELOG_9ROUTER.md not found"
+}
+
+if ($changelogIssues.Count -gt 0) {
+    Write-Host ""
+    Write-Host "  WARNING: Potential breaking changes detected:" -ForegroundColor Yellow
+    foreach ($issue in $changelogIssues) {
+        Write-Host "    - $issue" -ForegroundColor Yellow
+    }
+    Write-Host "  Review changelogs before proceeding." -ForegroundColor Yellow
+}
+
+# ============================================================
+# Step 3/4: Doctor Check
+# ============================================================
+
+Write-Step "3/4" "Doctor Check"
 
 $issues = @()
 
@@ -144,6 +207,14 @@ if ($mode -ne "eco") {
     }
 }
 
+Write-Host ""
+Write-Host "  Root:           $($script:ROOT_DIR)" -ForegroundColor Gray
+Write-Host "  ECC:            $($script:ECC_DIR)" -ForegroundColor Gray
+Write-Host "  9Router:        $($script:ROUTER_DIR)" -ForegroundColor Gray
+Write-Host "  OpenCode:       $($script:OPENCODE_CFG)" -ForegroundColor Gray
+Write-Host "  LLM mode:       $mode" -ForegroundColor Gray
+Write-Host ""
+
 if ($issues.Count -eq 0) {
     Write-OK "All checks passed"
 } else {
@@ -153,19 +224,7 @@ if ($issues.Count -eq 0) {
 }
 
 # ============================================================
-# Step 3: System Info
-# ============================================================
-
-Write-Step "3/4" "System Info"
-
-Write-Host "  farewell-assistant root: $($script:ROOT_DIR)" -ForegroundColor Gray
-Write-Host "  ECC path:                $($script:ECC_DIR)" -ForegroundColor Gray
-Write-Host "  9Router path:            $($script:ROUTER_DIR)" -ForegroundColor Gray
-Write-Host "  OpenCode config:         $($script:OPENCODE_CFG)" -ForegroundColor Gray
-Write-Host "  LLM mode:                $mode" -ForegroundColor Gray
-
-# ============================================================
-# Step 4: Summary
+# Step 4/4: Summary
 # ============================================================
 
 Write-Step "4/4" "Summary"

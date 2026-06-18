@@ -92,3 +92,4 @@ Footer ini bukan sekadar display — mempengaruhi behavior AI:
 | on | on | PLAN | ON - 20 | Local LLM + 20 skill, analyze mode |
 
 Footer bersifat informatif, sekaligus behavioral switch.
+

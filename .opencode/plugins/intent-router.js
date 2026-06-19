@@ -48,8 +48,9 @@ exports.server = async (ctx) => {
 
                 // Prepend to user message — AI sees this before the actual input
                 output.parts.unshift({ type: "text", text: prefix });
-            } catch (_e) {
-                // Never crash the chat
+            } catch (e) {
+                // Log error but never crash the chat
+                console.error("[intent-router] pipeline error:", e.message || e);
             }
         },
     };

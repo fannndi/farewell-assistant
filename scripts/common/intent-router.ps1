@@ -2,8 +2,20 @@
 # Usage: . "$PSScriptRoot\intent-router.ps1"
 # Depends on: enrichment-pipeline.ps1, skill-chain.ps1, helpers.ps1, config.ps1
 
-# -- Turn Counter --
+# -- Turn Counter (persisted to .opencode/turn-count) --
 $script:TurnCount = 0
+$script:TurnCountFile = "$($script:STATE_DIR)\turn-count"
+function Get-TurnCount {
+    if (Test-Path $script:TurnCountFile) {
+        try { return [int](Get-Content $script:TurnCountFile -Raw).Trim() } catch { return 0 }
+    }
+    return 0
+}
+function Set-TurnCount {
+    param([int]$Count)
+    try { New-Item -ItemType Directory -Path (Split-Path $script:TurnCountFile -Parent) -Force | Out-Null } catch {}
+    $Count | Set-Content -Path $script:TurnCountFile -Encoding UTF8
+}
 
 # -- Main Router Function --
 
@@ -20,8 +32,9 @@ function Invoke-IntentRouter {
     if (-not $WorkMode) { $WorkMode = Get-WorkMode }
     if (-not $ActiveProfile) { $ActiveProfile = Get-LLMMode }
 
-    # Increment turn counter
-    $script:TurnCount++
+    # Increment turn counter (persisted)
+    $script:TurnCount = (Get-TurnCount) + 1
+    Set-TurnCount -Count $script:TurnCount
 
     # Step 1: Classify intent (structured or quick)
     $classified = Get-CachedIntent -Input $TextInput
@@ -29,7 +42,8 @@ function Invoke-IntentRouter {
         $structured = Invoke-StructuredEnrichment -TextInput $TextInput -Context $Context -Force:$Force
         $quick = Get-QuickIntent -TextInput $TextInput
         # Priority: quick (if confident) > structured > quick (fallback)
-        if ($quick.confidence -ge 0.7) {
+        # Threshold 0.8: only override structured enrichment for high-confidence quick matches
+        if ($quick.confidence -ge 0.8) {
             $classified = $quick
             $classified.source = "quick"
         } elseif ($structured) {
@@ -49,7 +63,7 @@ function Invoke-IntentRouter {
             reason = $permission.reason
             intent = $classified
         }
-        Sync-TurnState -Result $result
+        Sync-TurnState -Result $result -UserInput $TextInput
         return $result
     }
 
@@ -60,7 +74,7 @@ function Invoke-IntentRouter {
     $modelRoute = Select-ModelRoute -Complexity $classified.complexity -Profile $ActiveProfile
 
     # Step 5: Determine if planning phase is needed
-    $needsPlanning = $classified.complexity -eq "high" -and $classified.intent -eq "build"
+    $needsPlanning = ($classified.complexity -eq "high" -or $classified.complexity -eq "critical") -and $classified.intent -eq "build"
 
     # Step 6: Build blocked intents list
     $blocked = @()
@@ -80,7 +94,7 @@ function Invoke-IntentRouter {
     }
 
     # Step 7: Persist to context files
-    Sync-TurnState -Result $result -Input $TextInput
+    Sync-TurnState -Result $result -UserInput $TextInput
 
     return $result
 }
@@ -170,14 +184,14 @@ function Show-IntentRouterResult {
 # -- Persist Turn State to Context Files --
 
 function Sync-TurnState {
-    param($Result, [string]$Input = "")
+    param($Result, [string]$UserInput = "")
 
     $stateDir = if ($script:STATE_DIR) { $script:STATE_DIR } else { "$($script:ROOT_DIR)\.opencode" }
 
     # 1. Write pipeline-result.json (structured, machine-readable)
     $pipelineData = @{
         timestamp = (Get-Date -Format "yyyy-MM-ddTHH:mm:sszzz")
-        input = $Input
+        input = $UserInput
         turn = if ($Result.turn) { $Result.turn } else { $script:TurnCount }
     }
 

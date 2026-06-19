@@ -9,6 +9,14 @@ Semua perubahan penting di farewell-assistant.
 ### P0 — Wire Pipeline to Runtime (BREAKING: pipeline now LIVE)
 - **`.opencode/plugins/intent-router.js`**: OpenCode plugin via `chat.message` hook → intercepts every user message → shells to `run-router.ps1`. **Blocking mode** (15s timeout): menunggu pipeline selesai, lalu **prepend** prefix `[Pipeline: intent/complexity/confidence% | chain]` ke user message. AI melihat hasil pipeline sebagai baris pertama setiap input.
 - **`scripts/run-router.ps1`**: Clean entry point for plugin → dot-sources all pipeline modules → calls `Invoke-IntentRouter`.
+
+### Bug Fixes (verified)
+- **Input recording**: `$Input` → `$UserInput` di `Sync-TurnState` (shadowing automatic variable). `input` field sekarang terisi dengan benar.
+- **Turn counter**: Persisted ke `.opencode/turn-count` file. Tidak reset setiap kali script dijalankan. Turn 1→2→3 across invocations.
+- **Quick-classify threshold**: 0.7 → 0.8. Quick-classify hanya menang untuk high-confidence matches (0.8+). Structured enrichment sekarang dipakai untuk input ambiguous.
+- **Planning check**: `critical` complexity sekarang juga trigger planning (sebelumnya hanya `high`).
+- **Plugin error logging**: `catch(_e){}` → `console.error("[intent-router] pipeline error:", e.message)`. Error ter-log, bukan silent swallow.
+- **powershell-patterns**: Skill ada di `projects/skills/` (bukan `ecc/skills/`). OpenCode benar menemukannya.
 - **Auto-Prefix**: Plugin otomatis menambahkan `[Pipeline: intent/complexity/confidence% | chain_summary]` ke setiap user message. AI tidak perlu trigger pipeline manual.
 - **preprocess.md**: Updated — dokumentasi auto-prefix + plugin mechanism.
 - **.gitignore**: `!.opencode/plugins/` exception untuk plugin tracking.

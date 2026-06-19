@@ -29,6 +29,14 @@ exports.server = async (ctx) => {
                 const data = JSON.parse(raw);
                 if (!data || !data.intent) return;
 
+                // Check for HOLD — input too vague
+                if (data.blocked === true && data.hold === true) {
+                    const reason = data.reason || "Input kurang presisi";
+                    const prefix = `[HOLD] ${reason}\n`;
+                    output.parts.unshift({ type: "text", text: prefix });
+                    return;
+                }
+
                 // Build compact prefix
                 const intent = data.intent;
                 const domain = data.domain || "";
@@ -39,7 +47,7 @@ exports.server = async (ctx) => {
 
                 const parts = [];
                 if (intent) parts.push(intent);
-                if (domain) parts.push(domain);
+                if (domain && domain !== "general") parts.push(domain);
                 if (complexity) parts.push(complexity);
                 if (confidence) parts.push(confidence);
                 if (source && source !== "structured") parts.push(source);

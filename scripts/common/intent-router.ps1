@@ -41,13 +41,14 @@ function Invoke-IntentRouter {
     if (-not $classified) {
         $structured = Invoke-StructuredEnrichment -TextInput $TextInput -Context $Context -Force:$Force
         $quick = Get-QuickIntent -TextInput $TextInput
-        # Priority: quick (if confident) > structured > quick (fallback)
-        # Threshold 0.8: only override structured enrichment for high-confidence quick matches
-        if ($quick.confidence -ge 0.8) {
-            $classified = $quick
-            $classified.source = "quick"
-        } elseif ($structured) {
+        # Priority: structured enrichment (accurate domain+stack) > quick (fallback)
+        if ($structured) {
             $classified = $structured
+            # Quick-classify only overrides if structured has very low confidence
+            if ($structured.confidence -lt 0.5 -and $quick.confidence -ge 0.8) {
+                $classified = $quick
+                $classified.source = "quick"
+            }
         } else {
             $classified = $quick
             $classified.source = "quick"
@@ -61,6 +62,20 @@ function Invoke-IntentRouter {
         $result = @{
             success = $false
             reason = $permission.reason
+            intent = $classified
+        }
+        Sync-TurnState -Result $result -UserInput $TextInput
+        return $result
+    }
+
+    # Step 2.5: Check input sufficiency (hold if too vague)
+    $sufficiency = Test-InputSufficiency -TextInput $TextInput -Classified $classified
+    if (-not $sufficiency.sufficient) {
+        $result = @{
+            success = $false
+            hold = $true
+            reason = $sufficiency.reason
+            missing = $sufficiency.missing
             intent = $classified
         }
         Sync-TurnState -Result $result -UserInput $TextInput
@@ -212,8 +227,10 @@ function Sync-TurnState {
         $pipelineData.profile = $Result.profile
     } else {
         $pipelineData.blocked = $true
+        $pipelineData.hold = if ($Result.hold) { $true } else { $false }
         $pipelineData.reason = $Result.reason
         $pipelineData.intent = $Result.intent.intent
+        if ($Result.missing) { $pipelineData.missing = $Result.missing }
     }
 
     $pipelineJson = $pipelineData | ConvertTo-Json -Depth 5

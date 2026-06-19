@@ -29,13 +29,24 @@ Return this exact schema (no markdown, no explanation, no code fences):
   "confidence": <0.0 to 1.0>
 }
 
-Rules:
-- intent: what the user wants to DO (not just ask about)
-- domain: which project category this belongs to
-- stack: detected technologies (empty array if unknown)
-- complexity: low=simple change, medium=feature, high=architectural
-- confidence: how sure you are (be honest)
-- Return ONLY the JSON object, nothing else
+Domain classification rules:
+- web: APIs, REST endpoints, CRUD, frontend, backend, authentication, web frameworks (React, Django, FastAPI, Express, Laravel, NestJS)
+- mobile: Flutter, Dart, iOS, Android, Swift, Kotlin, React Native
+- infra: Docker, Kubernetes, CI/CD, deployment, server configuration, networking
+- data: databases, SQL, migrations, ETL, data pipelines, PostgreSQL, MySQL, Redis
+- ai_ml: machine learning, model training, inference, LLM, PyTorch, TensorFlow
+- automation: PowerShell, scripts, task automation, scheduling, Windows automation
+- general: programming concepts, generic questions, unclear domain
+
+Stack detection: identify specific technologies mentioned (e.g., ["python", "fastapi"], ["flutter", "dart"])
+
+Complexity rules:
+- low: simple question, one-line fix, typo
+- medium: feature implementation, bug fix
+- high: architectural change, multi-file refactor, system design
+- critical: security vulnerability, production down
+
+Return ONLY the JSON object, nothing else.
 "@
 
     $prompt = "User input: $TextInput$contextBlock"
@@ -174,3 +185,83 @@ function Set-CachedIntent {
 }
 
 function Clear-IntentCache { $script:IntentCache = @{} }
+
+# -- Input Sufficiency Check --
+# Detect if user input has enough detail for precise execution.
+# Returns: @{ sufficient = $true/$false; reason = "what's missing" }
+
+function Test-InputSufficiency {
+    param(
+        [string]$TextInput,
+        $Classified
+    )
+
+    $inputLower = $TextInput.ToLower().Trim()
+    $wordCount = ($TextInput -split '\s+').Count
+    $intent = if ($Classified) { $Classified.intent } else { "unknown" }
+    $domain = if ($Classified) { $Classified.domain } else { "general" }
+    $stack = if ($Classified -and $Classified.stack) { $Classified.stack } else { @() }
+
+    # Always sufficient: questions, research, docs (with enough detail)
+    $skipIntents = @("research", "docs")
+    if ($skipIntents -contains $intent) { return @{ sufficient = $true } }
+
+    # HOLD: ask intent too short — AI should clarify, not just answer
+    if ($intent -eq "ask" -and $wordCount -lt 4) {
+        return @{
+            sufficient = $false
+            reason = "Input terlalu singkat. Jelaskan lebih detail apa yang kamu butuhkan."
+            missing = @("detail lebih lanjut")
+        }
+    }
+
+    # Always sufficient: fix with enough detail
+    if ($intent -eq "fix" -and $inputLower -match '(bug|error|crash|broken|fix)\s+\w+\s+\w+') {
+        return @{ sufficient = $true }
+    }
+
+    # Always sufficient: review with enough detail
+    if ($intent -eq "review" -and $inputLower -match '(review|audit|check)\s+\w+\s+\w+') {
+        return @{ sufficient = $true }
+    }
+
+    # Always sufficient: deploy with enough detail
+    if ($intent -eq "deploy" -and $inputLower -match '(deploy|release)\s+\w+\s+\w+') {
+        return @{ sufficient = $true }
+    }
+
+    # HOLD: build intent — needs entity + stack
+    if ($intent -eq "build") {
+        $missing = @()
+
+        # Check for specific entity (not generic terms)
+        $hasEntity = $inputLower -match '(user|product|order|payment|auth|login|register|profile|comment|post|article|task|item|category|admin|customer|invoice|report|dashboard|setting|notification|page|component|form|table|list|modal|menu|sidebar|header|footer|search|filter|cart|checkout|blog|forum|message|chat|email|notification|settings|upload|download|import|export|backup|migrate|sync|validate|verify|approve|reject|assign|schedule|queue|cache|log|monitor|alert|metric|analytics|saas|erp|crm|cms|pos|hrm|lms|iot)'
+        if (-not $hasEntity) { $missing += "entity/fitur" }
+
+        # Check for stack/framework
+        $hasStack = $stack.Count -gt 0 -and $stack[0] -ne ""
+        if (-not $hasStack) {
+            $hasStackHint = $inputLower -match '(react|vue|angular|next|nuxt|django|fastapi|laravel|spring|express|nest|flutter|swift|kotlin|python|node|go|rust|php|java|typescript|javascript|powershell|postgres|mysql|redis|docker|kubernetes)'
+            if (-not $hasStackHint) { $missing += "tech stack" }
+        }
+
+        if ($missing.Count -gt 0) {
+            return @{
+                sufficient = $false
+                reason = "Input kurang presisi. Perlu: $($missing -join ', ')"
+                missing = $missing
+            }
+        }
+    }
+
+    # HOLD: fix/deploy too short
+    if (($intent -eq "fix" -or $intent -eq "deploy") -and $wordCount -lt 3) {
+        return @{
+            sufficient = $false
+            reason = "Input terlalu singkat untuk '$intent'. Jelaskan apa yang perlu di-$intent."
+            missing = @("detail lebih lanjut")
+        }
+    }
+
+    return @{ sufficient = $true }
+}

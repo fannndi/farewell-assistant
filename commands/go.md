@@ -8,11 +8,10 @@ Universal goal-based command. Satu command untuk semua task.
 
 ## Cara Kerja
 
-1. **Detect** — cek project aktif dari `projects/registry.json`
-2. **Context** — load `projects/context/<slug>.md`
-3. **Enrich** — kalau mode on, jalankan Invoke-LLMEnrich()
-4. **Execute** — AI decompose goal dan eksekusi langkah-langkah
-5. **Respond** — hasil + footer
+1. **Pipeline** — trigger `Invoke-IntentRouter` via `trigger-pipeline.ps1`
+2. **Context** — load `projects/context/<slug>.md` + `pipeline-result.json`
+3. **Execute** — AI decompose goal dan eksekusi langkah-langkah
+4. **Respond** — hasil
 
 ## Contoh
 

@@ -3,6 +3,7 @@
   "model": "9router/${COMBO_0}",
   "small_model": "9router/${COMBO_1}",
   "default_agent": "build",
+  "plugin": [".opencode/plugins/intent-router.js"],
 
   "provider": {
     "9router": {

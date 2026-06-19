@@ -4,26 +4,26 @@ description: Verify enrichment pipeline (local LLM preprocessor)
 
 # Enrich Check
 
-Diagnostic command untuk validasi enrichment pipeline end-to-end.
+Diagnostic command untuk validasi pipeline Intent-Driven end-to-end.
 
 ## Cara Kerja
 
 1. **Detect mode** — baca `llm-mode.json`
 2. **GPU check** — tampilkan VRAM info
-3. **Test enrich** — kirim input ke `Invoke-LLMEnrich()`
-4. **Compare** — input vs output untuk cek apakah enrichment aktif
+3. **Run pipeline** — jalankan `Invoke-IntentRouter` via `scripts/hooks/check-enrich.ps1`
+4. **Show result** — tampilkan intent, domain, complexity, confidence, skill chain, model route
 
 ## Mode
 
 - Mode `eco` → enrichment disabled (skip, tampilkan instruksi)
-- Mode selain eco → test jalankan enrichment
+- Mode selain eco → test jalankan pipeline lengkap
 
 ## Contoh
 
 | Perintah | Yang Dilakukan |
 |----------|----------------|
-| `/enrich-check test input` | Test enrichment dengan "test input" |
-| `/enrich-check bikin API` | Test enrichment dengan input complex |
+| `/enrich-check fix auth bug` | Test pipeline dengan intent fix |
+| `/enrich-check bikin CRUD user` | Test pipeline dengan input complex |
 
 ## Task
 

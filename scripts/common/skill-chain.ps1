@@ -169,17 +169,15 @@ function Get-SkillChain {
 
     # Try domain-specific chain first
     $key = "${Intent}_${Domain}"
-    if ($script:SkillChains[$key]) {
-        return $script:SkillChains[$key]
-    }
+    $chain = $script:SkillChains[$key]
+    if ($chain) { return ,$chain }
 
     # Fallback to intent-only chain
-    if ($script:SkillChains[$Intent]) {
-        return $script:SkillChains[$Intent]
-    }
+    $chain = $script:SkillChains[$Intent]
+    if ($chain) { return ,$chain }
 
     # Fallback to generic ask
-    return $script:SkillChains["ask"]
+    return ,$script:SkillChains["ask"]
 }
 
 # -- Chain Validation (check if skills exist on disk) --

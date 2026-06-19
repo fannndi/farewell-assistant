@@ -4,7 +4,45 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
-## [1.4.2] - 2026-06-19 - Audit Fix: P0 Critical + P1 High + P2 Medium + P3 Low
+## [1.5.0] - 2026-06-19 — Pipeline Live: Plugin + Trigger + Tests + Final Fixes
+
+### P0 — Wire Pipeline to Runtime (BREAKING: pipeline now LIVE)
+- **`.opencode/plugins/intent-router.js`**: OpenCode plugin via `chat.message` hook → intercepts every user message → shells to `run-router.ps1`. Non-blocking, never crashes chat. Registered via `"plugin": [".opencode/plugins/intent-router.js"]`.
+- **`scripts/run-router.ps1`**: Clean entry point for plugin → dot-sources all pipeline modules → calls `Invoke-IntentRouter`. No quick-abort path (pipeline handles eco/short inputs internally).
+- **`start.ps1`**: Updated Step 7/7 to prime pipeline at startup (runs `Invoke-IntentRouter` for fresh context before launch).
+- **`preprocess.md`**: AI WAJIB trigger pipeline via `trigger-pipeline.ps1` before every turn.
+
+### P1 — Fix Bugs
+- **`commands/enrich-check.md` + `go.md`**: Remove `Invoke-LLMEnrich` references (function removed in v1.4.3). Update docs to reference `Invoke-IntentRouter`/`trigger-pipeline.ps1`.
+- **`intent-router.ps1`**: `$Result` → `$result` (normalize casing). Intent classification priority: quick (if confident ≥0.7) > structured > quick (fallback).
+- **`trigger-pipeline.ps1`**: `$Input` → `$InputText` (PS automatic variable shadowing fix).
+
+### P2 — Dedup & Sync Documentation
+- **`intent-router.ps1`**: Remove dead `Select-ModelRoute` fallback (24 lines). `$script:MODEL_ROUTES` from `config.ps1` is single source of truth.
+- **`enrichment-pipeline.ps1`**: `"critical"` added to LLM schema (`low|medium|high|critical`) + whitelist. Tier now reachable.
+- **`skill-chain.ps1`**: Fix PS array unrolling bug with `,` operator. All 19 chains return correct type.
+- **Chain count**: 12 → 19 in all docs (context.md x3, README x2, CHANGELOG).
+- **`preprocess.md`**: Fix step ordering (cache=2, enrich=3, classify=4). Add `critical` to planning check.
+
+### P3 — Pester Testing
+- **`tests/pipeline.tests.ps1`**: 20 tests across 5 `Describe` blocks:
+  - `Get-QuickIntent`: 5 tests (fix, build, deploy, review, ask)
+  - `Get-SkillChain`: 5 tests (build_web, build_mobile, fix, deploy, ask)
+  - `Test-TaskPermission`: 4 tests (PLAN blocks build, allows review/docs, BUILD allows all)
+  - `Select-ModelRoute`: 3 tests (low→Free, high→Emergency, critical→Emergency)
+  - `Regression Guard`: 3 tests (functions exist, Invoke-StructuredEnrichment exists, Invoke-LLMEnrich removed)
+- **`run-tests.ps1`**: Test runner (invokes Pester on all test files).
+- **`tests/test-helper.ps1`**: Bootstrap (dot-sources config/helpers/enrichment/skill-chain/intent-router).
+- **Result**: 20/20 passed, 889ms.
+
+### Verification
+```
+run-router.ps1 "bikin CRUD user" → intent=build source=quick chain=5 ✓
+run-router.ps1 "fix bug"         → intent=fix  source=quick chain=3 ✓
+Pester suite                      → 20/20 passed, 889ms ✓
+```
+
+---
 
 ### Fixed — P0 Critical
 - **context.md race condition**: Hapus context.md write dari `Sync-SessionState` (log.ps1). Sekarang hanya `Sync-TurnState` yang manage context.md → tidak ada overwrite mid-session.

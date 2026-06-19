@@ -112,16 +112,9 @@ function Select-ModelRoute {
         [string]$Profile
     )
 
-    # Complexity-based routing (use $script:MODEL_ROUTES from config.ps1)
+    # Complexity-based routing (single source: $script:MODEL_ROUTES from config.ps1)
     $routeMap = $script:MODEL_ROUTES
-    if (-not $routeMap) {
-        $routeMap = @{
-            "low"      = @{ primary = "Free"; secondary = "Free"; heavy = "Free" }
-            "medium"   = @{ primary = "Free"; secondary = "Free"; heavy = "Free" }
-            "high"     = @{ primary = "Free"; secondary = "Emergency"; heavy = "Emergency" }
-            "critical" = @{ primary = "Emergency"; secondary = "Emergency"; heavy = "Emergency" }
-        }
-    }
+    if (-not $routeMap) { return @{ primary = "Free"; secondary = "Free"; heavy = "Free" } }
 
     $routes = $routeMap[$Complexity]
     if (-not $routes) { $routes = $routeMap["medium"] }

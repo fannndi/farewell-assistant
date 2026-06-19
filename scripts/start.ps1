@@ -623,15 +623,32 @@ $oldVbs = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\
 if (Test-Path $oldVbs) { try { Remove-Item $oldVbs -Force; Write-OK "Removed stale VBS" } catch {} }
 
 # ============================================================
-#  Step 7/7: Launch
+#  Step 7/7: Pipeline Prime + Launch
 # ============================================================
 
-Write-Step "7/7" "Launch"
+Write-Step "7/7" "Pipeline + Launch"
 
 $mode = Get-LLMMode
 if ($mode -ne "eco") {
     $ollamaOk = Start-OllamaService
     if ($ollamaOk) { Write-OK "Ollama running" } else { Write-Fail "Ollama failed to start" }
+}
+
+# Prime pipeline — runs Invoke-IntentRouter to write fresh context files
+try {
+    if (Test-Path $script:ENRICHMENT_SCRIPT) {
+        . $script:ENRICHMENT_SCRIPT
+        . $script:SKILL_CHAIN_SCRIPT
+        . $script:INTENT_ROUTER_SCRIPT
+        $pipelineResult = Invoke-IntentRouter -TextInput "session start" -Force
+        if ($pipelineResult.success) {
+            Write-OK "Pipeline primed: $($pipelineResult.intent.intent)/$($pipelineResult.intent.domain)/$($pipelineResult.intent.complexity)"
+        } else {
+            Write-OK "Pipeline primed (startup)"
+        }
+    }
+} catch {
+    Write-Skip "Pipeline skip: $_"
 }
 
 Write-StartReport -RouterRunning $routerRunning -ComboBadges $comboBadges -Mode $mode -CurrentCombos $currentCombos -ComboNamesFromFile $comboNamesFromFile

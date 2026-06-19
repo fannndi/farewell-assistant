@@ -163,7 +163,7 @@ farewell-assistant/
 │   │   ├── log.ps1                # Write-TaskLog, Sync-SessionState
 │   │   ├── enrichment-pipeline.ps1 # ★ Structured enrichment (JSON intent classification)
 │   │   ├── intent-router.ps1      # ★ Intent → Skill Chain → Model Route
-│   │   ├── skill-chain.ps1        # ★ Skill chain builder (12 built-in chains)
+│   │   ├── skill-chain.ps1        # ★ Skill chain builder (19 built-in chains)
 │   │   └── start-9router-bg.ps1   # Hidden wrapper for Scheduled Task
 │   └── hooks/
 │       ├── self-heal.ps1          # Post-edit typecheck (project-aware)
@@ -212,7 +212,7 @@ farewell-assistant/
 | Instructions | 19 | 2 (comprehensive) |
 | Pipeline steps | 8+ | **9 (Intent-Driven)** |
 | Intent classification | Manual | **Auto (LLM + regex)** |
-| Skill routing | Manual | **12 built-in chains** |
+| Skill routing | Manual | **19 built-in chains** |
 | Model routing | Static | **Dynamic (complexity-based)** |
 | Multi-project | Overcomplicated | Simple registry |
 | Startup command | Manual | 1 perintah: `/start` |

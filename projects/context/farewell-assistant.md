@@ -16,7 +16,7 @@ Key files:
   - scripts/common/log.ps1      — Write-TaskLog + Sync-SessionState
   - scripts/common/enrichment-pipeline.ps1 — ★ Structured enrichment (JSON intent classification via Ollama)
   - scripts/common/intent-router.ps1      — ★ Intent → permission check → skill chain → model route + Sync-TurnState
-  - scripts/common/skill-chain.ps1        — ★ Skill chain builder (12 built-in chains)
+  - scripts/common/skill-chain.ps1        — ★ Skill chain builder (19 built-in chains)
   - scripts/common/start-9router-bg.ps1   — hidden wrapper for Scheduled Task
 
 Runtime context files (written per-turn):
@@ -47,7 +47,7 @@ Conventions:
   - Precision Context System: pipeline writes to pipeline-result.json + context.md → AI reads
   - Intent-Driven Pipeline: Input → Quick Classify → Structured Enrich → Rule Check → Skill Chain → Model Route → Execute
   - Work mode (PLAN/BUILD) adalah ROLE — AI tidak boleh auto-switch, hanya user via /workmode
-  - Skill chains: 12 built-in chains mapping intent+domain → sequential skill execution
+  - Skill chains: 19 built-in chains mapping intent+domain → sequential skill execution
   - Model routing: low/medium complexity → Free combo, high/critical → Emergency combo
   - Power profiles: hot (0.8B) → eco (1.5B) → balance (2B) → performance (4B)
   - Setiap task stage dicatat ke logging.md via Write-TaskLog
@@ -64,5 +64,5 @@ GPU: MX150 2GB VRAM — hot (600MB) / eco (1GB) / balance (1.4GB) / performance 
 
 Pipeline: Input → Quick Classify → Structured Enrich (Ollama) → Rule Check → Skill Chain → Model Route → Execute
 Enrichment: JSON output {intent, domain, stack, complexity, confidence}
-Skill Chains: 12 built-in (build_web, build_mobile, fix_bug, review_code, deploy, etc.)
+Skill Chains: 19 built-in (build_web, build_mobile, fix_bug, review_code, deploy, etc.)
 Model Routes: complexity → Free combo (low/medium) or Emergency combo (high/critical)

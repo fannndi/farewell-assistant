@@ -73,7 +73,7 @@ User Input
 
 ### Added — Phase 2: Intent Router + Skill Chains
 - **intent-router.ps1**: `Invoke-IntentRouter` — pipeline lengkap: classify → permission check → skill chain → model route.
-- **skill-chain.ps1**: `Get-SkillChain` — mapping intent+domain → urutan skill. 12 built-in chains: build_web, build_mobile, build_infra, build_data, build_automation, build_ai_ml, fix, fix_bug, fix_security, review, review_code, review_security, deploy, research, docs.
+- **skill-chain.ps1**: `Get-SkillChain` — mapping intent+domain → urutan skill. 19 built-in chains: build_web, build_mobile, build_infra, build_data, build_automation, build_ai_ml, build, fix_bug, fix_security, fix, review_code, review_security, review, deploy, research, research_deep, docs, docs_code, ask.
 - **Chain validation**: `Test-SkillChain` cek skill existence di disk.
 
 ### Added — Phase 3: Dynamic Model Routing

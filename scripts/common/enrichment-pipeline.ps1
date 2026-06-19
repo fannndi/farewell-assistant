@@ -25,7 +25,7 @@ Return this exact schema (no markdown, no explanation, no code fences):
   "intent": "<build|fix|review|deploy|research|docs|ask>",
   "domain": "<web|mobile|infra|data|ai_ml|automation|general>",
   "stack": ["<detected framework or language>"],
-  "complexity": "<low|medium|high>",
+  "complexity": "<low|medium|high|critical>",
   "confidence": <0.0 to 1.0>
 }
 
@@ -59,7 +59,7 @@ Rules:
         # Validate required fields
         $validIntents = @("build", "fix", "review", "deploy", "research", "docs", "ask")
         $validDomains = @("web", "mobile", "infra", "data", "ai_ml", "automation", "general")
-        $validComplexity = @("low", "medium", "high")
+        $validComplexity = @("low", "medium", "high", "critical")
 
         $intent = if ($validIntents -contains $parsed.intent) { $parsed.intent } else { "ask" }
         $domain = if ($validDomains -contains $parsed.domain) { $parsed.domain } else { "general" }

@@ -27,10 +27,15 @@ function Invoke-IntentRouter {
     $classified = Get-CachedIntent -Input $TextInput
     if (-not $classified) {
         $structured = Invoke-StructuredEnrichment -TextInput $TextInput -Context $Context -Force:$Force
-        if ($structured) {
+        $quick = Get-QuickIntent -TextInput $TextInput
+        # Priority: quick (if confident) > structured > quick (fallback)
+        if ($quick.confidence -ge 0.7) {
+            $classified = $quick
+            $classified.source = "quick"
+        } elseif ($structured) {
             $classified = $structured
         } else {
-            $classified = Get-QuickIntent -TextInput $TextInput
+            $classified = $quick
             $classified.source = "quick"
         }
         Set-CachedIntent -Input $TextInput -Intent $classified
@@ -44,7 +49,7 @@ function Invoke-IntentRouter {
             reason = $permission.reason
             intent = $classified
         }
-        Sync-TurnState -Result $Result
+        Sync-TurnState -Result $result
         return $result
     }
 

@@ -24,20 +24,9 @@ Setiap user input setelah Session Init:
 User: "bikin CRUD user dengan auth JWT"
 ```
 
-### Step 2: Quick Classification
+### Step 2: Cache Check
 
-Pattern-based (tanpa LLM, instan):
-
-| Pattern | Intent | Confidence |
-|---------|--------|------------|
-| fix/bug/error/crash | fix | 0.7 |
-| review/audit/check/inspect | review | 0.7 |
-| deploy/release/ship/publish | deploy | 0.7 |
-| research/search/find | research | 0.7 |
-| write/document/docs/readme | docs | 0.7 |
-| create/build/make/add/implement/bikin/buat/tambah | build | 0.8 |
-
-**Threshold:** Kalau confidence >= 0.7, langsung lanjut ke Step 5. Kalau < 0.7, lanjut ke Step 3 (structured enrichment).
+Intent disimpan di session cache. Kalau input sama muncul lagi, langsung lanjut ke Step 5 (skip enrichment + quick classify).
 
 ### Step 3: Structured Enrichment
 
@@ -57,9 +46,18 @@ Input: "bikin CRUD user dengan auth JWT"
 
 **Skip conditions:** mode == eco, input < 3 kata, pertanyaan umum
 
-### Step 4: Cache Check
+### Step 4: Quick Classification (Fallback)
 
-Intent disimpan di session cache. Kalau input sama muncul lagi, skip enrichment.
+Pattern-based (tanpa LLM, instan). Hanya jalan jika Step 3 (Structured Enrichment) gagal atau di-skip:
+
+| Pattern | Intent | Confidence |
+|---------|--------|------------|
+| fix/bug/error/crash | fix | 0.7 |
+| review/audit/check/inspect | review | 0.7 |
+| deploy/release/ship/publish | deploy | 0.7 |
+| research/search/find | research | 0.7 |
+| write/document/docs/readme | docs | 0.7 |
+| create/build/make/add/implement/bikin/buat/tambah | build | 0.8 |
 
 ### Step 5: Rule Check
 
@@ -132,11 +130,11 @@ Mapping intent + domain → **urutan skill yang dieksekusi berurutan**:
 
 ### Step 8: Planning Check
 
-Kalau complexity == "high" AND intent == "build":
+Kalau complexity == "high" OR complexity == "critical" AND intent == "build":
 - Aktifkan planning phase dulu (planner agent)
 - Decompose task → acceptance criteria → implementasi
 
-Kalau complexity != "high":
+Kalau complexity < "high":
 - Langsung eksekusi
 
 ### Step 9: Execute
@@ -146,6 +144,18 @@ Skill chain dijalankan berurutan. Setiap skill:
 2. Load context dari session
 3. Ejekusi dengan model route yang dipilih
 4. Output → input ke skill berikutnya
+
+### ⚡ Execution: AI WAJIB Trigger Pipeline
+
+Pipeline (Invoke-IntentRouter) adalah **PowerShell function**, bukan mekanisme internal AI. AI WAJIB menjalankan pipeline secara eksplisit sebelum memproses setiap user input:
+
+**Setiap kali menerima input baru, AI harus:**
+1. Jalankan pipeline: jalankan `powershell -ExecutionPolicy Bypass -File "{project}\\scripts\\common\\trigger-pipeline.ps1" -InputText "<user_input>"`
+2. Baca `.opencode/pipeline-result.json` untuk intent classification
+3. Baca `.opencode/context.md` untuk turn state
+4. Lanjutkan eksekusi berdasarkan hasil pipeline
+
+**PENTING:** File pipeline-result.json dan context.md hanya update jika AI menjalankan pipeline. Jangan gunakan data stale. Pipeline harus di-trigger setiap turn.
 
 ---
 

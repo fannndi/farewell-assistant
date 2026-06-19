@@ -157,6 +157,21 @@ Pipeline (Invoke-IntentRouter) adalah **PowerShell function**, bukan mekanisme i
 
 **PENTING:** File pipeline-result.json dan context.md hanya update jika AI menjalankan pipeline. Jangan gunakan data stale. Pipeline harus di-trigger setiap turn.
 
+### 🔄 Auto-Prefix (Plugin)
+
+**Plugin `.opencode/plugins/intent-router.js`** secara otomatis:
+1. Menjalankan `Invoke-IntentRouter` via `run-router.ps1` di `chat.message` hook
+2. Menambahkan prefix `[Pipeline: intent/complexity/confidence% | chain_summary]` ke user message
+3. AI akan melihat prefix ini sebagai baris pertama dari setiap user input
+
+**AI tidak perlu trigger pipeline manual** — plugin sudah melakukannya.
+Prefix otomatis muncul di prompt AI sebagai:
+
+```
+[Pipeline: build/high/80% | orch-add-feature → ...]
+User: bikin CRUD user dengan auth JWT
+```
+
 ---
 
 ## Performance Profile

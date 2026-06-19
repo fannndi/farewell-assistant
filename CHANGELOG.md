@@ -4,11 +4,14 @@ Semua perubahan penting di farewell-assistant.
 
 ---
 
-## [1.5.0] - 2026-06-19 — Pipeline Live: Plugin + Trigger + Tests + Final Fixes
+## [1.5.0] - 2026-06-19 — Pipeline Live: Plugin + Auto-Prefix + 20 Tests
 
 ### P0 — Wire Pipeline to Runtime (BREAKING: pipeline now LIVE)
-- **`.opencode/plugins/intent-router.js`**: OpenCode plugin via `chat.message` hook → intercepts every user message → shells to `run-router.ps1`. Non-blocking, never crashes chat. Registered via `"plugin": [".opencode/plugins/intent-router.js"]`.
-- **`scripts/run-router.ps1`**: Clean entry point for plugin → dot-sources all pipeline modules → calls `Invoke-IntentRouter`. No quick-abort path (pipeline handles eco/short inputs internally).
+- **`.opencode/plugins/intent-router.js`**: OpenCode plugin via `chat.message` hook → intercepts every user message → shells to `run-router.ps1`. **Blocking mode** (15s timeout): menunggu pipeline selesai, lalu **prepend** prefix `[Pipeline: intent/complexity/confidence% | chain]` ke user message. AI melihat hasil pipeline sebagai baris pertama setiap input.
+- **`scripts/run-router.ps1`**: Clean entry point for plugin → dot-sources all pipeline modules → calls `Invoke-IntentRouter`.
+- **Auto-Prefix**: Plugin otomatis menambahkan `[Pipeline: intent/complexity/confidence% | chain_summary]` ke setiap user message. AI tidak perlu trigger pipeline manual.
+- **preprocess.md**: Updated — dokumentasi auto-prefix + plugin mechanism.
+- **.gitignore**: `!.opencode/plugins/` exception untuk plugin tracking.
 - **`start.ps1`**: Updated Step 7/7 to prime pipeline at startup (runs `Invoke-IntentRouter` for fresh context before launch).
 - **`preprocess.md`**: AI WAJIB trigger pipeline via `trigger-pipeline.ps1` before every turn.
 

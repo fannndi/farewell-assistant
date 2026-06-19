@@ -37,25 +37,22 @@ exports.server = async (ctx) => {
                     return;
                 }
 
-                // Build compact prefix
-                const intent = data.intent;
+                // Build footer — single consistent format
+                const intent = data.intent || "unknown";
                 const domain = data.domain || "";
                 const complexity = data.complexity || "";
                 const confidence = data.confidence ? Math.round(data.confidence * 100) + "%" : "";
-                const chain = data.chain_summary || "";
-                const source = data.source || "";
+                const chain = data.chain || [];
+                const chainSteps = chain.length > 0 ? chain.length : "";
+                const model = data.model_primary || "";
+                const turn = data.turn || "";
+                const work = data.work_mode || "";
+                const mode = data.profile || "";
 
-                const parts = [];
-                if (intent) parts.push(intent);
-                if (domain && domain !== "general") parts.push(domain);
-                if (complexity) parts.push(complexity);
-                if (confidence) parts.push(confidence);
-                if (source && source !== "structured") parts.push(source);
-
-                const prefix = `[Pipeline: ${parts.join("/")} | ${chain}]\n`;
+                const footer = `Intent: ${intent} | Complexity: ${complexity} (${confidence}) | Domain: ${domain} | Chain: ${chainSteps} steps | Model: ${model} | Turn: ${turn} | Mode: ${mode}\n`;
 
                 // Prepend to user message — AI sees this before the actual input
-                output.parts.unshift({ type: "text", text: prefix });
+                output.parts.unshift({ type: "text", text: footer });
             } catch (e) {
                 // Log error but never crash the chat
                 console.error("[intent-router] pipeline error:", e.message || e);

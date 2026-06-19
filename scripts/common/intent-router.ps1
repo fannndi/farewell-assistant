@@ -307,10 +307,8 @@ function Sync-TurnState {
 # Session State
 
 - **Project:** $active
-- **Kategori:** $kategori
 - **Mode:** $mode
 - **Work:** $work
-- **Started:** $sessionStarted
 
 # Turn State
 
@@ -321,7 +319,6 @@ function Sync-TurnState {
 - **Chain:** $chainDisplay
 - **Model:** $modelDisplay
 - **Planning:** $planningDisplay
-- **Blocked:** $blockedDisplay
 - **Turn:** $turnCount
 "@
 

@@ -222,11 +222,11 @@ Ditulis oleh `Invoke-IntentRouter` setelah klasifikasi:
 ```json
 {
   "intent": "build",
-  "domain": "automation",
-  "stack": ["powershell"],
+  "domain": "web",
+  "stack": ["javascript", "react"],
   "complexity": "medium",
-  "confidence": 0.85,
-  "chain": ["orch-add-feature", "powershell-patterns", "tdd-workflow"],
+  "confidence": 0.95,
+  "chain": ["orch-add-feature", "api-design", "backend-patterns"],
   "model_primary": "Free",
   "needs_planning": false,
   "turn": 12
@@ -237,25 +237,40 @@ Ditulis oleh `Invoke-IntentRouter` setelah klasifikasi:
 Berisi session state + turn state yang diupdate setiap turn:
 ```markdown
 # Session State
+
 - **Project:** farewell-assistant
-- **Mode:** eco
+- **Mode:** balance
 - **Work:** BUILD
 
 # Turn State
+
 - **Intent:** build
 - **Complexity:** medium
-- **Chain:** orch-add-feature → powershell-patterns → tdd-workflow
+- **Confidence:** 95%(structured)
+- **Stack:** javascript, react
+- **Chain:** orch-add-feature → api-design → backend-patterns
 - **Model:** Free/Free
+- **Planning:** no
 - **Turn:** 12
 ```
+
+### 3. Plugin Auto-Prefix (single consistent indicator)
+Plugin `.opencode/plugins/intent-router.js` menambahkan **satu baris footer konsisten** ke setiap user message:
+```
+Intent: build | Complexity: medium (95%) | Domain: web | Chain: 3 steps | Model: Free | Turn: 12 | Mode: balance
+```
+
+**Format konsisten** dipakai di SEMUA tempat — plugin prefix, context.md, dan dokumentasi. AI melihat footer ini sebagai baris pertama dari setiap user input.
 
 ### Data Flow
 
 ```
 User Input
-  → Invoke-IntentRouter (classify + route)
-  → Sync-TurnState (tulis ke pipeline-result.json + context.md)
-  → AI reads context.md (lihat semua data)
+  → Plugin chat.message hook
+    → Run run-router.ps1 (classify + route)
+    → Write pipeline-result.json + context.md
+    → Prepend footer ke user message
+  → AI reads: footer + context.md + pipeline-result.json
   → AI execute (dengan konteks lengkap)
 ```
 

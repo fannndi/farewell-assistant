@@ -49,7 +49,7 @@ exports.server = async (ctx) => {
                 const work = data.work_mode || "";
                 const mode = data.profile || "";
 
-                const footer = `Intent: ${intent} | Complexity: ${complexity} (${confidence}) | Domain: ${domain} | Chain: ${chainSteps} steps | Model: ${model} | Turn: ${turn} | Mode: ${mode}\n`;
+                const footer = `Intent: ${intent} | Complexity: ${complexity} (${confidence}) | Domain: ${domain} | Chain: ${chainSteps} steps | Model: ${model} | Work: ${work} | Turn: ${turn} | Mode: ${mode}\n`;
 
                 // Prepend to user message — AI sees this before the actual input
                 output.parts.unshift({ type: "text", text: footer });

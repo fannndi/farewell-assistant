@@ -21,6 +21,7 @@
     "{project}/.opencode/llm-mode.json",
     "{project}/.opencode/work-mode.json",
     "{project}/.opencode/pipeline-result.json",
+    "{project}/.opencode/context.md",
     "{project}/instructions/user-rules.md",
     "{project}/instructions/preprocess.md",
     "{project}/projects/context/{context_file}.md"

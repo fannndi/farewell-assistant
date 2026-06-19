@@ -145,30 +145,19 @@ Skill chain dijalankan berurutan. Setiap skill:
 3. Ejekusi dengan model route yang dipilih
 4. Output → input ke skill berikutnya
 
-### ⚡ Execution: AI WAJIB Trigger Pipeline
+### ⚡ Execution: Plugin Auto-Runs Pipeline
 
-Pipeline (Invoke-IntentRouter) adalah **PowerShell function**, bukan mekanisme internal AI. AI WAJIB menjalankan pipeline secara eksplisit sebelum memproses setiap user input:
-
-**Setiap kali menerima input baru, AI harus:**
-1. Jalankan pipeline: jalankan `powershell -ExecutionPolicy Bypass -File "{project}\\scripts\\common\\trigger-pipeline.ps1" -InputText "<user_input>"`
-2. Baca `.opencode/pipeline-result.json` untuk intent classification
-3. Baca `.opencode/context.md` untuk turn state
-4. Lanjutkan eksekusi berdasarkan hasil pipeline
-
-**PENTING:** File pipeline-result.json dan context.md hanya update jika AI menjalankan pipeline. Jangan gunakan data stale. Pipeline harus di-trigger setiap turn.
-
-### 🔄 Auto-Prefix (Plugin)
-
-**Plugin `.opencode/plugins/intent-router.js`** secara otomatis:
+**Plugin `.opencode/plugins/intent-router.js`** secara otomatis menjalankan pipeline setiap user input:
 1. Menjalankan `Invoke-IntentRouter` via `run-router.ps1` di `chat.message` hook
-2. Menambahkan prefix `[Pipeline: intent/complexity/confidence% | chain_summary]` ke user message
-3. AI akan melihat prefix ini sebagai baris pertama dari setiap user input
+2. Menulis hasil ke `pipeline-result.json` + `context.md`
+3. Prepend footer konsisten ke user message
 
 **AI tidak perlu trigger pipeline manual** — plugin sudah melakukannya.
-Prefix otomatis muncul di prompt AI sebagai:
+
+Footer konsisten muncul di prompt AI sebagai:
 
 ```
-[Pipeline: build/high/80% | orch-add-feature → ...]
+Intent: build | Complexity: medium (95%) | Domain: web | Chain: 8 steps | Model: Free | Turn: 1 | Mode: BUILD
 User: bikin CRUD user dengan auth JWT
 ```
 

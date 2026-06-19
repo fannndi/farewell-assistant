@@ -22,6 +22,7 @@
     "{project}/.opencode/work-mode.json",
     "{project}/.opencode/pipeline-result.json",
     "{project}/.opencode/context.md",
+    "{project}/training/knowledge-base.md",
     "{project}/instructions/user-rules.md",
     "{project}/instructions/preprocess.md",
     "{project}/projects/context/{context_file}.md"
@@ -160,6 +161,10 @@
       "template": "{file:{project}/ecc/.opencode/commands/update-docs.md}\n\n$ARGUMENTS",
       "agent": "doc-updater",
       "subtask": true
+    },
+    "training": {
+      "description": "Training — self-improvement system for pipeline accuracy",
+      "template": "powershell -ExecutionPolicy Bypass -File \"{project}\\scripts\\training\\train.ps1\" $ARGUMENTS"
     }
   },
 

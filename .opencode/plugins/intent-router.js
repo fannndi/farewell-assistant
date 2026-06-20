@@ -8,7 +8,7 @@ const { execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
-const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT || "15000", 10);
+const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT || "30000", 10);
 
 exports.server = async (ctx) => {
     return {
@@ -18,6 +18,7 @@ exports.server = async (ctx) => {
                 if (!text || text.length < 3) return;
 
                 const py = findPython(ctx.directory);
+                const callTime = Date.now();
 
                 try {
                     execFileSync(
@@ -31,7 +32,7 @@ exports.server = async (ctx) => {
                         }
                     );
                 } catch (e) {
-                    // Timeout or non-zero exit — pipeline may have partially written result
+                    // Timeout or non-zero exit
                 }
 
                 const pipelinePath = path.join(ctx.directory, ".opencode", "pipeline-result.json");
@@ -40,6 +41,13 @@ exports.server = async (ctx) => {
                 const data = JSON.parse(raw);
                 if (!data || !data.intent) return;
 
+                // Staleness check — pipeline result older than call = stale
+                const pipelineTime = new Date(data.timestamp).getTime() || 0;
+                if (pipelineTime < callTime - 2000) {
+                    output.parts.unshift({ type: "text", text: `[TIMEOUT] Pipeline timeout. Mode: ${(data.profile || "eco").charAt(0).toUpperCase() + (data.profile || "eco").slice(1)}\n` });
+                    return;
+                }
+
                 // HOLD — input too vague
                 if (data.blocked === true && data.hold === true) {
                     const reason = data.reason || "Input kurang presisi";
@@ -47,14 +55,14 @@ exports.server = async (ctx) => {
                     return;
                 }
 
-                // BLOCKED — permission denied (plan mode blocking build/fix/deploy)
+                // BLOCKED — permission denied
                 if (data.blocked === true && !data.hold) {
                     const reason = data.reason || "Intent diblokir oleh work mode";
                     output.parts.unshift({ type: "text", text: `[BLOCKED] ${reason}\n` });
                     return;
                 }
 
-                // Build footer — project awareness + pipeline proof
+                // Build footer
                 const project = data.project || "farewell-assistant";
                 const workMode = (data.work_mode || "build").toUpperCase();
                 const turn = data.turn || 0;

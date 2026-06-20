@@ -143,6 +143,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
     context_content = f"""# Session State
 
 - **Project:** {active}
+- **Kategori:** {kategori}
 - **Mode:** {mode}
 - **Work:** {work}
 

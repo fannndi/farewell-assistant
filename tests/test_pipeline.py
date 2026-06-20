@@ -152,28 +152,28 @@ class TestCheckInputSufficiency:
         r = check_input_sufficiency("deploy", {"intent": "deploy", "stack": []})
         assert r["sufficient"] is False
 
-    def test_build_with_entity_stack(self):
+    def test_build_always_sufficient(self):
         r = check_input_sufficiency(
-            "bikin CRUD user dengan auth JWT dan React",
-            {"intent": "build", "stack": ["react"]},
+            "bikin CRUD user",
+            {"intent": "build", "stack": []},
         )
         assert r["sufficient"] is True
 
-    def test_build_no_entity(self):
+    def test_build_with_stack(self):
         r = check_input_sufficiency(
-            "bikin sesuatu yang bagus",
-            {"intent": "build", "stack": []},
+            "bikin CRUD user dengan React",
+            {"intent": "build", "stack": ["react"]},
         )
-        assert r["sufficient"] is False
-        assert "entity" in r["reason"]
+        assert r["sufficient"] is True
+        assert r.get("auto_detect_stack") is False
 
-    def test_build_no_stack(self):
+    def test_build_without_stack(self):
         r = check_input_sufficiency(
-            "bikin user login page",
+            "bikin CRUD user",
             {"intent": "build", "stack": []},
         )
-        assert r["sufficient"] is False
-        assert "tech stack" in r["reason"]
+        assert r["sufficient"] is True
+        assert r.get("auto_detect_stack") is True
 
 
 class TestCacheFunctions:

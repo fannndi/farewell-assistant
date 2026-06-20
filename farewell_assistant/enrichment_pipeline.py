@@ -195,7 +195,7 @@ def invoke_structured_enrichment(text_input: str, context: str = "", force: bool
 # ---------------------------------------------------------------------------
 
 _DOMAIN_PATTERNS: list[tuple[str, str]] = [
-    (r"react|nextjs|next\.js|vue|angular|frontend|ui|css|html|api|rest|express|fastapi|django|laravel|spring|nest", "web"),
+    (r"react|nextjs|next\.js|vue|angular|frontend|ui|css|html|api|rest|express|fastapi|django|laravel|spring|nest|crud|auth|jwt|backend|server|middleware|token|login|register", "web"),
     (r"flutter|dart|kotlin|android|ios|swift|compose|mobile|react.native", "mobile"),
     (r"docker|kubernetes|k8s|ci|cd|deploy|nginx|terraform|ansible|infra", "infra"),
     (r"postgres|mysql|redis|clickhouse|database|sql|etl|pipeline|data", "data"),
@@ -254,7 +254,7 @@ def get_quick_intent(text_input: str) -> dict:
         complexity = "medium"
         if re.search(r"simple|basic|quick|tipis", input_lower):
             complexity = "low"
-        if re.search(r"full|complex|advanced|enterprise|sistem|api|crud|auth", input_lower):
+        if re.search(r"full|complex|advanced|enterprise|sistem", input_lower):
             complexity = "high"
         return {"intent": "build", "domain": domain, "stack": stack, "complexity": complexity, "confidence": 0.8}
 
@@ -293,40 +293,17 @@ def check_input_sufficiency(text_input: str, classified: dict | None) -> dict:
     if intent == "deploy" and re.search(r"(deploy|release)\s+\w+\s+\w+", input_lower):
         return {"sufficient": True}
 
-    # HOLD: build intent — needs entity + stack
+    # BUILD intent — always sufficient, flag auto-detection
     if intent == "build":
-        missing = []
-        # Check for specific entity
-        has_entity = bool(re.search(
-            r"(user|product|order|payment|auth|login|register|profile|comment|post|article|task|item|"
-            r"category|admin|customer|invoice|report|dashboard|setting|notification|page|component|"
-            r"form|table|list|modal|menu|sidebar|header|footer|search|filter|cart|checkout|blog|"
-            r"forum|message|chat|email|settings|upload|download|import|export|backup|migrate|sync|"
-            r"validate|verify|approve|reject|assign|schedule|queue|cache|log|monitor|alert|metric|"
-            r"analytics|saas|erp|crm|cms|pos|hrm|lms|iot)",
-            input_lower,
-        ))
-        if not has_entity:
-            missing.append("entity/fitur")
-
-        # Check for stack/framework
         has_stack = bool(stack) and stack[0] != ""
         if not has_stack:
             has_stack_hint = bool(re.search(
                 r"(react|vue|angular|next|nuxt|django|fastapi|laravel|spring|express|nest|"
                 r"flutter|swift|kotlin|python|node|go|rust|php|java|typescript|javascript|"
-                r"powershell|postgres|mysql|redis|docker|kubernetes)",
+                r"powershell|postgres|mysql|redis|docker|kubernetes|crud|auth|jwt|rest|graphql)",
                 input_lower,
             ))
-            if not has_stack_hint:
-                missing.append("tech stack")
-
-        if missing:
-            return {
-                "sufficient": False,
-                "reason": f"Input kurang presisi. Perlu: {', '.join(missing)}",
-                "missing": missing,
-            }
+        return {"sufficient": True, "auto_detect_stack": not has_stack}
 
     # HOLD: fix/deploy too short
     if intent in ("fix", "deploy") and word_count < 3:

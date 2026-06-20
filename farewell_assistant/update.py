@@ -11,7 +11,7 @@ def update_repo(repo_dir: Path, label: str, remote: str, branch: str) -> bool:
     if not git_dir.exists():
         write_skip(f"{label}: .git not found in {repo_dir}")
         return False
-    write_step(f"Updating {label} ({remote}/{branch})...")
+    write_step(label, f"Updating {label} ({remote}/{branch})...")
     try:
         result = subprocess.run(
             ["git", "pull", "--ff-only", remote, branch],
@@ -47,7 +47,7 @@ def rebuild_9router_if_needed(was_updated: bool) -> bool:
     use_shell = platform.system() == "Windows"
     node_modules = config.ROUTER_DIR / "node_modules"
     if not node_modules.exists():
-        write_step("Installing 9Router dependencies...")
+        write_step("9Router", "Installing 9Router dependencies...")
         try:
             subprocess.run(
                 ["npm", "install"],
@@ -61,7 +61,7 @@ def rebuild_9router_if_needed(was_updated: bool) -> bool:
         except subprocess.CalledProcessError as e:
             write_info(f"npm install failed: {e.stderr.strip()}")
             return False
-    write_step("Building 9Router...")
+    write_step("9Router", "Building 9Router...")
     try:
         result = subprocess.run(
             ["npm", "run", "build"],

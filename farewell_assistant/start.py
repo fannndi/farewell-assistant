@@ -87,9 +87,16 @@ def _handle_config():
         write_skip("api-key.txt not found")
         return
 
-    api_key, combo_entries, combo_models = parse_api_key()
+    api_key_config = parse_api_key()
+    api_key, combo_entries, combo_models = api_key_config
 
     if combo_entries:
+        # Export env vars for 9Router startup
+        if api_key:
+            os.environ["NINEROUTER_API_KEY"] = api_key
+        if api_key_config.router_password:
+            os.environ["9ROUTER_PASSWORD"] = api_key_config.router_password
+
         write_ok("API keys loaded")
         # Check for new/changed combos
         cached = read_json(config.COMBO_FILE, default=[]) or []

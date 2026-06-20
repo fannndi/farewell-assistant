@@ -296,10 +296,11 @@ def start_9router() -> bool:
 
 class ApiKeyConfig:
     """Parsed API key configuration."""
-    __slots__ = ("api_key", "combo_entries", "combo_models")
+    __slots__ = ("api_key", "router_password", "combo_entries", "combo_models")
 
-    def __init__(self, api_key: str | None, combo_entries: dict[str, dict], combo_models: dict[str, dict]):
+    def __init__(self, api_key: str | None, router_password: str, combo_entries: dict[str, dict], combo_models: dict[str, dict]):
         self.api_key = api_key
+        self.router_password = router_password
         self.combo_entries = combo_entries
         self.combo_models = combo_models
 
@@ -308,8 +309,9 @@ class ApiKeyConfig:
 
 
 def parse_api_key() -> ApiKeyConfig:
-    """Parse api-key.txt. Returns ApiKeyConfig with api_key, combo_entries, combo_models."""
+    """Parse api-key.txt. Returns ApiKeyConfig with api_key, router_password, combo_entries, combo_models."""
     api_key = None
+    router_password = ""
     combo_entries: dict[str, dict] = {}
     combo_models: dict[str, dict] = {}
     try:
@@ -321,6 +323,8 @@ def parse_api_key() -> ApiKeyConfig:
             k, v = k.strip(), v.strip()
             if k == "NINEROUTER_API_KEY":
                 api_key = v
+            elif k == "9ROUTER_PASSWORD":
+                router_password = v
             elif k.startswith("COMBO_"):
                 idx = k.replace("COMBO_", "")
                 combo_entries.setdefault(idx, {})["combo"] = v
@@ -333,7 +337,7 @@ def parse_api_key() -> ApiKeyConfig:
             write_task_log("PARSE_API_KEY", f"Parse error: {e}", "fail")
         except Exception:
             pass
-    return ApiKeyConfig(api_key, combo_entries, combo_models)
+    return ApiKeyConfig(api_key, router_password, combo_entries, combo_models)
 
 
 # ---------------------------------------------------------------------------

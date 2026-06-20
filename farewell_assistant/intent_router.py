@@ -2,7 +2,6 @@
 
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 
 from . import config
 from .helpers import get_llm_mode, get_work_mode, read_json, write_json, _c
@@ -13,7 +12,7 @@ from .enrichment_pipeline import (
     set_cached_intent,
     check_input_sufficiency,
 )
-from .skill_chain import get_skill_chain, show_skill_chain
+from .skill_chain import get_skill_chain
 from .log import write_task_log
 
 # ---------------------------------------------------------------------------
@@ -138,15 +137,6 @@ def sync_turn_state(result: dict, user_input: str = ""):
         model_display = ""
 
     turn_count = result.get("turn", 0)
-
-    # Get session start time
-    session_started = now
-    try:
-        ss = read_json(config.STATE_DIR / "session-state.json")
-        if ss and ss.get("session", {}).get("started"):
-            session_started = ss["session"]["started"]
-    except Exception:
-        pass
 
     context_content = f"""# Session State
 

@@ -202,8 +202,8 @@ def stop_9router():
             for line in result.stdout.splitlines():
                 if f":{router_port}" in line and "LISTENING" in line:
                     parts = line.split()
-                    if parts:
-                        pid = int(parts[-1])
+                    if len(parts) >= 5:
+                        pid = int(parts[4])
                         try:
                             subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True)
                         except Exception:

@@ -1,9 +1,12 @@
 // Run precision pipeline on every user message.
 // Blocking: waits for pipeline to complete (PIPELINE_TIMEOUT env or 15s default).
-// Prepend pipeline result as [Pipeline:] prefix to user message parts.
+// Prepend pipeline result as footer to user message parts.
 // AI sees intent, complexity, confidence, and skill chain before every turn.
+//
+// Security: User input passed as separate argv arg, NOT interpolated into shell command.
+// This prevents command injection via $(), backtick, or other shell metacharacters.
 
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
@@ -16,13 +19,24 @@ exports.server = async (ctx) => {
                 const text = extractText(output?.parts);
                 if (!text || text.length < 3) return;
 
-                // Run pipeline and wait for result
-                const scriptPath = path.join(ctx.directory, "scripts", "run-router.ps1");
-                const escaped = text.replace(/"/g, '`"');
-                execSync(
-                    `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" -InputText "${escaped}"`,
-                    { timeout: PIPELINE_TIMEOUT, windowsHide: true, stdio: "ignore" }
-                );
+                // Find Python executable
+                const py = findPython(ctx.directory);
+
+                // Run pipeline via Python CLI — user input as separate argument (no shell interpolation)
+                try {
+                    execFileSync(
+                        py,
+                        ["-m", "farewell_assistant.run_router", "--input", text],
+                        {
+                            cwd: ctx.directory,
+                            timeout: PIPELINE_TIMEOUT,
+                            windowsHide: true,
+                            stdio: "ignore",
+                        }
+                    );
+                } catch (e) {
+                    // Timeout or non-zero exit — continue, pipeline may have partially written result
+                }
 
                 // Read fresh pipeline result
                 const pipelinePath = path.join(ctx.directory, ".opencode", "pipeline-result.json");
@@ -62,6 +76,21 @@ exports.server = async (ctx) => {
         },
     };
 };
+
+function findPython(projectDir) {
+    // Try standard locations
+    const candidates = [
+        "py",
+        "python3",
+        "python",
+    ];
+    // Also try the project's venv if exists
+    const venvWin = path.join(projectDir, ".venv", "Scripts", "python.exe");
+    const venvUnix = path.join(projectDir, ".venv", "bin", "python3");
+    if (fs.existsSync(venvWin)) return venvWin;
+    if (fs.existsSync(venvUnix)) return venvUnix;
+    return candidates[0];
+}
 
 function extractText(parts) {
     if (!Array.isArray(parts)) return "";

@@ -35,11 +35,23 @@ def _hash_input(text: str) -> str:
 
 
 def get_cached_intent(text: str) -> dict | None:
-    return _intent_cache.get(_hash_input(text))
+    key = _hash_input(text)
+    entry = _intent_cache.get(key)
+    if not entry:
+        return None
+    ts = entry.get("timestamp", 0)
+    ttl = config.ENRICHMENT.get("cache_ttl", 3600)
+    if time.time() - ts > ttl:
+        del _intent_cache[key]
+        return None
+    return entry.get("data")
 
 
 def set_cached_intent(text: str, intent: dict):
-    _intent_cache[_hash_input(text)] = intent
+    _intent_cache[_hash_input(text)] = {
+        "data": intent,
+        "timestamp": time.time(),
+    }
     _save_cache()
 
 
@@ -47,6 +59,17 @@ def clear_intent_cache():
     _intent_cache.clear()
     if _CACHE_FILE.exists():
         _CACHE_FILE.unlink(missing_ok=True)
+
+
+def purge_expired_cache():
+    """Remove expired entries from cache."""
+    now = time.time()
+    ttl = config.ENRICHMENT.get("cache_ttl", 3600)
+    expired = [k for k, v in _intent_cache.items() if now - v.get("timestamp", 0) > ttl]
+    for k in expired:
+        del _intent_cache[k]
+    if expired:
+        _save_cache()
 
 
 # Load cache on import

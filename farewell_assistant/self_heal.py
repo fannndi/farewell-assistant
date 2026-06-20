@@ -22,9 +22,7 @@ def _run_check(command: list[str], check_pattern: str = None) -> tuple[bool, str
         )
         output = result.stdout + result.stderr
         passed = result.returncode == 0
-        if not passed and check_pattern and check_pattern in output:
-            passed = False
-        elif not passed and check_pattern and check_pattern not in output:
+        if not passed and check_pattern and check_pattern not in output:
             passed = True
         return passed, output.strip()
     except subprocess.TimeoutExpired:

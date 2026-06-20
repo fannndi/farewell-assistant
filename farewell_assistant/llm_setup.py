@@ -69,13 +69,6 @@ PROFILES = OrderedDict({
     },
 })
 
-VRAM_MAP = OrderedDict({
-    "hot": 600,
-    "eco": 1024,
-    "balance": 1433,
-    "performance": 2560,
-})
-
 MODEL_MAP = OrderedDict({
     "eco": "qwen2.5-coder-1.5b",
     "on": "qwen2.5-coder-1.5b",
@@ -269,7 +262,14 @@ def invoke_auto_mode():
         label = "PERFORMANCE - qwen3.5-4b, ~2.5GB VRAM"
 
     write_info("Recommendation: " + recommendation)
-    response = input("  Switch to " + recommendation + " profile? [y/N] ")
+    try:
+        import sys
+        if not sys.stdin.isatty():
+            write_skip("Non-interactive session, skipping profile switch")
+            return
+        response = input("  Switch to " + recommendation + " profile? [y/N] ")
+    except Exception:
+        response = "n"
     if response.lower() == "y":
         downloaded = invoke_download_gguf(recommendation)
         if not downloaded:

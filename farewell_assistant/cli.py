@@ -5,7 +5,6 @@ import sys
 
 from . import config
 from .detect_project import detect_project
-from .helpers import get_llm_mode
 from .intent_router import invoke_intent_router, show_intent_router_result
 from .llm_setup import handle_llm_setup
 from .start import run_start
@@ -49,6 +48,13 @@ def cmd_autostart(args):
 def cmd_self_heal(args):
     from .self_heal import run_self_heal
     run_self_heal(args.file, args.project)
+
+
+def cmd_enrich_check(args):
+    input_text = " ".join(args.args) if args.args else "apa itu closure"
+    force = not input_text.startswith("_")
+    result = invoke_intent_router(input_text, force=force)
+    show_intent_router_result(result)
 
 
 def main():
@@ -102,6 +108,11 @@ def main():
     sh_p.add_argument("--file", required=True, help="Edited file path")
     sh_p.add_argument("--project", default="", help="Project root path")
     sh_p.set_defaults(func=cmd_self_heal)
+
+    # enrich-check
+    ec_p = subparsers.add_parser("enrich-check", help="Verify enrichment pipeline")
+    ec_p.add_argument("args", nargs="*", help="Optional test input text")
+    ec_p.set_defaults(func=cmd_enrich_check)
 
     args = parser.parse_args()
 

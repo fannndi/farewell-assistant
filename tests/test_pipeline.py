@@ -195,6 +195,25 @@ class TestCacheFunctions:
         r = get_cached_intent("cache clear test")
         assert r is None
 
+    def test_cache_expiry(self):
+        set_cached_intent("cache expiry test", {"intent": "docs"})
+        # Manually set timestamp to past
+        from farewell_assistant.enrichment_pipeline import _intent_cache, _hash_input
+        key = _hash_input("cache expiry test")
+        _intent_cache[key]["timestamp"] = 0
+        r = get_cached_intent("cache expiry test")
+        assert r is None
+
+    def test_purge_expired_cache(self):
+        from farewell_assistant.enrichment_pipeline import purge_expired_cache
+        set_cached_intent("purge test", {"intent": "ask"})
+        from farewell_assistant.enrichment_pipeline import _intent_cache, _hash_input
+        key = _hash_input("purge test")
+        _intent_cache[key]["timestamp"] = 0
+        purge_expired_cache()
+        r = get_cached_intent("purge test")
+        assert r is None
+
 
 class TestSyncTurnState:
     def test_writes_pipeline_result(self, tmp_path):

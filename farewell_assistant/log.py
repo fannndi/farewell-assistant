@@ -1,10 +1,10 @@
 """Structured task logging to logging.md + session state sync."""
 
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 
 from . import config
+from .helpers import read_json, write_json
 
 
 def write_task_log(stage: str, action: str, result: str = "success", files: str = ""):
@@ -23,20 +23,6 @@ def write_task_log(stage: str, action: str, result: str = "success", files: str 
         pass
 
 
-def _read_json(path: Path, default=None):
-    if not path.exists():
-        return default
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return default
-
-
-def _write_json(path: Path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-
-
 def sync_session_state():
     """Write session-state.json + initial context.md."""
     try:
@@ -49,7 +35,7 @@ def sync_session_state():
         # Read registry for active project
         active = "farewell-assistant"
         kategori = "AUTOMATION"
-        reg = _read_json(config.REGISTRY_FILE)
+        reg = read_json(config.REGISTRY_FILE)
         if reg and reg.get("active"):
             active = reg["active"]
             if reg.get("projects", {}).get(active, {}).get("kategori"):
@@ -76,7 +62,7 @@ def sync_session_state():
                 "sessions_count": 1,
             },
         }
-        _write_json(config.STATE_DIR / "session-state.json", state)
+        write_json(config.STATE_DIR / "session-state.json", state)
 
         # context.md is managed by sync_turn_state (intent_router.py)
         # Only write initial context.md if it doesn't exist

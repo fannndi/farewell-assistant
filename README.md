@@ -185,7 +185,7 @@ User Input
     │
     ▼
 ┌─────────────────┐
-│  Quick Classify  │  ← Regex pattern (instant, no LLM)
+│  Cache Check     │  ← Skip kalau sudah di-cache (TTL 1 jam)
 └────────┬────────┘
          ▼
 ┌─────────────────┐
@@ -193,7 +193,7 @@ User Input
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│  Cache Check     │  ← Skip kalau sudah di-cache
+│  Quick Classify  │  ← Fallback: Regex pattern (instant, no LLM)
 └────────┬────────┘
          ▼
 ┌─────────────────┐
@@ -268,7 +268,7 @@ Task dikirim ke cloud AI via 9Router. Routing berdasarkan complexity:
 
 ```
 farewell-assistant/
-├── farewell_assistant/           # Core Python package (14 modules)
+├── farewell_assistant/           # Core Python package (17 modules)
 │   ├── cli.py                    # CLI dispatcher (argparse)
 │   ├── config.py                 # URLs, paths, constants, model routes
 │   ├── intent_router.py          # Intent → Skill Chain → Model Route

@@ -47,12 +47,6 @@ LOG_FILE = ROOT_DIR / "logging.md"
 
 # -- Helpers --
 
-def resolve_path(path: str) -> Path:
-    """Resolve $ROOT placeholder to actual ROOT_DIR."""
-    if path.startswith("$ROOT"):
-        return ROOT_DIR / path[len("$ROOT/"):]
-    return Path(path)
-
 # -- Scheduled Task (cross-platform) --
 TASK_NAME = "FarewellAssistant-9Router"
 

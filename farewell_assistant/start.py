@@ -1,11 +1,14 @@
 """Full startup orchestrator - combines bootstrap, update, health, pipeline."""
 
+import json
+import os
+import subprocess
 import time
 
 from . import config
 from .bootstrap import handle_first_run, bootstrap_check
 from .update import run_update_check, rebuild_9router_if_needed
-from .health import ensure_9router, ensure_ollama, check_gpu, ping_models
+from .health import ensure_9router, ensure_ollama
 from .helpers import (
     get_llm_mode, parse_api_key, read_json, write_info, write_ok, write_skip, write_step,
 )
@@ -72,6 +75,7 @@ def run_start() -> bool:
     sync_session_state()
     duration = round(time.monotonic() - start, 1)
     write_task_log("START", f"Boot completed ({duration}s)", "success")
+    write_step("7/7", "Ready")
     write_ok(f"Ready ({duration}s)")
     return True
 
@@ -90,9 +94,10 @@ def _handle_config():
         # Check for new/changed combos
         cached = read_json(config.COMBO_FILE, default=[]) or []
         cached_map = {str(c.get("name", "")): c for c in cached if isinstance(c, dict)}
-        for idx, name in sorted(combo_entries.items()):
+        for idx, entry in sorted(combo_entries.items()):
             if idx not in cached_map:
-                write_ok(f"NEW combo: {idx} ({name})")
+                combo_name = entry.get("combo", idx)
+                write_ok(f"NEW combo: {idx} ({combo_name})")
         # Save combo cache
         save = []
         for idx in sorted(combo_entries.keys()):
@@ -102,7 +107,6 @@ def _handle_config():
                 "models": combo_models.get(idx, {}).get("models", []),
             })
         config.COMBO_FILE.parent.mkdir(parents=True, exist_ok=True)
-        import json
         config.COMBO_FILE.write_text(json.dumps(save, indent=2, ensure_ascii=False), encoding="utf-8")
         write_ok("Combos saved")
 
@@ -137,7 +141,6 @@ def _generate_profile(combo_entries: dict, combo_models: dict):
     model_obj = {}
     for c in combos:
         model_obj[c] = {"name": c + " combo"}
-    import json
     content = content.replace("${COMBO_MODELS}", json.dumps(model_obj, indent=2))
 
     # Context file

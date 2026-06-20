@@ -1,6 +1,5 @@
 """Cross-platform autostart manager — Scheduled Tasks (Windows), systemd user service (Linux)."""
 
-import json
 import os
 import platform
 import subprocess

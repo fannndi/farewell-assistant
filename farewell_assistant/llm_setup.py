@@ -37,7 +37,7 @@ PROFILES = OrderedDict({
         "condition": "Outdoor, unplugged, high temp",
         "hf_repo": "unsloth/Qwen3.5-0.8B-GGUF",
         "hf_file": "Qwen3.5-0.8B-Q4_K_M.gguf",
-        "modelfile": str(config.ROOT_DIR / "Modelfile.qwen3.5-0.8b"),
+        "modelfile": str(config.LLM_DIR / "Modelfile.qwen3.5-0.8b"),
         "size_gb": 0.5,
     },
     "eco": {
@@ -46,7 +46,7 @@ PROFILES = OrderedDict({
         "condition": "Indoor, unplugged",
         "hf_repo": "Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF",
         "hf_file": "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf",
-        "modelfile": str(config.ROOT_DIR / "Modelfile.qwen2.5-coder-1.5b"),
+        "modelfile": str(config.LLM_DIR / "Modelfile.qwen2.5-coder-1.5b"),
         "size_gb": 1.0,
     },
     "balance": {
@@ -55,7 +55,7 @@ PROFILES = OrderedDict({
         "condition": "Indoor, plugged, AC",
         "hf_repo": "unsloth/Qwen3.5-2B-GGUF",
         "hf_file": "Qwen3.5-2B-Q4_K_M.gguf",
-        "modelfile": str(config.ROOT_DIR / "Modelfile.qwen3.5-2b"),
+        "modelfile": str(config.LLM_DIR / "Modelfile.qwen3.5-2b"),
         "size_gb": 1.4,
     },
     "performance": {
@@ -64,7 +64,7 @@ PROFILES = OrderedDict({
         "condition": "Indoor, plugged, fan active",
         "hf_repo": "unsloth/Qwen3.5-4B-GGUF",
         "hf_file": "Qwen3.5-4B-Q4_K_M.gguf",
-        "modelfile": str(config.ROOT_DIR / "Modelfile.qwen3.5-4b"),
+        "modelfile": str(config.LLM_DIR / "Modelfile.qwen3.5-4b"),
         "size_gb": 2.5,
     },
 })
@@ -263,7 +263,7 @@ def invoke_import_ollama(profile_name: str) -> bool:
 
 def invoke_auto_mode():
     write_step("AUTO", "Detecting GPU hardware...")
-    gpu_info = get_gpu_info("name,memory.total,temperature.gpu")
+    gpu_info = get_gpu_info("name,memory.total,memory.used,temperature.gpu")
 
     if not gpu_info or (not gpu_info.get("name") and not gpu_info.get("memory_total")):
         write_fail("No GPU detected")

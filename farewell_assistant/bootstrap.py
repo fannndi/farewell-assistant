@@ -95,6 +95,20 @@ def handle_first_run() -> bool:
     write_step("BOOTSTRAP", "First-run setup")
     result = run_bootstrap()
     if result:
+        # Ask LLM setup — download all 4 models
+        try:
+            import sys
+            if sys.stdin.isatty():
+                response = input("\n  Setup LLM? Download all 4 models? [y/N] ").strip().lower()
+                if response == "y":
+                    from .llm_setup import handle_llm_setup
+                    write_step("LLM", "Downloading all 4 profiles...")
+                    handle_llm_setup("pull")
+                    from .llm_setup import set_llm_mode
+                    set_llm_mode("eco")
+                    write_ok("LLM setup complete — eco mode (default)")
+        except Exception:
+            pass
         write_ok("Bootstrap complete")
         write_task_log("bootstrap", "first-run setup", result="success")
     else:

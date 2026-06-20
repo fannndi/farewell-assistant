@@ -32,6 +32,9 @@ REGISTRY_FILE = DATA_DIR / "registry.json"
 SKILL_IDX_FILE = DATA_DIR / "skill-mode-index.json"
 CONTEXT_DIR = PROJECT_CONTEXT_DIR  # alias for context lookups
 
+# -- LLM (Modelfiles, GGUF models) --
+LLM_DIR = DATA_DIR / "llm"
+
 # -- State Files --
 STATE_DIR = ROOT_DIR / ".opencode"
 LOG_DIR = STATE_DIR / "logs"

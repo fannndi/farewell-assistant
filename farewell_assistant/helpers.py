@@ -332,24 +332,26 @@ def get_gpu_info(fields: str = "utilization.gpu,memory.used,memory.total") -> di
         if gpu_raw.returncode != 0 or not gpu_raw.stdout.strip():
             return {"available": False, "utilization": 0, "memory_used": 0, "memory_total": 0}
 
+        # Parse by field order — nvidia-smi outputs values in same order as --query-gpu
+        field_list = [f.strip() for f in fields.split(",")]
         parts = [p.strip() for p in gpu_raw.stdout.strip().split(",")]
         result = {"available": True}
-        for p in parts:
-            if re.match(r"^\d+(\.\d+)?\s*%$", p):
-                result["utilization"] = int(p.replace(" %", ""))
-            elif re.match(r"^\d+\s*MiB$", p):
-                if "memory_used" not in result:
-                    result["memory_used"] = int(p.replace(" MiB", ""))
-                else:
-                    result["memory_total"] = int(p.replace(" MiB", ""))
-            elif re.match(r"^\d+\s*C$", p):
-                result["temperature"] = int(p.replace(" C", ""))
-            elif not re.match(r"^\d", p):
-                result["name"] = p
+        for field, value in zip(field_list, parts):
+            if field == "name":
+                result["name"] = value
+            elif field == "memory.total":
+                m = re.search(r"(\d+)", value)
+                result["memory_total"] = int(m.group(1)) if m else 0
+            elif field == "memory.used":
+                m = re.search(r"(\d+)", value)
+                result["memory_used"] = int(m.group(1)) if m else 0
+            elif field == "temperature.gpu":
+                m = re.search(r"(\d+)", value)
+                result["temperature"] = int(m.group(1)) if m else 0
+            elif field == "utilization.gpu":
+                m = re.search(r"(\d+)", value)
+                result["utilization"] = int(m.group(1)) if m else 0
 
-        result.setdefault("utilization", 0)
-        result.setdefault("memory_used", 0)
-        result.setdefault("memory_total", 0)
         return result
     except Exception:
         return {"available": False, "utilization": 0, "memory_used": 0, "memory_total": 0}

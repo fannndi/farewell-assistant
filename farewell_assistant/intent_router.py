@@ -46,6 +46,57 @@ def check_task_permission(intent: dict, work_mode: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Skill-Level Permission (mode-based skill filtering)
+# ---------------------------------------------------------------------------
+
+def filter_chain_by_mode(chain: list[dict[str, str]], work_mode: str) -> list[dict[str, str]]:
+    """Filter skill chain: remove WRITE skills if in PLAN mode."""
+    if work_mode != "plan":
+        return chain
+
+    build_skills = _get_build_skills()
+    hybrid_skills = _get_hybrid_skills()
+    filtered = []
+    for step in chain:
+        name = step["name"]
+        if name in build_skills:
+            continue  # skip WRITE skills in PLAN mode
+        step_copy = dict(step)
+        if name in hybrid_skills:
+            step_copy["mode_hint"] = "PLAN: analysis only"
+        filtered.append(step_copy)
+    return filtered
+
+
+def _get_build_skills() -> set[str]:
+    """Load WRITE-only skill names from skill-mode-index."""
+    try:
+        idx = read_json(config.DATA_DIR / "skill-mode-index.json")
+        if not idx:
+            return set()
+        skills = []
+        for group in idx.get("build", {}).get("skill_groups", {}).values():
+            skills.extend(group)
+        return set(skills)
+    except Exception:
+        return set()
+
+
+def _get_hybrid_skills() -> set[str]:
+    """Load HYBRID skill names from skill-mode-index."""
+    try:
+        idx = read_json(config.DATA_DIR / "skill-mode-index.json")
+        if not idx:
+            return set()
+        skills = []
+        for group in idx.get("hybrid", {}).get("skill_groups", {}).values():
+            skills.extend(group)
+        return set(skills)
+    except Exception:
+        return set()
+
+
+# ---------------------------------------------------------------------------
 # Model Route Selection
 # ---------------------------------------------------------------------------
 
@@ -230,6 +281,9 @@ def invoke_intent_router(
 
     # Step 3: Build skill chain
     chain = get_skill_chain(classified["intent"], classified["domain"])
+
+    # Step 3.5: Filter chain by work mode (remove WRITE skills in PLAN mode)
+    chain = filter_chain_by_mode(chain, work_mode)
 
     # Step 4: Select model route
     model_route = select_model_route(classified["complexity"], active_profile)

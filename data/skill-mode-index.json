@@ -1,88 +1,347 @@
 {
-  "version": "1.1.0",
-  "updated_at": "2026-06-18",
+  "version": "2.0.0",
+  "updated_at": "2026-06-20",
 
   "plan": {
     "description": "Read-only mode: audit, research, analyze, no file modification",
-    "skills": {
+    "skill_groups": {
       "audit": [
-        "workspace-surface-audit",
         "repo-scan",
-        "context-budget",
+        "workspace-surface-audit",
         "agent-architecture-audit",
         "automation-audit-ops",
-        "ecc-guide"
+        "ecc-tools-cost-audit",
+        "context-budget",
+        "config-gc",
+        "click-path-audit",
+        "codehealth-mcp",
+        "production-audit",
+        "ecc-guide",
+        "skill-comply",
+        "skill-scout",
+        "skill-stocktake"
       ],
       "research": [
-        "search-first",
         "research-ops",
         "deep-research",
         "exa-search",
         "documentation-lookup",
-        "literature-review"
-      ],
-      "explore": [
-        "codebase-onboarding",
-        "code-tour",
-        "iterative-retrieval",
-        "config-gc"
+        "literature-review",
+        "market-research",
+        "prediction-market-oracle-research",
+        "ito-market-intelligence",
+        "ito-basket-compare",
+        "pubmed-database",
+        "uspto-database",
+        "gget",
+        "science-thinking-scholar-evaluation"
       ],
       "planning": [
         "blueprint",
         "product-capability",
         "intent-driven-development",
-        "plan-orchestrate"
+        "plan-orchestrate",
+        "product-lens",
+        "council",
+        "recursive-decision-ledger",
+        "token-budget-advisor",
+        "strategic-compact"
+      ],
+      "review": [
+        "coding-standards",
+        "security-review",
+        "security-bounty-hunter",
+        "security-scan",
+        "flutter-dart-code-review",
+        "codehealth-mcp",
+        "error-handling",
+        "santa-method"
+      ],
+      "reference": [
+        "python-patterns",
+        "python-testing",
+        "fastapi-patterns",
+        "django-patterns",
+        "django-security",
+        "django-celery",
+        "django-tdd",
+        "django-verification",
+        "pytorch-patterns",
+        "generating-python-installer",
+        "frontend-patterns",
+        "nextjs-turbopack",
+        "vite-patterns",
+        "bun-runtime",
+        "nestjs-patterns",
+        "prisma-patterns",
+        "mcp-server-patterns",
+        "react-patterns",
+        "react-performance",
+        "react-testing",
+        "motion-foundations",
+        "motion-patterns",
+        "vue-patterns",
+        "nuxt4-patterns",
+        "angular-developer",
+        "golang-patterns",
+        "golang-testing",
+        "kotlin-patterns",
+        "kotlin-testing",
+        "kotlin-coroutines-flows",
+        "kotlin-exposed-patterns",
+        "kotlin-ktor-patterns",
+        "compose-multiplatform-patterns",
+        "android-clean-architecture",
+        "java-coding-standards",
+        "jpa-patterns",
+        "springboot-patterns",
+        "springboot-security",
+        "springboot-tdd",
+        "springboot-verification",
+        "quarkus-patterns",
+        "quarkus-security",
+        "quarkus-tdd",
+        "quarkus-verification",
+        "tinystruct-patterns",
+        "rust-patterns",
+        "rust-testing",
+        "cpp-coding-standards",
+        "swiftui-patterns",
+        "swift-concurrency-6-2",
+        "swift-protocol-di-testing",
+        "foundation-models-on-device",
+        "liquid-glass-design",
+        "dart-flutter-patterns",
+        "laravel-patterns",
+        "laravel-security",
+        "laravel-tdd",
+        "laravel-verification",
+        "laravel-plugin-discovery",
+        "perl-patterns",
+        "perl-security",
+        "perl-testing",
+        "dotnet-patterns",
+        "csharp-testing",
+        "fsharp-testing",
+        "mysql-patterns",
+        "postgres-patterns",
+        "redis-patterns",
+        "clickhouse-io",
+        "database-migrations",
+        "kubernetes-patterns",
+        "docker-patterns",
+        "deployment-patterns",
+        "git-workflow",
+        "backend-patterns",
+        "api-design",
+        "cisco-ios-patterns",
+        "homelab-network-readiness",
+        "homelab-network-setup",
+        "netmiko-ssh-automation",
+        "network-bgp-diagnostics",
+        "network-config-validation",
+        "network-interface-health",
+        "homelab-network-readiness"
+      ],
+      "security": [
+        "safety-guard",
+        "gateguard",
+        "defi-amm-security",
+        "evm-token-decimals",
+        "nodejs-keccak256",
+        "hipaa-compliance",
+        "healthcare-phi-compliance",
+        "llm-trading-agent-security"
+      ],
+      "ai_ml_reference": [
+        "mle-workflow",
+        "ml-adoption-playbook",
+        "ai-regression-testing",
+        "ai-first-engineering",
+        "recsys-pipeline-architect",
+        "agentic-engineering",
+        "agent-eval",
+        "agent-self-evaluation",
+        "agent-sort",
+        "agent-architecture-audit"
+      ],
+      "business": [
+        "carrier-relationship-management",
+        "customs-trade-compliance",
+        "energy-procurement",
+        "inventory-demand-planning",
+        "logistics-exception-management",
+        "production-scheduling",
+        "quality-nonconformance",
+        "returns-reverse-logistics",
+        "finance-billing-ops",
+        "customer-billing-ops"
+      ],
+      "healthcare": [
+        "healthcare-cdss-patterns",
+        "healthcare-emr-patterns"
+      ],
+      "explore": [
+        "codebase-onboarding",
+        "code-tour",
+        "iterative-retrieval",
+        "inherit-legacy-style",
+        "blender-motion-state-inspection",
+        "benchmark",
+        "benchmark-methodology",
+        "competitive-platform-analysis",
+        "competitive-report-structure"
       ]
     },
     "agents": ["explore", "architect", "planner"],
     "tools_allowed": ["read", "bash"],
     "tools_blocked": ["write", "edit"],
-    "behavior": "read-only, analyze, audit, research, rekomendasi tanpa ngubah file"
+    "behavior": "read-only, analyze, audit, research, reference, rekomendasi tanpa ngubah file"
   },
 
   "build": {
-    "description": "Write/execute mode: implement, test, deploy, commit",
-    "skills": {
+    "description": "Write/execute mode: implement, test, deploy, commit, generate",
+    "skill_groups": {
       "orchestration": [
         "orch-pipeline",
         "orch-add-feature",
         "orch-fix-defect",
         "orch-change-feature",
         "orch-refine-code",
-        "orch-build-mvp"
+        "orch-build-mvp",
+        "team-agent-orchestration",
+        "team-builder",
+        "claude-devfleet",
+        "ralphinho-rfc-pipeline",
+        "parallel-execution-optimizer",
+        "dmux-workflows"
       ],
       "tdd_testing": [
         "tdd-workflow",
         "e2e-testing",
-        "ai-regression-testing"
+        "cpp-testing",
+        "browser-qa",
+        "windows-desktop-e2e",
+        "healthcare-eval-harness",
+        "eval-harness"
       ],
-      "coding": [
+      "coding_write": [
         "powershell-patterns",
-        "coding-standards",
-        "error-handling",
-        "plankton-code-quality"
+        "plankton-code-quality",
+        "architecture-decision-records",
+        "content-hash-cache-pattern",
+        "hexagonal-architecture",
+        "motion-advanced",
+        "motion-ui",
+        "recsys-pipeline-architect",
+        "ui-to-vue",
+        "uncloud",
+        "seo"
       ],
-      "security": [
-        "security-review",
-        "safety-guard",
-        "gateguard"
-      ],
-      "deployment": [
-        "deployment-patterns",
-        "docker-patterns",
-        "database-migrations",
-        "git-workflow"
+      "generate": [
+        "code-tour",
+        "codebase-onboarding",
+        "article-writing",
+        "content-engine",
+        "brand-discovery",
+        "brand-voice",
+        "crosspost",
+        "social-publisher",
+        "investor-materials",
+        "investor-outreach",
+        "lead-intelligence",
+        "marketing-campaign",
+        "frontend-slides",
+        "manim-video",
+        "video-editing",
+        "videodb",
+        "remotion-video-creation",
+        "fal-ai-media",
+        "taste",
+        "ui-demo"
       ],
       "agent_eng": [
-        "agentic-engineering",
-        "agentic-os",
         "agent-harness-construction",
-        "autonomous-agent-harness"
+        "agentic-os",
+        "autonomous-agent-harness",
+        "agentic-engineering",
+        "agent-payment-x402",
+        "autonomous-loops",
+        "continuous-agent-loop",
+        "continuous-learning-v2",
+        "dynamic-workflow-mode",
+        "gan-style-harness"
+      ],
+      "infra": [
+        "homelab-pihole-dns",
+        "homelab-vlan-segmentation",
+        "homelab-wireguard-vpn",
+        "dashboard-builder",
+        "flox-environments",
+        "data-scraper-agent",
+        "data-throughput-accelerator",
+        "content-hash-cache-pattern"
+      ],
+      "tools_config": [
+        "configure-ecc",
+        "hookify-rules",
+        "customize-opencode",
+        "openclaw-persona-forge",
+        "nanoclaw-repl",
+        "ck",
+        "hermes-imports",
+        "opensource-pipeline",
+        "generating-python-installer"
+      ],
+      "api_integration": [
+        "api-connector-builder",
+        "x-api",
+        "web-fetch",
+        "nutrient-document-processing",
+        "visa-doc-translate",
+        "ios-icon-gen",
+        "email-ops",
+        "mcp-server-patterns"
+      ],
+      "connections": [
+        "connections-optimizer",
+        "social-graph-ranker"
       ]
     },
     "agents": ["build", "tdd-guide", "code-reviewer", "security-reviewer", "build-error-resolver", "doc-updater"],
     "tools_allowed": ["write", "edit", "bash", "read"],
     "tools_blocked": [],
-    "behavior": "write, edit, execute, implement, test, commit"
+    "behavior": "write, edit, execute, implement, test, generate, deploy, commit"
+  },
+
+  "hybrid": {
+    "description": "Context-dependent: analysis portion safe in PLAN, write portion needs BUILD",
+    "skill_groups": {
+      "analysis_only_in_plan": [
+        "accessibility",
+        "agent-introspection-debugging",
+        "design-system",
+        "email-ops",
+        "github-ops",
+        "google-workspace-ops",
+        "jira-integration",
+        "knowledge-ops",
+        "mle-workflow",
+        "project-flow-ops",
+        "seo",
+        "terminal-ops",
+        "messages-ops",
+        "unified-notifications-ops",
+        "prompt-optimizer",
+        "make-interfaces-feel-better",
+        "frontend-design-direction",
+        "frontend-a11y",
+        "agentic-engineering"
+      ]
+    },
+    "agents": [],
+    "tools_allowed": ["read", "bash"],
+    "tools_blocked": ["write", "edit"],
+    "behavior": "PLAN: only analysis/recommendation sub-usage. BUILD: full execution."
   }
 }

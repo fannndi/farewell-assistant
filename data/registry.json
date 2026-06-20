@@ -14,7 +14,14 @@
       },
       "path": "$ROOT",
       "dominan": "AUTOMATION"
+    },
+    "farewell-ex": {
+      "type": "rust+kotlin",
+      "last_used": "2026-06-20",
+      "context_file": "farewell-ex.md",
+      "path": "C:/Users/FANNNDI/AppData/Local/Temp/farewell-ex",
+      "dominan": "ANDROID+RUST"
     }
   },
-  "active": "farewell-assistant"
+  "active": "farewell-ex"
 }

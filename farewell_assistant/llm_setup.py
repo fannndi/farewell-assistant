@@ -119,8 +119,13 @@ def _write_profile_log(mode: str, model: str | None):
         enrich = "Off" if mode == "eco" else "On"
         with open(log_file, "a", encoding="utf-8") as f:
             f.write(f"| {now} | {mode} | {llm_name} | {enrich} |\n")
-    except Exception:
-        pass
+    except Exception as e:
+        # Log write failure without crashing
+        try:
+            from .log import write_task_log
+            write_task_log("PROFILE_LOG", f"Write failed: {e}", "fail")
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------------------

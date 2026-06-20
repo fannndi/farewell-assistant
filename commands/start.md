@@ -10,7 +10,7 @@ Single command untuk semua. Jalankan setiap kali buka laptop atau setelah clone 
 
 | Step | Aksi | Detail |
 |------|------|--------|
-| 1/7 | **Git Pull Self** | `git pull --ff-only` farewell-assistant — sync perubahan dari device lain. Kalau start.ps1 berubah, tampilkan "run again for new version". |
+| 1/7 | **Git Pull Self** | `git pull --ff-only` farewell-assistant — sync perubahan dari device lain. Kalau farewell_assistant package berubah, tampilkan "run again for new version". |
 | 2/7 | **Initial Bootstrap** | Guard: hanya jalan sekali setelah fresh clone. Clone ECC + 9Router, build, panduan dashboard, validate key+combo, init state. |
 | 3/7 | **Update ECC + 9Router** | `git pull` ECC + 9Router → rebuild kalau update. Cek npm 9router version vs local. Scan changelog untuk breaking changes (prompt [Y/n]). |
 | 4/7 | **9Router Health** | Health check → start kalau tidak running (backoff ~45s). |
@@ -21,7 +21,7 @@ Single command untuk semua. Jalankan setiap kali buka laptop atau setelah clone 
 ## Cara Pakai
 
 ```powershell
-.\start.ps1
+py -m farewell_assistant.cli start
 ```
 
 Atau di dalam opencode: `/start`

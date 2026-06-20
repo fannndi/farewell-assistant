@@ -19,7 +19,7 @@ Manage Windows Scheduled Task yang start 9Router otomatis pas user logon.
 
 1. **Scheduled Task** `FarewellAssistant-9Router` dibuat di user context (no admin)
 2. **Trigger**: `AtLogon` untuk user saat ini
-3. **Action**: jalankan `scripts/common/start-9router-bg.ps1` via pwsh hidden
+3. **Action**: jalankan `py -m farewell_assistant.cli autostart` via pwsh hidden
 4. **Restart policy**: 3x retry dengan interval 5 menit kalau exit code non-zero
 5. **Wrapper**: load config + api-key.txt, health-check, `Start-9Router` robust, log ke `.opencode/logs/autostart.log`
 
@@ -27,7 +27,7 @@ Manage Windows Scheduled Task yang start 9Router otomatis pas user logon.
 
 | File | Fungsi |
 |------|--------|
-| `scripts/autostart.ps1` | CLI: enable/disable/status/run |
+| `py -m farewell_assistant.cli autostart` | CLI: enable/disable/status/run |
 | `scripts/common/start-9router-bg.ps1` | Hidden wrapper untuk Task Scheduler |
 | `scripts/common/helpers.ps1` `Start-9Router` | Robust start: PID file, log redirect, backoff |
 | `.opencode/logs/autostart.log` | Log autostart runs |

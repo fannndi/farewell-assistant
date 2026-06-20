@@ -10,7 +10,7 @@ Diagnostic command untuk validasi pipeline Intent-Driven end-to-end.
 
 1. **Detect mode** — baca `llm-mode.json`
 2. **GPU check** — tampilkan VRAM info
-3. **Run pipeline** — jalankan `Invoke-IntentRouter` via `scripts/hooks/check-enrich.ps1`
+3. **Run pipeline** — jalankan `py -m farewell_assistant.cli route --force`
 4. **Show result** — tampilkan intent, domain, complexity, confidence, skill chain, model route
 
 ## Mode

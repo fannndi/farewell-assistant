@@ -6,7 +6,6 @@
 logging.md
 
 # Secrets
-# Note: api-key.example.txt is a template (committed to git)
 api-key.txt
 !api-key.example.txt
 .env
@@ -18,6 +17,15 @@ ecc/
 # Model files (large GGUF binaries, not tracked)
 models/
 
+# Managed projects (cloned by controller)
+Project/Code/
+Project/Session/
+Project/Memory/
+
+# Bytecode
+__pycache__/
+*.py[cod]
+
 # OS
 Thumbs.db
 Desktop.ini
@@ -28,5 +36,3 @@ Desktop.ini
 .vscode/
 .idea/
 *.code-workspace
-
-

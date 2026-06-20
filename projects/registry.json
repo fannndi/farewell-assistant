@@ -1,27 +1,24 @@
 {
   "projects": {
     "farewell-assistant": {
-      "type": "powershell",
-      "last_used": "2026-06-19",
-      "context_file": "context/farewell-assistant.md",
+      "type": "python",
+      "last_used": "2026-06-20",
+      "context_file": "farewell-assistant.md",
       "kategori": {
-        "ecc/": "AUTOMATION",
-        "commands/": "AUTOMATION",
-        "profiles/": "AUTOMATION",
-        "projects/": "AUTOMATION",
+        "farewell_assistant/": "AUTOMATION",
         "scripts/": "AUTOMATION",
         "instructions/": "AUTOMATION",
-        "9router/": "AUTOMATION",
-        ".opencode/": "AUTOMATION"
+        "projects/": "AUTOMATION",
+        ".opencode/": "AUTOMATION",
+        "Project/": "AUTOMATION"
       },
-      "path": "C:/Users/FANNNDI/Documents/farewell-assistant",
+      "path": "$ROOT",
       "dominan": "AUTOMATION"
     },
     "service-hub": {
       "last_used": "2026-06-19",
-      "context_file": "context/service-hub.md",
+      "context_file": "service-hub.md",
       "kategori": {
-        ".github/": "AUTOMATION",
         "supabase/": "DATA",
         "backend/": "WEB",
         "infra/": "INFRA",
@@ -29,7 +26,7 @@
         "docs/": "AUTOMATION",
         "scripts/": "AUTOMATION"
       },
-      "path": "C:/Users/FANNNDI/Documents/service-hub",
+      "path": "$ROOT/Project/Code/service-hub",
       "type": "node",
       "dominan": "MOBILE+WEB"
     }

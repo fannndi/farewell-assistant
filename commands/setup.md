@@ -21,4 +21,4 @@ Alias untuk `llm-setup`. Configure LLM mode untuk session saat ini.
 /setup remove           Wipe all models + GGUF
 ```
 
-Redirect ke `scripts/llm-setup.ps1`. Lihat `/llm-setup` untuk detail.
+Redirect ke `py -m farewell_assistant.cli llm`. Lihat `/llm-setup` untuk detail.

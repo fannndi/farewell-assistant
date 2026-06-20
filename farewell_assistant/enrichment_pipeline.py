@@ -20,13 +20,19 @@ _intent_cache: dict[str, dict] = {}
 
 def _load_cache():
     global _intent_cache
-    data = read_json(_CACHE_FILE, default={})
-    _intent_cache = data if isinstance(data, dict) else {}
+    try:
+        data = read_json(_CACHE_FILE, default={})
+        _intent_cache = data if isinstance(data, dict) else {}
+    except Exception:
+        _intent_cache = {}
 
 
 def _save_cache():
-    config.STATE_DIR.mkdir(parents=True, exist_ok=True)
-    write_json(_CACHE_FILE, _intent_cache)
+    try:
+        config.STATE_DIR.mkdir(parents=True, exist_ok=True)
+        write_json(_CACHE_FILE, _intent_cache)
+    except Exception:
+        pass
 
 
 def _hash_input(text: str) -> str:

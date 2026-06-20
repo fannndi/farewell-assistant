@@ -140,12 +140,22 @@ def sync_turn_state(result: dict, user_input: str = ""):
 
     turn_count = result.get("turn", 0)
 
+    # Read session start time
+    session_started = ""
+    try:
+        ss = read_json(config.STATE_DIR / "session-state.json")
+        if ss and ss.get("session", {}).get("started"):
+            session_started = ss["session"]["started"]
+    except Exception:
+        pass
+
     context_content = f"""# Session State
 
 - **Project:** {active}
 - **Kategori:** {kategori}
 - **Mode:** {mode}
 - **Work:** {work}
+- **Started:** {session_started}
 
 # Turn State
 

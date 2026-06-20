@@ -501,3 +501,7 @@ def handle_llm_setup(action: str = "status", profile: str = ""):
 
     elif action == "auto":
         invoke_auto_mode()
+
+    elif action == "hot":
+        write_info("⚠️  Hot mode (0.8B) — lower accuracy. For complex inputs, use balance.")
+        _warmup_mode("hot")

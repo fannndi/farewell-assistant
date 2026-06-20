@@ -294,8 +294,21 @@ def start_9router() -> bool:
 # API key parser (shared)
 # ---------------------------------------------------------------------------
 
-def parse_api_key() -> tuple[str | None, dict[str, dict], dict[str, dict]]:
-    """Parse api-key.txt. Returns (api_key, combo_entries, combo_models)."""
+class ApiKeyConfig:
+    """Parsed API key configuration."""
+    __slots__ = ("api_key", "combo_entries", "combo_models")
+
+    def __init__(self, api_key: str | None, combo_entries: dict[str, dict], combo_models: dict[str, dict]):
+        self.api_key = api_key
+        self.combo_entries = combo_entries
+        self.combo_models = combo_models
+
+    def __iter__(self):
+        return iter((self.api_key, self.combo_entries, self.combo_models))
+
+
+def parse_api_key() -> ApiKeyConfig:
+    """Parse api-key.txt. Returns ApiKeyConfig with api_key, combo_entries, combo_models."""
     api_key = None
     combo_entries: dict[str, dict] = {}
     combo_models: dict[str, dict] = {}
@@ -314,9 +327,13 @@ def parse_api_key() -> tuple[str | None, dict[str, dict], dict[str, dict]]:
             elif k.startswith("MODELS_"):
                 idx = k.replace("MODELS_", "")
                 combo_models.setdefault(idx, {})["models"] = [m.strip() for m in v.split(",") if m.strip()]
-    except Exception:
-        pass
-    return api_key, combo_entries, combo_models
+    except Exception as e:
+        try:
+            from .log import write_task_log
+            write_task_log("PARSE_API_KEY", f"Parse error: {e}", "fail")
+        except Exception:
+            pass
+    return ApiKeyConfig(api_key, combo_entries, combo_models)
 
 
 # ---------------------------------------------------------------------------

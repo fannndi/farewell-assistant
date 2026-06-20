@@ -27,7 +27,8 @@ def cmd_llm(args):
 
 
 def cmd_detect(args):
-    result = detect_project(args.path, emit_context=args.context)
+    emit = args.context or args.register
+    result = detect_project(args.path, emit_context=emit)
     return result
 
 
@@ -113,6 +114,7 @@ def main():
     det_p = subparsers.add_parser("detect", help="Detect project type")
     det_p.add_argument("path", nargs="?", default="", help="Path to project directory")
     det_p.add_argument("--context", action="store_true", help="Emit context template")
+    det_p.add_argument("--register", action="store_true", help="Register in registry and set active")
     det_p.set_defaults(func=cmd_detect)
 
     # start

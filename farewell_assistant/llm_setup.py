@@ -92,6 +92,14 @@ def set_llm_mode(mode: str):
     if model:
         state["model"] = model
     write_json(config.LLM_MODE_FILE, state)
+
+    # Invalidate intent cache on mode switch — enrichment rules differ per mode
+    try:
+        from .enrichment_pipeline import clear_intent_cache
+        clear_intent_cache()
+    except Exception:
+        pass
+
     try:
         sync_session_state()
     except Exception:

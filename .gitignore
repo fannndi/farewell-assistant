@@ -18,16 +18,16 @@ ecc/
 models/
 
 # Managed projects (cloned by controller)
-Project/Code/
-Project/Session/
-Project/Memory/
+data/Code/
+data/session/
+data/memory/
+
+# Session profile logs (gitignored)
+profiles/logs/*.md
 
 # Bytecode
 __pycache__/
 *.py[cod]
-
-# Session profile logs (gitignored)
-profiles/logs/*.md
 
 # OS
 Thumbs.db

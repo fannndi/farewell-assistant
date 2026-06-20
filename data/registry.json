@@ -1,0 +1,20 @@
+{
+  "projects": {
+    "farewell-assistant": {
+      "type": "python",
+      "last_used": "2026-06-20",
+      "context_file": "farewell-assistant.md",
+      "kategori": {
+        "farewell_assistant/": "AUTOMATION",
+        "scripts/": "AUTOMATION",
+        "instructions/": "AUTOMATION",
+        "data/": "AUTOMATION",
+        ".opencode/": "AUTOMATION",
+        "profiles/": "AUTOMATION"
+      },
+      "path": "$ROOT",
+      "dominan": "AUTOMATION"
+    }
+  },
+  "active": "farewell-assistant"
+}

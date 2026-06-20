@@ -11,7 +11,7 @@ Detect project type (Flutter/Node/Go/Rust/PHP/Python/.NET/Ruby/...) dari file ma
 ```
 /detect                              Detect di current working directory
 /detect -Path "C:\my-project"        Detect di path tertentu
-/detect -Path "..." -EmitContext     Detect + emit context template ke projects/context/<slug>.md
+/detect -Path "..." -EmitContext     Detect + emit context template ke data/context/<slug>.md
 ```
 
 ## Markers yang Dikenali
@@ -34,11 +34,11 @@ Detect project type (Flutter/Node/Go/Rust/PHP/Python/.NET/Ruby/...) dari file ma
 ## Output
 
 - Type + Stack terdeteksi
-- Dengan `-EmitContext`: template markdown di `projects/context/<slug>.md` siap diisi
+- Dengan `-EmitContext`: template markdown di `data/context/<slug>.md` siap diisi
 
 ## Integrasi Registry
 
-Setelah context dibuat, daftarkan project di `projects/registry.json`:
+Setelah context dibuat, daftarkan project di `data/registry.json`:
 
 ```json
 {

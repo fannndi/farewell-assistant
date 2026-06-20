@@ -19,17 +19,17 @@ OPENCODE_DIR = Path(os.environ.get("USERPROFILE") or os.environ.get("HOME", ""))
 OPENCODE_CFG = OPENCODE_DIR / "opencode.jsonc"
 MODELS_DIR = ROOT_DIR / "models"
 
-# -- Project Management (controller repo) --
-PROJECT_DIR = ROOT_DIR / "Project"
-PROJECT_CODE_DIR = PROJECT_DIR / "Code"
-PROJECT_CONTEXT_DIR = PROJECT_DIR / "Context"
-PROJECT_SESSION_DIR = PROJECT_DIR / "Session"
-PROJECT_MEMORY_DIR = PROJECT_DIR / "Memory"
-PROJECT_SKILLS_DIR = PROJECT_DIR / "Skills"
+# -- Data (project data, context, registry, skills) --
+DATA_DIR = ROOT_DIR / "data"
+PROJECT_CODE_DIR = DATA_DIR / "Code"
+PROJECT_CONTEXT_DIR = DATA_DIR / "context"
+PROJECT_SESSION_DIR = DATA_DIR / "session"
+PROJECT_MEMORY_DIR = DATA_DIR / "memory"
+PROJECT_SKILLS_DIR = DATA_DIR / "skills"
 
 # -- Index / Registry --
-REGISTRY_FILE = ROOT_DIR / "projects" / "registry.json"
-SKILL_IDX_FILE = ROOT_DIR / "projects" / "skill-mode-index.json"
+REGISTRY_FILE = DATA_DIR / "registry.json"
+SKILL_IDX_FILE = DATA_DIR / "skill-mode-index.json"
 CONTEXT_DIR = PROJECT_CONTEXT_DIR  # alias for context lookups
 
 # -- State Files --

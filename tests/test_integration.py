@@ -13,7 +13,7 @@ def _isolated_state(tmp_path, monkeypatch):
     state_dir = tmp_path / ".opencode"
     state_dir.mkdir()
     monkeypatch.setattr(config, "STATE_DIR", state_dir)
-    monkeypatch.setattr(config, "REGISTRY_FILE", tmp_path / "projects" / "registry.json")
+    monkeypatch.setattr(config, "REGISTRY_FILE", tmp_path / "data" / "registry.json")
     monkeypatch.setattr(config, "LOG_FILE", tmp_path / "logging.md")
     yield
 

@@ -42,9 +42,11 @@ Runtime context files (written per-turn):
 Static files:
   - instructions/user-rules.md  — core rules + ROLE enforcement (mode lock, logging)
   - instructions/preprocess.md  — enrichment pipeline + footer format
-  - projects/registry.json      — project index (active: farewell-assistant)
-  - projects/skill-mode-index.json — skills per work mode (PLAN: ~20, BUILD: ~30)
-  - projects/skill-index.json   — full skill catalog by kategori (6 kategori, 271+ skills)
+  - data/registry.json          — project index (active: farewell-assistant)
+  - data/skill-mode-index.json  — skills per work mode (PLAN: ~20, BUILD: ~30)
+  - data/skill-index.json       — full skill catalog by kategori (6 kategori, 271+ skills)
+  - data/context/*.md           — per-project context files
+  - data/skills/                — local (non-ECC) skills
   - api-key.txt                 — NINEROUTER_API_KEY, 9ROUTER_PASSWORD, COMBO_* definitions (gitignored)
 
 Conventions:

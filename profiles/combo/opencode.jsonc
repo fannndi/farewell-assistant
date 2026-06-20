@@ -24,11 +24,11 @@
     "{project}/.opencode/context.md",
     "{project}/instructions/user-rules.md",
     "{project}/instructions/preprocess.md",
-    "{project}/projects/Context/{context_file}.md"
+    "{project}/data/context/{context_file}.md"
   ],
 
   "skills": {
-    "paths": ["{project}/ecc/skills", "{project}/Project/Skills"]
+    "paths": ["{project}/ecc/skills", "{project}/data/skills"]
   },
 
   "agent": {

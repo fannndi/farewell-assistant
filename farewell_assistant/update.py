@@ -23,7 +23,7 @@ def update_repo(repo_dir: Path, label: str, remote: str, branch: str) -> bool:
             write_info(f"{label}: {result.stderr.strip()}")
             return False
         output = result.stdout.strip()
-        if output:
+        if output and "Already up to date" not in output:
             write_ok(f"{label}: {output.splitlines()[0]}")
             write_task_log("STAGE", f"update {label}", "success", str(repo_dir))
             return True

@@ -62,12 +62,28 @@ def sync_turn_state(result: dict, user_input: str = ""):
     """Write pipeline-result.json + context.md."""
     state_dir = config.STATE_DIR
 
+    # Read registry for active project + kategori
+    active = "farewell-assistant"
+    kategori = "AUTOMATION"
+    try:
+        reg = read_json(config.REGISTRY_FILE)
+        if reg and reg.get("active"):
+            active = reg["active"]
+            if reg.get("projects", {}).get(active, {}).get("kategori"):
+                kat_vals = set()
+                for v in reg["projects"][active]["kategori"].values():
+                    kat_vals.add(v)
+                kategori = " > ".join(sorted(kat_vals))
+    except Exception:
+        pass
+
     # 1. Write pipeline-result.json
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
     pipeline_data = {"timestamp": now, "input": user_input, "turn": result.get("turn", 0)}
 
     if result.get("success"):
         pipeline_data.update({
+            "project": active,
             "intent": result["intent"]["intent"],
             "domain": result["intent"]["domain"],
             "stack": result["intent"].get("stack", []),
@@ -85,6 +101,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
         })
     else:
         pipeline_data.update({
+            "project": active,
             "blocked": True,
             "hold": result.get("hold", False),
             "reason": result.get("reason", ""),
@@ -98,21 +115,6 @@ def sync_turn_state(result: dict, user_input: str = ""):
     # 2. Update context.md
     mode = get_llm_mode()
     work = get_work_mode().upper()
-
-    # Read registry for active project + kategori
-    active = "farewell-assistant"
-    kategori = "AUTOMATION"
-    try:
-        reg = read_json(config.REGISTRY_FILE)
-        if reg and reg.get("active"):
-            active = reg["active"]
-            if reg.get("projects", {}).get(active, {}).get("kategori"):
-                kat_vals = set()
-                for v in reg["projects"][active]["kategori"].values():
-                    kat_vals.add(v)
-                kategori = " > ".join(sorted(kat_vals))
-    except Exception:
-        pass
 
     # Build chain display
     if result.get("success"):

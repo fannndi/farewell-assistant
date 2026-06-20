@@ -157,7 +157,7 @@ Skill chain dijalankan berurutan. Setiap skill:
 Footer konsisten muncul di prompt AI sebagai:
 
 ```
-Intent: build | Complexity: medium (95%) | Domain: web | Chain: 8 steps | Model: Free | Turn: 1 | Mode: BUILD
+Farewell: ON | Project: service-hub | BUILD | Turn: 1 | Chain: 8 | 95% | Balance
 User: bikin CRUD user dengan auth JWT
 ```
 

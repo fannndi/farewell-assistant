@@ -41,6 +41,7 @@ WORK_MODE_FILE = STATE_DIR / "work-mode.json"
 COMBO_FILE = STATE_DIR / "combo.json"
 API_KEY_FILE = ROOT_DIR / "api-key.txt"
 PROFILE_SRC = ROOT_DIR / "profiles" / "combo" / "opencode.jsonc"
+PROFILE_LOG_DIR = ROOT_DIR / "profiles" / "logs"
 
 # -- Logging --
 LOG_FILE = ROOT_DIR / "logging.md"

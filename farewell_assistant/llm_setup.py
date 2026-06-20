@@ -98,6 +98,30 @@ def set_llm_mode(mode: str):
         pass
     write_task_log("LLM", "Set mode to " + mode, "success")
 
+    # Write session profile log (permanent record, gitignored)
+    _write_profile_log(mode, model)
+
+
+def _write_profile_log(mode: str, model: str | None):
+    """Append profile switch to profiles/logs/session-YYYY-MM-DD.md."""
+    try:
+        log_dir = config.PROFILE_LOG_DIR
+        log_dir.mkdir(parents=True, exist_ok=True)
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        log_file = log_dir / f"session-{today}.md"
+        if not log_file.exists():
+            log_file.write_text(
+                f"# Session — {today}\n\n| Time | Profile | LLM | Enrich |\n|------|---------|-----|--------|\n",
+                encoding="utf-8",
+            )
+        now = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        llm_name = model or "-"
+        enrich = "Off" if mode == "eco" else "On"
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(f"| {now} | {mode} | {llm_name} | {enrich} |\n")
+    except Exception:
+        pass
+
 
 # ---------------------------------------------------------------------------
 # GGUF Path

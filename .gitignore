@@ -26,6 +26,9 @@ Project/Memory/
 __pycache__/
 *.py[cod]
 
+# Session profile logs (gitignored)
+profiles/logs/*.md
+
 # OS
 Thumbs.db
 Desktop.ini

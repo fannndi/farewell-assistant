@@ -1,10 +1,8 @@
 // Run precision pipeline on every user message.
 // Blocking: waits for pipeline to complete (PIPELINE_TIMEOUT env or 15s default).
-// Prepend pipeline result as footer to user message parts.
-// AI sees intent, complexity, confidence, and skill chain before every turn.
+// Prepend footer to user message parts — project awareness + pipeline status.
 //
 // Security: User input passed as separate argv arg, NOT interpolated into shell command.
-// This prevents command injection via $(), backtick, or other shell metacharacters.
 
 const { execFileSync } = require("child_process");
 const path = require("path");
@@ -19,10 +17,8 @@ exports.server = async (ctx) => {
                 const text = extractText(output?.parts);
                 if (!text || text.length < 3) return;
 
-                // Find Python executable
                 const py = findPython(ctx.directory);
 
-                // Run pipeline via Python CLI — user input as separate argument (no shell interpolation)
                 try {
                     execFileSync(
                         py,
@@ -35,42 +31,42 @@ exports.server = async (ctx) => {
                         }
                     );
                 } catch (e) {
-                    // Timeout or non-zero exit — continue, pipeline may have partially written result
+                    // Timeout or non-zero exit — pipeline may have partially written result
                 }
 
-                // Read fresh pipeline result
                 const pipelinePath = path.join(ctx.directory, ".opencode", "pipeline-result.json");
                 if (!fs.existsSync(pipelinePath)) return;
                 const raw = fs.readFileSync(pipelinePath, "utf-8").replace(/^\uFEFF/, "");
                 const data = JSON.parse(raw);
                 if (!data || !data.intent) return;
 
-                // Check for HOLD — input too vague
+                // HOLD — input too vague
                 if (data.blocked === true && data.hold === true) {
                     const reason = data.reason || "Input kurang presisi";
-                    const prefix = `[HOLD] ${reason}\n`;
-                    output.parts.unshift({ type: "text", text: prefix });
+                    output.parts.unshift({ type: "text", text: `[HOLD] ${reason}\n` });
                     return;
                 }
 
-                // Build footer — single consistent format
-                const intent = data.intent || "unknown";
-                const domain = data.domain || "";
-                const complexity = data.complexity || "";
-                const confidence = data.confidence ? Math.round(data.confidence * 100) + "%" : "";
-                const chain = data.chain || [];
-                const chainSteps = chain.length > 0 ? chain.length : "";
-                const model = data.model_primary || "";
-                const turn = data.turn || "";
-                const work = data.work_mode || "";
-                const mode = data.profile || "";
+                // BLOCKED — permission denied (plan mode blocking build/fix/deploy)
+                if (data.blocked === true && !data.hold) {
+                    const reason = data.reason || "Intent diblokir oleh work mode";
+                    output.parts.unshift({ type: "text", text: `[BLOCKED] ${reason}\n` });
+                    return;
+                }
 
-                const footer = `Intent: ${intent} | Complexity: ${complexity} (${confidence}) | Domain: ${domain} | Chain: ${chainSteps} steps | Model: ${model} | Work: ${work} | Turn: ${turn} | Mode: ${mode}\n`;
+                // Build footer — project awareness + pipeline proof
+                const project = data.project || "farewell-assistant";
+                const workMode = (data.work_mode || "build").toUpperCase();
+                const turn = data.turn || 0;
+                const chainLen = Array.isArray(data.chain) ? data.chain.length : 0;
+                const confidence = data.confidence ? Math.round(data.confidence * 100) + "%" : "-";
+                const llmMode = (data.profile || "eco");
+                const llmDisplay = llmMode.charAt(0).toUpperCase() + llmMode.slice(1);
 
-                // Prepend to user message — AI sees this before the actual input
+                const footer = `Farewell: ON | Project: ${project} | ${workMode} | Turn: ${turn} | Chain: ${chainLen} | ${confidence} | ${llmDisplay}\n`;
+
                 output.parts.unshift({ type: "text", text: footer });
             } catch (e) {
-                // Log error but never crash the chat
                 console.error("[intent-router] pipeline error:", e.message || e);
             }
         },
@@ -78,13 +74,7 @@ exports.server = async (ctx) => {
 };
 
 function findPython(projectDir) {
-    // Try standard locations
-    const candidates = [
-        "py",
-        "python3",
-        "python",
-    ];
-    // Also try the project's venv if exists
+    const candidates = ["py", "python3", "python"];
     const venvWin = path.join(projectDir, ".venv", "Scripts", "python.exe");
     const venvUnix = path.join(projectDir, ".venv", "bin", "python3");
     if (fs.existsSync(venvWin)) return venvWin;

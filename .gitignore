@@ -4,6 +4,7 @@
 
 # Logging
 logging.md
+session-log.md
 
 # Secrets
 api-key.txt
@@ -21,6 +22,7 @@ models/
 data/Code/
 data/session/
 data/memory/
+TEMP/
 
 # Session profile logs (gitignored)
 profiles/logs/*.md

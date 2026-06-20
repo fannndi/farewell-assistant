@@ -130,7 +130,15 @@ def sync_turn_state(result: dict, user_input: str = ""):
 
     # 1. Write pipeline-result.json
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
-    pipeline_data = {"timestamp": now, "input": user_input, "turn": result.get("turn", 0)}
+    # Get project code from registry
+    project_code = ""
+    try:
+        reg = read_json(config.REGISTRY_FILE)
+        if reg and reg.get("active") and reg.get("projects", {}).get(reg["active"], {}).get("project_code"):
+            project_code = reg["projects"][reg["active"]]["project_code"]
+    except Exception:
+        pass
+    pipeline_data = {"timestamp": now, "input": user_input, "turn": result.get("turn", 0), "project_code": project_code}
 
     if result.get("success"):
         pipeline_data.update({

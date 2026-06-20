@@ -1,6 +1,7 @@
 {
   "projects": {
     "farewell-assistant": {
+      "project_code": "000",
       "type": "python",
       "last_used": "2026-06-20",
       "context_file": "farewell-assistant.md",
@@ -13,15 +14,19 @@
         "profiles/": "AUTOMATION"
       },
       "path": "$ROOT",
-      "dominan": "AUTOMATION"
+      "dominan": "AUTOMATION",
+      "is_local": true
     },
     "farewell-ex": {
+      "project_code": "001",
       "type": "rust+kotlin",
       "last_used": "2026-06-20",
       "context_file": "farewell-ex.md",
       "path": "C:/Users/FANNNDI/AppData/Local/Temp/farewell-ex",
-      "dominan": "ANDROID+RUST"
+      "dominan": "ANDROID+RUST",
+      "is_local": true
     }
   },
-  "active": "farewell-ex"
+  "active": "farewell-ex",
+  "_next_code": "002"
 }

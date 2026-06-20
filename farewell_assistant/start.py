@@ -11,6 +11,7 @@ from .update import run_update_check, rebuild_9router_if_needed
 from .health import ensure_9router, ensure_ollama
 from .helpers import (
     get_llm_mode, parse_api_key, read_json, write_info, write_ok, write_skip, write_step,
+    log_session,
 )
 from .intent_router import invoke_intent_router
 from .log import sync_session_state, write_task_log
@@ -179,3 +180,16 @@ def _prime_pipeline():
             write_ok("Pipeline primed (startup)")
     except Exception as e:
         write_skip("Pipeline skip: " + str(e))
+
+
+def run_daily() -> bool:
+    """Daily session start: full startup + session-log."""
+    print()
+    print("  =================================================")
+    print("  farewell-assistant - Daily")
+    print("  =================================================")
+    print()
+    ok = run_start()
+    # Log session after startup
+    log_session()
+    return ok

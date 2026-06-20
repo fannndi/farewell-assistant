@@ -36,6 +36,11 @@ def cmd_start(args):
     run_start()
 
 
+def cmd_daily(args):
+    from .start import run_daily
+    run_daily()
+
+
 def cmd_autostart(args):
     from .autostart import enable_autostart, disable_autostart, show_status
     if args.action == "enable":
@@ -59,25 +64,43 @@ def cmd_enrich_check(args):
 
 
 def cmd_project(args):
-    import json
-    registry = config.REGISTRY_FILE
-    if not registry.exists():
-        print("  Registry not found: " + str(registry))
-        return
-    data = json.loads(registry.read_text(encoding="utf-8"))
-    projects = data.get("projects", {})
+    from .helpers import list_registered_projects, activate_project_by_code
     if args.action == "list":
-        active = data.get("active", "")
-        for name, info in projects.items():
-            marker = " *" if name == active else ""
-            print(f"  {name}{marker}  ({info.get('type', 'unknown')}, {info.get('dominan', '')})")
-        print(f"\n  Active: {active}")
-    elif args.action in projects:
-        data["active"] = args.action
-        registry.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-        print(f"  Active project: {args.action}")
+        projects = list_registered_projects()
+        if not projects:
+            print("  Tidak ada project terdaftar.")
+            return
+        print()
+        for p in projects:
+            marker = " ← active" if p["active"] else ""
+            print(f"  {p['code']} — {p['name']} ({p['type']}, {p['dominan']}){marker}")
+        print()
     else:
-        print(f"  Unknown project '{args.action}'. Use 'project list' to see available.")
+        # Try as code (001, 002, etc.)
+        activate_project_by_code(args.action)
+
+
+def cmd_setup_project(args):
+    from .helpers import setup_project_from_url
+    setup_project_from_url(args.url)
+
+
+def cmd_start_project(args):
+    from .helpers import list_registered_projects, activate_project_by_code
+    if args.action:
+        activate_project_by_code(args.action)
+    else:
+        projects = list_registered_projects()
+        if not projects:
+            print("  Tidak ada project terdaftar.")
+            return
+        print()
+        for p in projects:
+            marker = " ← active" if p["active"] else ""
+            print(f"  {p['code']} — {p['name']} ({p['type']}, {p['dominan']}){marker}")
+        print()
+        print("  Pilih project: /start-project <code>")
+        print()
 
 
 def main():
@@ -118,8 +141,12 @@ def main():
     det_p.set_defaults(func=cmd_detect)
 
     # start
-    start_p = subparsers.add_parser("start", help="Run startup sequence")
+    start_p = subparsers.add_parser("start", help="Run full startup sequence (legacy)")
     start_p.set_defaults(func=cmd_start)
+
+    # daily (new: daily session start + log)
+    daily_p = subparsers.add_parser("daily", help="Daily session start + log to session-log.md")
+    daily_p.set_defaults(func=cmd_daily)
 
     # autostart
     as_p = subparsers.add_parser("autostart", help="Manage autostart (schtasks/systemd)")
@@ -141,8 +168,19 @@ def main():
     # project
     proj_p = subparsers.add_parser("project", help="Switch active project")
     proj_p.add_argument("action", nargs="?", default="list",
-                        help="Project name or 'list'")
+                        help="Project code (001, 002, etc.) or 'list'")
     proj_p.set_defaults(func=cmd_project)
+
+    # setup-project (clone + register)
+    setup_p = subparsers.add_parser("setup-project", help="Clone project to TEMP/ and register")
+    setup_p.add_argument("url", help="Git clone URL")
+    setup_p.set_defaults(func=cmd_setup_project)
+
+    # start-project (list + select)
+    start_proj_p = subparsers.add_parser("start-project", help="List projects and activate one")
+    start_proj_p.add_argument("action", nargs="?", default="",
+                              help="Project code to activate (001, 002, etc.)")
+    start_proj_p.set_defaults(func=cmd_start_project)
 
     args = parser.parse_args()
 

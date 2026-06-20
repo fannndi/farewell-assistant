@@ -567,3 +567,181 @@ def get_skill_count(work_mode: str) -> int:
                 if isinstance(group, list):
                     count += len(group)
     return count
+
+
+# ---------------------------------------------------------------------------
+# Session Log
+# ---------------------------------------------------------------------------
+
+def log_session(project: str = "", llm_mode: str = "", work_mode: str = ""):
+    """Append daily session entry to session-log.md."""
+    from datetime import datetime, timezone
+    config.SESSION_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    if not project:
+        project = read_project_active()
+    if not llm_mode:
+        llm_mode = get_llm_mode()
+    if not work_mode:
+        work_mode = get_work_mode()
+
+    entry = f"""## {now}
+
+- **Project:** {project}
+- **LLM Mode:** {llm_mode}
+- **Work Mode:** {work_mode.upper()}
+- **Turn:** 0
+---
+"""
+    try:
+        with open(config.SESSION_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(entry)
+        write_ok("Session logged")
+    except Exception as e:
+        write_skip(f"Session log failed: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Project Registry
+# ---------------------------------------------------------------------------
+
+def read_project_active() -> str:
+    """Get active project name from registry."""
+    reg = read_json(config.REGISTRY_FILE)
+    if reg and reg.get("active"):
+        return reg["active"]
+    return "farewell-assistant"
+
+
+def read_project_code(project_name: str) -> str:
+    """Get project code by name."""
+    reg = read_json(config.REGISTRY_FILE)
+    if reg and reg.get("projects", {}).get(project_name, {}).get("project_code"):
+        return reg["projects"][project_name]["project_code"]
+    return "???"
+
+
+def get_next_project_code() -> str:
+    """Auto-increment project code (001, 002, ...)."""
+    reg = read_json(config.REGISTRY_FILE)
+    next_code = reg.get("_next_code", "001") if reg else "001"
+    val = int(next_code) if next_code.isdigit() else 0
+    code = f"{val:03d}"
+    # Increment for next time
+    if reg:
+        reg["_next_code"] = f"{val + 1:03d}"
+    return code
+
+
+def register_project(name: str, project_type: str, path: str, dominan: str = ""):
+    """Register project in registry with auto code."""
+    code = get_next_project_code()
+    reg = read_json(config.REGISTRY_FILE) or {"projects": {}, "active": "", "_next_code": "001"}
+
+    # Detect type and dominan from path
+    if not project_type:
+        project_type = detect_type_from_path(path)
+    if not dominan:
+        dominan = project_type.upper()
+
+    lower = name.lower().replace(" ", "-")
+    reg["projects"][lower] = {
+        "project_code": code,
+        "type": project_type,
+        "last_used": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "context_file": f"{lower}.md",
+        "path": path,
+        "dominan": dominan,
+        "is_local": False,
+    }
+    reg["active"] = lower
+    write_json(config.REGISTRY_FILE, reg)
+    return code
+
+
+def detect_type_from_path(path: str) -> str:
+    """Simple project type detection from files in path."""
+    import glob
+    p = Path(path)
+    if not p.exists():
+        return "unknown"
+    files = [f.name.lower() for f in p.iterdir() if f.is_file()]
+    if "package.json" in files: return "node"
+    if "pyproject.toml" in files or "requirements.txt" in files or "setup.py" in files: return "python"
+    if "cargo.toml" in files: return "rust"
+    if "pom.xml" in files or "build.gradle" in files or "build.gradle.kts" in files: return "java"
+    if "go.mod" in files: return "go"
+    if "pubspec.yaml" in files: return "flutter"
+    if "composer.json" in files: return "php"
+    if "*.csproj" in glob.glob(os.path.join(path, "*.csproj")): return "dotnet"
+    return "unknown"
+
+
+def clone_project(url: str, temp_dir: str | None = None) -> str | None:
+    """Clone git repo to TEMP/, return project name or None."""
+    import urllib.parse
+    if not temp_dir:
+        temp_dir = str(config.TEMP_DIR)
+    name = os.path.basename(url)
+    if name.endswith(".git"):
+        name = name[:-4]
+    dest = os.path.join(temp_dir, name)
+    # Skip if already exists
+    if os.path.exists(dest):
+        write_skip(f"Already exists: {dest}")
+        return name
+    write_step("Clone", f"Cloning {url}...")
+    result = subprocess.run(
+        ["git", "clone", url, dest],
+        capture_output=True, text=True, timeout=120,
+    )
+    if result.returncode != 0:
+        write_fail(f"Clone failed: {result.stderr[:200]}")
+        return None
+    write_ok(f"Cloned to {dest}")
+    return name
+
+
+def setup_project_from_url(url: str) -> dict:
+    """Clone + detect + register. Returns {name, code, error}."""
+    name = clone_project(url)
+    if not name:
+        return {"error": "Clone failed"}
+    dest = os.path.join(str(config.TEMP_DIR), name)
+    project_type = detect_type_from_path(dest)
+    code = register_project(name, project_type, dest)
+    write_ok(f"{name} terdaftar dengan code project {code}")
+    return {"name": name, "code": code}
+
+
+def activate_project_by_code(code: str) -> bool:
+    """Activate a registered project by its code."""
+    reg = read_json(config.REGISTRY_FILE)
+    if not reg:
+        return False
+    for proj_name, proj_data in reg.get("projects", {}).items():
+        if proj_data.get("project_code") == code:
+            reg["active"] = proj_name
+            write_json(config.REGISTRY_FILE, reg)
+            write_ok(f"Active project: {code}-{proj_name}")
+            return True
+    write_fail(f"Project code {code} tidak ditemukan")
+    return False
+
+
+def list_registered_projects() -> list[dict]:
+    """Return list of {code, name, type, active}."""
+    reg = read_json(config.REGISTRY_FILE)
+    if not reg:
+        return []
+    active = reg.get("active", "")
+    projects = []
+    for name, info in reg.get("projects", {}).items():
+        projects.append({
+            "code": info.get("project_code", "???"),
+            "name": name,
+            "type": info.get("type", "?"),
+            "dominan": info.get("dominan", ""),
+            "active": name == active,
+        })
+    return sorted(projects, key=lambda p: p["code"])

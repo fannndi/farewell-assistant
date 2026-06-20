@@ -21,6 +21,7 @@ MODELS_DIR = ROOT_DIR / "models"
 
 # -- Data (project data, context, registry, skills) --
 DATA_DIR = ROOT_DIR / "data"
+TEMP_DIR = ROOT_DIR / "TEMP"
 PROJECT_CODE_DIR = DATA_DIR / "Code"
 PROJECT_CONTEXT_DIR = DATA_DIR / "context"
 PROJECT_SESSION_DIR = DATA_DIR / "session"
@@ -50,6 +51,7 @@ PROFILE_LOG_DIR = ROOT_DIR / "profiles" / "logs"
 
 # -- Logging --
 LOG_FILE = ROOT_DIR / "logging.md"
+SESSION_LOG_FILE = ROOT_DIR / "session-log.md"
 
 # -- Helpers --
 

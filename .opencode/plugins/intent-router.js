@@ -64,6 +64,8 @@ exports.server = async (ctx) => {
 
                 // Build footer
                 const project = data.project || "farewell-assistant";
+                const projectCode = data.project_code || "";
+                const projectLabel = projectCode ? `${projectCode}-${project}` : project;
                 const workMode = (data.work_mode || "build").toUpperCase();
                 const turn = data.turn || 0;
                 const chainLen = Array.isArray(data.chain) ? data.chain.length : 0;
@@ -71,7 +73,7 @@ exports.server = async (ctx) => {
                 const llmMode = (data.profile || "eco");
                 const llmDisplay = llmMode.charAt(0).toUpperCase() + llmMode.slice(1);
 
-                const footer = `Farewell: ON | Project: ${project} | ${workMode} | Turn: ${turn} | Chain: ${chainLen} | ${confidence} | ${llmDisplay}\n`;
+                const footer = `Farewell: ON | Project: ${projectLabel} | ${workMode} | Turn: ${turn} | Chain: ${chainLen} | ${confidence} | ${llmDisplay}\n`;
 
                 output.parts.unshift({ type: "text", text: footer });
             } catch (e) {

@@ -1,11 +1,13 @@
 // Run precision pipeline on every user message.
-// Blocking: waits for pipeline to complete (15s timeout).
+// Blocking: waits for pipeline to complete (PIPELINE_TIMEOUT env or 15s default).
 // Prepend pipeline result as [Pipeline:] prefix to user message parts.
 // AI sees intent, complexity, confidence, and skill chain before every turn.
 
 const { execSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+
+const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT || "15000", 10);
 
 exports.server = async (ctx) => {
     return {
@@ -19,7 +21,7 @@ exports.server = async (ctx) => {
                 const escaped = text.replace(/"/g, '`"');
                 execSync(
                     `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" -InputText "${escaped}"`,
-                    { timeout: 15000, windowsHide: true, stdio: "ignore" }
+                    { timeout: PIPELINE_TIMEOUT, windowsHide: true, stdio: "ignore" }
                 );
 
                 // Read fresh pipeline result

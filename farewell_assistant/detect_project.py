@@ -130,9 +130,10 @@ def detect_project(path: str = "", emit_context: bool = False) -> dict:
 
     if emit_context:
         import re as _re
-        slug = root.name
-        slug = _re.sub(r"[^a-z0-9-]", "-", slug.lower())
-        slug = _re.sub(r"-+", "-", slug)
+        slug = root.name.lower()
+        slug = _re.sub(r"[^a-z0-9\s-]", "", slug)
+        slug = _re.sub(r"[\s]+", "-", slug)
+        slug = _re.sub(r"-+", "-", slug).strip("-")
         ctx_dir = config.CONTEXT_DIR
         ctx_dir.mkdir(parents=True, exist_ok=True)
         ctx_file = ctx_dir / (slug + ".md")

@@ -1,5 +1,6 @@
 import platform
 import subprocess
+import time
 import httpx
 from . import config
 from .helpers import (
@@ -9,6 +10,7 @@ from .helpers import (
     start_9router,
     start_ollama_service,
     get_llm_mode,
+    parse_api_key,
     write_info,
     write_ok,
     write_skip,
@@ -53,39 +55,17 @@ def check_gpu() -> dict:
 
 def ping_models() -> list:
     results = []
-    api_key = None
-    combos = {}
-    try:
-        for line in config.API_KEY_FILE.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" not in line:
-                continue
-            k, v = line.split("=", 1)
-            k = k.strip()
-            v = v.strip()
-            if k == "NINEROUTER_API_KEY":
-                api_key = v
-            elif k.startswith("COMBO_"):
-                idx = k.replace("COMBO_", "")
-                combos.setdefault(idx, {})["combo"] = v
-            elif k.startswith("MODELS_"):
-                idx = k.replace("MODELS_", "")
-                combos.setdefault(idx, {})["models"] = [m.strip() for m in v.split(",") if m.strip()]
-    except Exception:
-        return results
-
-    if not api_key or not combos:
+    api_key, combo_entries, combo_models = parse_api_key()
+    if not api_key or not combo_entries:
         return results
 
     pid = get_9router_pid()
     if not pid:
         return results
 
-    for idx, entry in sorted(combos.items()):
+    for idx, entry in sorted(combo_entries.items()):
         combo = entry.get("combo", "")
-        models = entry.get("models", [])
+        models = combo_models.get(idx, {}).get("models", [])
         for model in models:
             result = {
                 "combo": combo,
@@ -96,7 +76,6 @@ def ping_models() -> list:
                 "err": "",
             }
             try:
-                import time
                 start = time.monotonic()
                 r = httpx.post(
                     f"{config.API_URL}/v1/chat/completions",

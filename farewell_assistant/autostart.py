@@ -14,11 +14,6 @@ def _get_task_name() -> str:
     return config.TASK_NAME
 
 
-def _get_bg_script() -> str:
-    # Use Python CLI directly instead of PS1 wrapper
-    return ""
-
-
 def _get_router_health() -> bool:
     import httpx
     try:

@@ -7,13 +7,26 @@ import time
 from datetime import datetime, timezone
 
 from . import config
-from .helpers import get_llm_mode, get_llm_model, invoke_llm
+from .helpers import get_llm_mode, get_llm_model, invoke_llm, read_json, write_json
 
 # ---------------------------------------------------------------------------
-# Intent Cache (per session, in-memory)
+# Intent Cache (per session, in-memory + disk persistence)
 # ---------------------------------------------------------------------------
+
+_CACHE_FILE = config.STATE_DIR / "intent-cache.json"
 
 _intent_cache: dict[str, dict] = {}
+
+
+def _load_cache():
+    global _intent_cache
+    data = read_json(_CACHE_FILE, default={})
+    _intent_cache = data if isinstance(data, dict) else {}
+
+
+def _save_cache():
+    config.STATE_DIR.mkdir(parents=True, exist_ok=True)
+    write_json(_CACHE_FILE, _intent_cache)
 
 
 def _hash_input(text: str) -> str:
@@ -27,10 +40,17 @@ def get_cached_intent(text: str) -> dict | None:
 
 def set_cached_intent(text: str, intent: dict):
     _intent_cache[_hash_input(text)] = intent
+    _save_cache()
 
 
 def clear_intent_cache():
     _intent_cache.clear()
+    if _CACHE_FILE.exists():
+        _CACHE_FILE.unlink(missing_ok=True)
+
+
+# Load cache on import
+_load_cache()
 
 
 # ---------------------------------------------------------------------------
@@ -222,7 +242,7 @@ def get_quick_intent(text_input: str) -> dict:
 # Input Sufficiency Check
 # ---------------------------------------------------------------------------
 
-def test_input_sufficiency(text_input: str, classified: dict | None) -> dict:
+def check_input_sufficiency(text_input: str, classified: dict | None) -> dict:
     """Check if user input has enough detail for precise execution."""
     input_lower = text_input.lower().strip()
     word_count = len(text_input.split())

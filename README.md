@@ -1,149 +1,266 @@
 # farewell-assistant
 
-> **AI assistant yang bisa handle semua project. Hemat token, pakai semua potensi GPU.**
+> **Zero-cost AI coding assistant. GPU-aware. Intent-driven. Handles every project.**
 
-Multi-project AI assistant berbasis OpenCode + 9Router + ECC. Didesain dari nol untuk efisiensi token dan fleksibilitas workflow.
+Python orchestrator yang menggabungkan OpenCode + 9Router + ECC menjadi satu pipeline intent-driven. Auto-classify task, chain skill yang tepat, route ke model yang optimal — semua dari satu perintah.
 
 ---
 
-## Quick Start
+## Prerequisites
+
+| Component | Minimum | Notes |
+|-----------|---------|-------|
+| Python | 3.10+ | `py --version` untuk cek |
+| Node.js | 18+ | Untuk 9Router (Next.js standalone) |
+| Git | 2.x | Untuk clone + update |
+| GPU (optional) | 2GB VRAM | Untuk local LLM enrichment. Tanpa GPU = eco mode (no enrichment) |
+| Ollama (optional) | Latest | Untuk local LLM runtime |
+
+---
+
+## Installation
 
 ```powershell
 git clone https://github.com/fannndi/farewell-assistant.git
 cd farewell-assistant
-.\start.ps1
+pip install httpx
 ```
 
-Itu saja. `start.ps1` akan:
-1. **Git pull** — sync perubahan dari device lain
-2. **Initial bootstrap** (hanya sekali) — clone ECC + 9Router, build, panduan dashboard
-3. **Update check** — pull ECC + 9Router, rebuild kalau ada update, scan breaking changes
-4. **9Router health** — start kalau belum running
-5. **Load config** — parse api-key.txt, diff combo vs cached, generate opencode.jsonc
-6. **Autostart** — register Scheduled Task kalau belum ada
-7. **Launch** — opencode
-
-Aman dijalankan setiap boot — guard skip langkah yang sudah selesai.
+Copy `api-key.example.txt` → `api-key.txt`, isi API key dan combo definitions.
 
 ---
 
-## Apa Ini?
+## Daily Routines
 
-Seperti punya asisten coding yang:
-- **Mengerti intent** — auto-classify build/fix/review/deploy/docs dari input
-- **Skill chain otomatis** — urutan skill yang presisi untuk setiap task
-- **Hemat token** — instruksi terstruktur, enrichment via local LLM
-- **Pakai GPU lokal** — 4 power profile sesuai kondisi hardware
-- **Handle semua project** — Flutter, Go, Node, PHP, Python, Rust, .NET
-
-```
-User Input → Quick Classify → Enrich (Ollama) → Skill Chain → Model Route → Execute
-    │              │                │                 │              │            │
-    │              │                │                 │              │            └─ Cloud AI (9Router)
-    │              │                │                 │              └─ Free/Emergency combo
-    │              │                │                 └─ build_web: api-design→backend→tdd→security
-    │              │                └─ {intent:"build", domain:"web", complexity:"medium"}
-    │              └─ Pattern match (instant, no LLM)
-    └─ "bikin CRUD user dengan auth JWT"
-```
-
----
-
-## Arsitektur
-
-### Pipeline: Intent-Driven Architecture (9 Langkah)
-
-| Step | Fungsi | Engine |
-|------|--------|--------|
-| 1. Input | User input masuk | Terminal |
-| 2. Quick Classify | Pattern-based intent detection | Regex (instant) |
-| 3. Structured Enrich | Klasifikasi intent + domain + stack | Ollama `qwen2.5:1.5b` |
-| 4. Cache Check | Skip kalau input sudah di-cache | Session memory |
-| 5. Rule Check | Validasi permission vs work mode | work-mode.json |
-| 6. Skill Chain | Bangun urutan skill berdasarkan intent | skill-chain.ps1 |
-| 7. Model Route | Pilih model combo berdasarkan complexity | config.ps1 |
-| 8. Planning Check | Kompleks tinggi → planning phase dulu | planner agent |
-| 9. Execute | Jalankan skill chain dengan model yang tepat | 9Router + ECC |
-
-### Power Profiles: GPU-Aware LLM
-
-| Profile | Condition | Model | VRAM | Speed |
-|---------|-----------|-------|------|-------|
-| Hot | Outdoor, unplugged, high temp | Qwen3.5-0.8B | ~600MB | ~15-25 tok/s |
-| Eco | Indoor, unplugged | Qwen2.5-Coder-1.5B | ~1GB | ~8-15 tok/s |
-| Balance | Indoor, plugged, AC | Qwen3.5-2B | ~1.4GB | ~5-10 tok/s |
-| Performance | Indoor, plugged, fan active | Qwen3.5-4B | ~2.5GB hybrid | ~2-5 tok/s |
-
-### Model Routing
-
-| Complexity | Primary | Secondary | Heavy |
-|------------|---------|-----------|-------|
-| low | Free (3 models) | Free | Free |
-| medium | Free (3 models) | Free | Free |
-| high | Free (3 models) | Emergency (2 models) | Emergency |
-| critical | Emergency (2 models) | Emergency | Emergency |
-
----
-
-## Daily Operation
-
-Setelah clone & first run (`.\start.ps1`), cukup satu perintah setiap hari:
+### Pagi — Startup (setiap kali buka laptop)
 
 ```powershell
-.\start.ps1
+py -m farewell_assistant.cli start
 ```
 
 Atau di dalam opencode: `/start`
 
-9Router sudah auto-start via Scheduled Task (terdaftar otomatis di step 6).
+**Yang dilakukan (7 step):**
 
-### Cek status (opsional)
+| Step | Action | Detail |
+|------|--------|--------|
+| 1/7 | Git Pull | Sync perubahan dari device lain |
+| 2/7 | Bootstrap | Clone ECC + 9Router (hanya sekali) |
+| 3/7 | Update | Pull ECC + 9Router, rebuild kalau ada update |
+| 4/7 | 9Router Health | Start kalau belum running |
+| 5/7 | Load Config | Parse api-key.txt, generate opencode.jsonc |
+| 6/7 | Pipeline Prime | Warm up intent router |
+| 7/7 | Ready | Semua komponen siap |
+
+Aman dijalankan berkali-kali — guard skip langkah yang sudah selesai.
+
+### Siang — Ganti LLM Mode sesuai Kondisi
 
 ```powershell
-.\scripts\autostart.ps1 -Action status    # Scheduled Task + 9Router health
-.\scripts\llm-setup.ps1 -Action status     # GPU + Ollama + models
-.\scripts\autostart.ps1 -Action run        # Trigger task manual (test)
-.\scripts\autostart.ps1 -Action disable    # Hentikan autostart
-.\scripts\autostart.ps1 -Action enable     # Daftarkan ulang
+# Pindahan dari dalam ke luar ( hemat battery )
+py -m farewell_assistant.cli llm eco
+
+# Balik ke meja ( plugged in )
+py -m farewell_assistant.cli llm balance
+
+# Heavy task, butuh power
+py -m farewell_assistant.cli llm performance
 ```
 
-### Logs & Debug
+### Sore — Cek Status
 
-| File | Isi |
-|------|-----|
-| `.opencode/logs/9router.log` | 9Router stdout |
-| `.opencode/logs/9router-error.log` | 9Router stderr |
-| `.opencode/logs/autostart.log` | Log Scheduled Task runs |
-| `.opencode/9router.pid` | PID 9Router process |
-| `logging.md` | Task log semua operasi (gitignored) |
+```powershell
+# Cek semua komponen
+py -m farewell_assistant.cli start
+
+# Cek 9Router + autostart
+py -m farewell_assistant.cli autostart status
+
+# Cek GPU + Ollama + models
+py -m farewell_assistant.cli llm status
+```
+
+### Malam — Cleanup (opsional)
+
+```powershell
+# Matikan autostart kalau tidak dipakai besok
+py -m farewell_assistant.cli autostart disable
+
+# Switch ke eco mode (hemat GPU)
+py -m farewell_assistant.cli llm eco
+```
 
 ---
 
 ## Commands
 
+### Core
+
+| Command | Fungsi | Contoh |
+|---------|--------|--------|
+| `start` | **Satu untuk semua** — startup lengkap | `py -m farewell_assistant.cli start` |
+| `workmode` | Switch PLAN/BUILD | `py -m farewell_assistant.cli workmode plan` |
+| `route` | Test intent router | `py -m farewell_assistant.cli route "bikin CRUD user"` |
+
+### LLM Management
+
+| Command | Fungsi | Contoh |
+|---------|--------|--------|
+| `llm status` | GPU + Ollama + models info | `py -m farewell_assistant.cli llm status` |
+| `llm eco` | Matikan LLM (zero GPU) | `py -m farewell_assistant.cli llm eco` |
+| `llm on` | Aktifkan LLM default | `py -m farewell_assistant.cli llm on` |
+| `llm hot` | Switch ke 0.8B | `py -m farewell_assistant.cli llm hot` |
+| `llm balance` | Switch ke 2B | `py -m farewell_assistant.cli llm balance` |
+| `llm performance` | Switch ke 4B | `py -m farewell_assistant.cli llm performance` |
+| `llm list` | List semua profiles | `py -m farewell_assistant.cli llm list` |
+| `llm pull` | Download semua GGUF | `py -m farewell_assistant.cli llm pull` |
+| `llm pull --profile hot` | Download profile spesifik | `py -m farewell_assistant.cli llm pull --profile hot` |
+| `llm remove` | Hapus semua models | `py -m farewell_assistant.cli llm remove` |
+| `llm auto` | Auto-detect GPU → recommend | `py -m farewell_assistant.cli llm auto` |
+
+### Project
+
+| Command | Fungsi | Contoh |
+|---------|--------|--------|
+| `detect` | Detect project type | `py -m farewell_assistant.cli detect` |
+| `detect --context` | Detect + emit context template | `py -m farewell_assistant.cli detect --context` |
+| `detect /path/to/project` | Detect project di path lain | `py -m farewell_assistant.cli detect C:\myapp` |
+
+### Autostart
+
+| Command | Fungsi | Contoh |
+|---------|--------|--------|
+| `autostart status` | Cek Scheduled Task status | `py -m farewell_assistant.cli autostart status` |
+| `autostart enable` | Daftarkan autostart | `py -m farewell_assistant.cli autostart enable` |
+| `autostart disable` | Hentikan autostart | `py -m farewell_assistant.cli autostart disable` |
+
+### Self-Heal
+
+| Command | Fungsi | Contoh |
+|---------|--------|--------|
+| `self-heal --file <path>` | Post-edit typecheck | `py -m farewell_assistant.cli self-heal --file src/main.ts` |
+
+### Di Dalam OpenCode (Slash Commands)
+
 | Command | Fungsi |
 |---------|--------|
-| `/start` | **Satu untuk semua** — git pull, update, health, config, autostart, launch |
-| `/autostart enable\|disable\|status\|run` | Manage Scheduled Task |
-| `/setup eco\|on\|hot\|balance\|performance` | Set LLM mode (alias `/llm-setup`) |
-| `/llm-setup <mode>` | Full LLM config + auto/list/pull/remove |
-| `/detect` | Detect project type dari directory markers |
-| `/enrich-check` | Verify enrichment pipeline (diagnostic) |
-| `/workmode plan\|build` | Switch work mode |
-| `/go "task"` | Universal task |
+| `/start` | Startup lengkap |
+| `/workmode plan` | Switch ke PLAN (read-only) |
+| `/workmode build` | Switch ke BUILD (full access) |
+| `/setup <mode>` | Set LLM mode |
+| `/llm-setup <mode>` | LLM config |
+| `/detect` | Detect project type |
+| `/enrich-check` | Test enrichment pipeline |
+| `/go "task"` | Universal task execution |
+| `/plan` | Create implementation plan (planner agent) |
+| `/tdd` | TDD workflow |
+| `/code-review` | Code review |
+| `/security-scan` | Security review (OWASP) |
+| `/build-fix` | Fix build errors |
+| `/verify` | Run verification loop |
 
 ---
 
-## Auto-start (Windows)
+## Work Mode
 
-9Router auto-start pas Windows logon via Scheduled Task. **Terdaftar otomatis** oleh `start.ps1` step 6.
+Dua mode yang menentukan apa yang boleh AI lakukan:
 
-- Trigger: `AtLogon` (no admin)
-- Restart: 3x @ 5 menit kalau crash
-- Action: `pwsh.exe -WindowStyle Hidden -File scripts/common/start-9router-bg.ps1`
-- Logs: `.opencode/logs/autostart.log`
-- PID tracking: `.opencode/9router.pid`
-- Ollama punya autostart sendiri via `.lnk` di Startup folder
+| Mode | Tools | Skill Groups | Use Case |
+|------|-------|-------------|----------|
+| **PLAN** | read, bash | audit, research, explore, planning | Analisis, audit, riset |
+| **BUILD** | read, bash, write, edit | orchestration, tdd, coding, security, deployment | Implementasi, fix, deploy |
+
+**Aturan keras:**
+- AI **TIDAK BOLEH** auto-switch mode — hanya user via `/workmode`
+- Default: BUILD
+- PLAN mode memblokir intent: build, fix, deploy
+- BUILD mode boleh semua
+
+---
+
+## Intent Pipeline
+
+```
+User Input
+    │
+    ▼
+┌─────────────────┐
+│  Quick Classify  │  ← Regex pattern (instant, no LLM)
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│ Structured Enrich│  ← Ollama (Qwen) — JSON classification
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Cache Check     │  ← Skip kalau sudah di-cache
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Rule Check      │  ← Validasi permission vs work mode
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Skill Chain     │  ← 19 built-in chains berdasarkan intent+domain
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Model Route     │  ← Complexity → Free/Emergency combo
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  Planning Check  │  ← High/critical → planning phase dulu
+└────────┬────────┘
+         ▼
+       Execute
+```
+
+### Skill Chains
+
+19 chains mapping intent+domain ke urutan skill:
+
+| Intent | Domain | Chain | Steps |
+|--------|--------|-------|-------|
+| build | web | build_web | orch-add-feature → api-design → backend-patterns → database-migrations → tdd-workflow → security-review → verification-loop → git-workflow |
+| build | mobile | build_mobile | orch-add-feature → dart-flutter-patterns → database-migrations → tdd-workflow → security-review → verification-loop → git-workflow |
+| build | infra | build_infra | orch-add-feature → deployment-patterns → docker-patterns → kubernetes-patterns → database-migrations → verification-loop → git-workflow |
+| build | data | build_data | orch-add-feature → postgres-patterns → database-migrations → tdd-workflow → verification-loop → git-workflow |
+| fix | general | fix | search-first → orch-fix-defect → verification-loop |
+| fix | bug | fix_bug | search-first → orch-fix-defect → ai-regression-testing → verification-loop → git-workflow |
+| review | code | review_code | coding-standards → error-handling → security-review → codehealth-mcp → verification-loop |
+| review | security | review_security | repo-scan → security-bounty-hunter → security-scan → verification-loop |
+| deploy | general | deploy | production-audit → deployment-patterns → canary-watch → git-workflow |
+| research | general | research | research-ops → documentation-lookup |
+| research | deep | research_deep | research-ops → deep-research → documentation-lookup → competitive-platform-analysis |
+| docs | general | docs | codebase-onboarding → article-writing → knowledge-ops |
+
+---
+
+## Power Profiles
+
+GPU-aware LLM management — sesuaikan dengan kondisi hardware:
+
+| Profile | Condition | Model | VRAM | Speed | Kapan Pakai |
+|---------|-----------|-------|------|-------|-------------|
+| `hot` | Outdoor, battery | Qwen3.5-0.8B | ~600MB | ~15-25 tok/s | Di luar, hemat battery |
+| `eco` | Indoor, unplugged | Qwen2.5-Coder-1.5B | ~1GB | ~8-15 tok/s | Normal mobile work |
+| `balance` | Plugged, AC | Qwen3.5-2B | ~1.4GB | ~5-10 tok/s | Kerja di meja |
+| `performance` | Plugged, fan | Qwen3.5-4B | ~2.5GB hybrid | ~2-5 tok/s | Heavy tasks |
+
+**Eco mode:** Enrichment dimatikan, GPU zero usage. Quick classify tetap jalan.
+
+---
+
+## Model Routing
+
+Task dikirim ke cloud AI via 9Router. Routing berdasarkan complexity:
+
+| Complexity | Primary | Emergency |
+|------------|---------|-----------|
+| low | Free (3 models) | Free |
+| medium | Free (3 models) | Free |
+| high | Free (3 models) | Emergency (2 models) |
+| critical | Emergency (2 models) | Emergency |
 
 ---
 
@@ -151,84 +268,73 @@ Atau di dalam opencode: `/start`
 
 ```
 farewell-assistant/
-├── scripts/
-│   ├── start.ps1                  # ★ Konsolidasi: 7-step bootstrap + update + config + report + launch
-│   ├── autostart.ps1              # Scheduled Task manager
-│   ├── llm-setup.ps1              # LLM config (eco/on/hot/balance/performance)
-│   ├── workmode.ps1               # Switch work mode
-│   ├── detect-project.ps1         # Project type detection
-│   ├── common/
-│   │   ├── config.ps1             # URLs, paths, constants, model routes, pipeline settings
-│   │   ├── helpers.ps1            # Start-9Router, Ollama, GPU, LLM, Get-SkillCount, Get-ComboDetails
-│   │   ├── log.ps1                # Write-TaskLog, Sync-SessionState
-│   │   ├── enrichment-pipeline.ps1 # ★ Structured enrichment (JSON intent classification)
-│   │   ├── intent-router.ps1      # ★ Intent → Skill Chain → Model Route
-│   │   ├── skill-chain.ps1        # ★ Skill chain builder (19 built-in chains)
-│   │   └── start-9router-bg.ps1   # Hidden wrapper for Scheduled Task
-│   └── hooks/
-│       ├── self-heal.ps1          # Post-edit typecheck (project-aware)
-│       └── check-enrich.ps1       # Enrichment diagnostic
-├── profiles/combo/opencode.jsonc
-├── instructions/
+├── farewell_assistant/           # Core Python package (14 modules)
+│   ├── cli.py                    # CLI dispatcher (argparse)
+│   ├── config.py                 # URLs, paths, constants, model routes
+│   ├── intent_router.py          # Intent → Skill Chain → Model Route
+│   ├── enrichment_pipeline.py    # Structured enrichment + quick classify + cache
+│   ├── skill_chain.py            # 19 built-in chains
+│   ├── helpers.py                # JSON, Ollama, 9Router, GPU, LLM, parse_api_key
+│   ├── workmode.py               # PLAN/BUILD mode switch
+│   ├── llm_setup.py              # 4 power profiles, GGUF download, Ollama import
+│   ├── detect_project.py         # Project type detection (16 types)
+│   ├── start.py                  # 7-step startup orchestrator
+│   ├── bootstrap.py              # First-run: clone ECC + 9Router, build
+│   ├── update.py                 # Git pull ECC + 9Router, rebuild if needed
+│   ├── health.py                 # 9Router/Ollama health, GPU check, model ping
+│   ├── autostart.py              # Cross-platform autostart (Windows/Linux)
+│   ├── self_heal.py              # Post-edit typecheck
+│   ├── log.py                    # Task logging + session state
+│   └── run_router.py             # Entry point for plugin
+├── scripts/                      # Backward-compat PS1 wrappers → delegate to Python
+├── profiles/combo/
+│   └── opencode.jsonc            # Profile template
+├── instructions/                 # AI rules + pipeline docs
 │   ├── user-rules.md
-│   └── preprocess.md              # Intent-Driven Pipeline (9 steps)
-├── commands/
-│   ├── start.md, autostart.md, llm-setup.md, setup.md
-│   ├── workmode.md, detect.md, go.md, enrich-check.md
-├── projects/
-│   ├── registry.json
-│   ├── skill-mode-index.json
-│   ├── skill-index.json
-│   └── context/
-├── 9router/                       # Clone (gitignored)
-├── ecc/                           # ECC skills (gitignored)
-├── models/                        # GGUF files (gitignored)
-├── .opencode/                     # Runtime state (gitignored)
-│   ├── llm-mode.json, work-mode.json, combo.json, 9router.pid
-│   ├── session-state.json, context.md
+│   └── preprocess.md
+├── commands/                     # OpenCode command definitions
+├── Project/
+│   ├── Context/                  # Per-project context markdown
+│   └── Skills/                   # Local (non-ECC) skills
+├── tests/
+│   ├── test_pipeline.py          # Pipeline tests (20 tests)
+│   ├── test_helpers.py           # Helper tests
+│   ├── test_detect.py            # Detect project tests
+│   ├── test_llm.py               # LLM setup tests
+│   └── test_autostart.py         # Autostart tests
+├── .opencode/
+│   ├── plugins/
+│   │   └── intent-router.js      # Chat.message hook (configurable timeout)
+│   ├── pipeline-result.json      # Runtime
+│   ├── context.md                # Runtime
+│   ├── llm-mode.json             # Runtime
+│   ├── work-mode.json            # Runtime
+│   ├── intent-cache.json         # Runtime (persisted to disk)
 │   └── logs/
-├── api-key.txt                    # NINEROUTER_API_KEY, 9ROUTER_PASSWORD, COMBO_* (gitignored)
+├── 9router/                      # Cloned (gitignored)
+├── ecc/                          # ECC 270+ skills (gitignored)
+├── models/                       # GGUF files (gitignored)
+├── api-key.txt                   # Secrets (gitignored)
 ├── api-key.example.txt
 ├── mcp-config.example.json
-├── Modelfile.qwen2.5-coder-1.5b
-├── Modelfile.qwen3.5-0.8b
-├── Modelfile.qwen3.5-2b
-├── Modelfile.qwen3.5-4b
+├── Modelfile.qwen3.5-*.gguf
+├── pyproject.toml                # Python package definition
 ├── CHANGELOG.md
-├── CHANGELOG_ECC.md
-├── CHANGELOG_9ROUTER.md
-└── logging.md                     # Task log (gitignored)
+└── logging.md                    # Task log (gitignored)
 ```
 
 ---
 
-## Comparison With opencode-setup
+## Logs & Debug
 
-| Metric | opencode-setup | farewell-assistant |
-|--------|---------------|-------------------|
-| Total tracked files | ~150+ | ~45 |
-| Scripts | 64 | 5 (+7 common, +2 hooks) |
-| Commands | ~50 | 8 (custom) + ECC |
-| Instructions | 19 | 2 (comprehensive) |
-| Pipeline steps | 8+ | **9 (Intent-Driven)** |
-| Intent classification | Manual | **Auto (LLM + regex)** |
-| Skill routing | Manual | **19 built-in chains** |
-| Model routing | Static | **Dynamic (complexity-based)** |
-| Multi-project | Overcomplicated | Simple registry |
-| Startup command | Manual | 1 perintah: `/start` |
-
----
-
-## Power Profiles
-
-| Profile | Condition | Model | VRAM | Speed | Use When |
-|---------|-----------|-------|------|-------|----------|
-| `hot` | Outdoor, unplugged, high temp | Qwen3.5-0.8B | ~600MB | ~15-25 tok/s | Outdoor, low battery |
-| `eco` | Indoor, unplugged | Qwen2.5-Coder-1.5B | ~1GB | ~8-15 tok/s | Normal mobile work |
-| `balance` | Indoor, plugged, AC | Qwen3.5-2B | ~1.4GB | ~5-10 tok/s | Desk work, comfortable |
-| `performance` | Indoor, plugged, fan active | Qwen3.5-4B | ~2.5GB hybrid | ~2-5 tok/s | Heavy tasks, max power |
-
-Switch: `/setup hot` / `/setup eco` / `/setup balance` / `/setup performance`
+| File | Isi |
+|------|-----|
+| `.opencode/logs/9router.log` | 9Router stdout |
+| `.opencode/logs/9router-error.log` | 9Router stderr |
+| `.opencode/9router.pid` | PID 9Router process |
+| `logging.md` | Task log semua operasi (gitignored) |
+| `.opencode/pipeline-result.json` | Pipeline output terakhir |
+| `.opencode/intent-cache.json` | Cached intent classifications |
 
 ---
 
@@ -236,12 +342,68 @@ Switch: `/setup hot` / `/setup eco` / `/setup balance` / `/setup performance`
 
 | Component | Role | Source |
 |-----------|------|--------|
+| Python 3.10+ | Core orchestrator | farewell-assistant |
 | OpenCode | AI coding assistant | Anomaly Co. |
-| 9Router | AI gateway (12 models, 4 strategies) | Local |
+| 9Router | AI gateway (12 models, 4 strategies) | decolua/9router |
 | ECC | 270+ skills, 64 agents | affaan-m/ECC |
 | Ollama | Local LLM runtime (4 models) | ollama.ai |
-| Intent Router | Structured intent classification | Custom |
-| Skill Chain | Skill sequence builder | Custom |
+| httpx | HTTP client | python-httpx |
+
+---
+
+## Troubleshooting
+
+### 9Router tidak start
+
+```powershell
+# Cek apakah port sudah dipakai
+netstat -ano | findstr :20128
+
+# Cek log
+type .opencode\logs\9router-error.log
+
+# Force restart
+py -m farewell_assistant.cli start
+```
+
+### Ollama tidak detected
+
+```powershell
+# Cek Ollama status
+py -m farewell_assistant.cli llm status
+
+# Start Ollama service
+ollama serve
+
+# Cek GPU info
+py -m farewell_assistant.cli llm list
+```
+
+### Enrichment pipeline timeout
+
+Default timeout 15s. Untuk model besar (performance mode: ~40-100s), set environment variable:
+
+```powershell
+$env:PIPELINE_TIMEOUT = "60000"  # 60 seconds
+```
+
+### Intent cache corrupt
+
+Hapus file cache:
+
+```powershell
+Remove-Item .opencode\intent-cache.json
+```
+
+### Pipeline tidak jalan
+
+```powershell
+# Test route langsung
+py -m farewell_assistant.cli route "bikin CRUD user dengan auth JWT"
+
+# Force enrichment (skip cache)
+py -m farewell_assistant.cli route "fix bug auth token" --force
+```
 
 ---
 

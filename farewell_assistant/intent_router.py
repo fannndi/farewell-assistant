@@ -11,7 +11,7 @@ from .enrichment_pipeline import (
     get_quick_intent,
     get_cached_intent,
     set_cached_intent,
-    test_input_sufficiency,
+    check_input_sufficiency,
 )
 from .skill_chain import get_skill_chain, show_skill_chain
 from .log import write_task_log
@@ -40,7 +40,7 @@ def _set_turn_count(count: int):
 # Permission Check
 # ---------------------------------------------------------------------------
 
-def test_task_permission(intent: dict, work_mode: str) -> dict:
+def check_task_permission(intent: dict, work_mode: str) -> dict:
     if work_mode == "plan" and intent.get("intent") in ("build", "fix", "deploy"):
         return {"allowed": False, "reason": f"Intent '{intent['intent']}' requires BUILD mode. Current mode: PLAN"}
     return {"allowed": True}
@@ -205,14 +205,14 @@ def invoke_intent_router(
         set_cached_intent(text_input, classified)
 
     # Step 2: Check permissions
-    permission = test_task_permission(classified, work_mode)
+    permission = check_task_permission(classified, work_mode)
     if not permission["allowed"]:
         result = {"success": False, "reason": permission["reason"], "intent": classified, "turn": turn_count}
         sync_turn_state(result, text_input)
         return result
 
     # Step 2.5: Check input sufficiency
-    sufficiency = test_input_sufficiency(text_input, classified)
+    sufficiency = check_input_sufficiency(text_input, classified)
     if not sufficiency["sufficient"]:
         result = {
             "success": False,

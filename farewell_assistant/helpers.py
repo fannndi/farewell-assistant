@@ -35,7 +35,13 @@ def _supports_color():
     if os.environ.get("NO_COLOR"):
         return False
     if platform.system() == "Windows":
-        return os.environ.get("WT_SESSION") or os.environ.get("TERM_PROGRAM") == "mintty"
+        return (
+            os.environ.get("WT_SESSION")
+            or os.environ.get("TERM_PROGRAM") == "mintty"
+            or os.environ.get("ConEmuANSI") == "ON"
+            or os.environ.get("ANSICON")
+            or os.environ.get("VSCODE_PID")
+        )
     return hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
 
 
@@ -282,6 +288,35 @@ def start_9router() -> bool:
 
     write_fail(f"9Router not reachable after {total}s (see {log_err})")
     return False
+
+
+# ---------------------------------------------------------------------------
+# API key parser (shared)
+# ---------------------------------------------------------------------------
+
+def parse_api_key() -> tuple[str | None, dict[str, dict], dict[str, dict]]:
+    """Parse api-key.txt. Returns (api_key, combo_entries, combo_models)."""
+    api_key = None
+    combo_entries: dict[str, dict] = {}
+    combo_models: dict[str, dict] = {}
+    try:
+        for line in config.API_KEY_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip()
+            if k == "NINEROUTER_API_KEY":
+                api_key = v
+            elif k.startswith("COMBO_"):
+                idx = k.replace("COMBO_", "")
+                combo_entries.setdefault(idx, {})["combo"] = v
+            elif k.startswith("MODELS_"):
+                idx = k.replace("MODELS_", "")
+                combo_models.setdefault(idx, {})["models"] = [m.strip() for m in v.split(",") if m.strip()]
+    except Exception:
+        pass
+    return api_key, combo_entries, combo_models
 
 
 # ---------------------------------------------------------------------------

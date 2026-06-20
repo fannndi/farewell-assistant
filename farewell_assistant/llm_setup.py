@@ -4,8 +4,10 @@ import os
 import platform
 import shutil
 import subprocess
+import tempfile
 from collections import OrderedDict
 from pathlib import Path
+from datetime import datetime, timezone
 
 from . import config
 from .helpers import (
@@ -92,7 +94,6 @@ def set_llm_mode(mode: str):
     if state is None:
         state = {}
     state["mode"] = mode
-    from datetime import datetime, timezone
     state["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
     model = MODEL_MAP.get(mode)
     if model:

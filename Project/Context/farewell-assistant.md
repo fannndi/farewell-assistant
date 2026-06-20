@@ -1,46 +1,50 @@
 # farewell-assistant
 
-Type: PowerShell automation orchestrator
+Type: Python AI assistant orchestrator
 Path: C:/Users/FANNNDI/Documents/farewell-assistant
-Stack: PowerShell 7 + OpenCode + 9Router (Next.js standalone) + ECC skills + Ollama (Qwen models)
+Stack: Python 3.10+ + OpenCode + 9Router (Next.js standalone) + ECC skills + Ollama (Qwen models)
 Focus: Intent-Driven AI assistant — structured enrichment, automatic skill chains, dynamic model routing. GPU-aware power profiles. 9Router auto-start on Windows logon.
 
-Key files:
-  - scripts/start.ps1           — daily startup + profile generation + model health report
-  - scripts/autostart.ps1       — Windows Scheduled Task manager (9Router on logon + restart-on-failure)
-  - scripts/llm-setup.ps1       — LLM mode config (eco/on/hot/balance/performance + auto/list/pull/remove)
-  - scripts/workmode.ps1        — switch PLAN/BUILD work mode (ROLE enforcement)
-  - scripts/detect-project.ps1  — project type detection from file markers
-  - scripts/common/config.ps1   — centralized URLs/paths/constants, model routes, pipeline settings
-  - scripts/common/helpers.ps1  — Start-9Router, Ollama, GPU, LLM, Get-SkillCount, Get-ComboDetails
-  - scripts/common/log.ps1      — Write-TaskLog + Sync-SessionState
-  - scripts/common/enrichment-pipeline.ps1 — ★ Structured enrichment (JSON intent classification via Ollama)
-  - scripts/common/intent-router.ps1      — ★ Intent → permission check → skill chain → model route + Sync-TurnState
-  - scripts/common/skill-chain.ps1        — ★ Skill chain builder (19 built-in chains)
-  - scripts/common/start-9router-bg.ps1   — hidden wrapper for Scheduled Task
+Key files (Python core):
+  - farewell_assistant/cli.py           — CLI dispatcher (argparse, 7 subcommands)
+  - farewell_assistant/config.py        — URLs, paths, constants, model routes
+  - farewell_assistant/intent_router.py — Intent → permission check → skill chain → model route
+  - farewell_assistant/enrichment_pipeline.py — Structured enrichment (JSON intent via Ollama) + quick classify + cache
+  - farewell_assistant/skill_chain.py   — Skill chain builder (19 built-in chains)
+  - farewell_assistant/helpers.py       — JSON state, Ollama, 9Router, GPU, LLM, parse_api_key
+  - farewell_assistant/workmode.py      — PLAN/BUILD mode switch (ROLE enforcement)
+  - farewell_assistant/llm_setup.py     — 4 power profiles, GGUF download, Ollama import
+  - farewell_assistant/detect_project.py — Project type detection (16 types)
+  - farewell_assistant/start.py         — 7-step startup orchestrator
+  - farewell_assistant/bootstrap.py     — First-run: clone ECC + 9Router, build
+  - farewell_assistant/update.py        — Git pull ECC + 9Router, rebuild if needed
+  - farewell_assistant/health.py        — 9Router/Ollama health, GPU check, model ping
+  - farewell_assistant/autostart.py     — Cross-platform autostart (Windows schtasks / Linux systemd)
+  - farewell_assistant/self_heal.py     — Post-edit typecheck (TS/TSX, Dart, Python)
+  - farewell_assistant/log.py           — Task logging + session state sync
+  - farewell_assistant/run_router.py    — Entry point for plugin (CLI)
+
+Backward-compat PS1 wrappers:
+  - scripts/run-router.ps1    → py -m farewell_assistant.run_router
+  - scripts/workmode.ps1      → py -m farewell_assistant.cli workmode
+  - scripts/llm-setup.ps1     → py -m farewell_assistant.cli llm
+  - scripts/detect-project.ps1 → py -m farewell_assistant.cli detect
 
 Runtime context files (written per-turn):
-  - .opencode/pipeline-result.json — ★ Machine-readable pipeline output (intent, domain, chain, model, turn)
-  - .opencode/context.md           — ★ AI-readable context (Session State + Turn State)
+  - .opencode/pipeline-result.json — Machine-readable pipeline output (intent, domain, chain, model, turn)
+  - .opencode/context.md           — AI-readable context (Session State + Turn State)
   - .opencode/llm-mode.json        — Current LLM mode (eco/hot/balance/performance)
   - .opencode/work-mode.json       — Current work mode (plan/build)
+  - .opencode/intent-cache.json    — Persisted intent cache (survives restart)
   - .opencode/session-state.json   — Session metadata + task history
-  - scripts/hooks/check-enrich.ps1 — enrichment pipeline diagnostic
-  - scripts/hooks/self-heal.ps1 — auto-fix on file change
-  - commands/go.md                — universal task execution template
-  - commands/start.md             — boot sequence documentation
-  - commands/setup.md             — LLM mode setup guide
-  - commands/llm-setup.md         — LLM mode reference
-  - commands/detect.md            — project type detection
-  - commands/autostart.md         — 9Router autostart manager
-  - commands/workmode.md          — PLAN/BUILD mode switch
-  - commands/enrich-check.md      — enrichment pipeline diagnostic
-  - profiles/combo/opencode.jsonc — OpenCode config template (combo-based, agent definitions, commands)
+  - profiles/combo/opencode.jsonc  — OpenCode config template (combo-based, agent definitions, commands)
+
+Static files:
   - instructions/user-rules.md  — core rules + ROLE enforcement (mode lock, logging)
   - instructions/preprocess.md  — enrichment pipeline + footer format
   - projects/registry.json      — project index (active: farewell-assistant)
-  - projects/skill-mode-index.json — skills per work mode (PLAN: 20, BUILD: 24)
-  - projects/skill-index.json   — full skill catalog by kategori (6 kategori, 271 skills on disk)
+  - projects/skill-mode-index.json — skills per work mode (PLAN: ~20, BUILD: ~30)
+  - projects/skill-index.json   — full skill catalog by kategori (6 kategori, 271+ skills)
   - api-key.txt                 — NINEROUTER_API_KEY, 9ROUTER_PASSWORD, COMBO_* definitions (gitignored)
 
 Conventions:
@@ -50,9 +54,9 @@ Conventions:
   - Skill chains: 19 built-in chains mapping intent+domain → sequential skill execution
   - Model routing: low/medium complexity → Free combo, high/critical → Emergency combo
   - Power profiles: hot (0.8B) → eco (1.5B) → balance (2B) → performance (4B)
-  - Setiap task stage dicatat ke logging.md via Write-TaskLog
+  - Setiap task stage dicatat ke logging.md via write_task_log
   - 9Router clone+standalone approach: build .next/standalone, run via node, PID tracked
-  - Autostart: Scheduled Task AtLogon (no admin) + restart 3x @ 5min, bukan VBS di Startup
+  - Autostart: Scheduled Task AtLogon (no admin) + restart 3x @ 5min
   - State files di .opencode/ (gitignored): llm-mode.json, work-mode.json, combo.json, 9router.pid, logs/
 
 Dependencies (cloned, gitignored):

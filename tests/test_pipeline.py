@@ -12,14 +12,14 @@ from farewell_assistant.enrichment_pipeline import (
     get_cached_intent,
     get_quick_intent,
     set_cached_intent,
-    test_input_sufficiency,
+    check_input_sufficiency,
 )
 from farewell_assistant.helpers import read_json
 from farewell_assistant.intent_router import (
     invoke_intent_router,
     select_model_route,
     sync_turn_state,
-    test_task_permission,
+    check_task_permission,
 )
 from farewell_assistant.skill_chain import get_skill_chain
 
@@ -86,22 +86,22 @@ class TestSkillChain:
         assert chain[0]["name"] == "documentation-lookup"
 
 
-class TestTaskPermission:
+class TestCheckTaskPermission:
     def test_blocks_build_in_plan(self):
-        r = test_task_permission({"intent": "build"}, "plan")
+        r = check_task_permission({"intent": "build"}, "plan")
         assert r["allowed"] is False
         assert "requires BUILD" in r["reason"]
 
     def test_allows_review_in_plan(self):
-        r = test_task_permission({"intent": "review"}, "plan")
+        r = check_task_permission({"intent": "review"}, "plan")
         assert r["allowed"] is True
 
     def test_allows_all_in_build(self):
-        r = test_task_permission({"intent": "build"}, "build")
+        r = check_task_permission({"intent": "build"}, "build")
         assert r["allowed"] is True
 
     def test_allows_docs_in_plan(self):
-        r = test_task_permission({"intent": "docs"}, "plan")
+        r = check_task_permission({"intent": "docs"}, "plan")
         assert r["allowed"] is True
 
 
@@ -119,48 +119,48 @@ class TestModelRoute:
         assert r["primary"] == "Emergency"
 
 
-class TestInputSufficiency:
+class TestCheckInputSufficiency:
     def test_research_sufficient(self):
-        r = test_input_sufficiency("apa itu closure", {"intent": "research", "stack": []})
+        r = check_input_sufficiency("apa itu closure", {"intent": "research", "stack": []})
         assert r["sufficient"] is True
 
     def test_docs_sufficient(self):
-        r = test_input_sufficiency("write documentation", {"intent": "docs", "stack": []})
+        r = check_input_sufficiency("write documentation", {"intent": "docs", "stack": []})
         assert r["sufficient"] is True
 
     def test_ask_short_hold(self):
-        r = test_input_sufficiency("hai", {"intent": "ask", "stack": []})
+        r = check_input_sufficiency("hai", {"intent": "ask", "stack": []})
         assert r["sufficient"] is False
 
     def test_ask_detailed(self):
-        r = test_input_sufficiency("apa itu closure di JavaScript?", {"intent": "ask", "stack": ["javascript"]})
+        r = check_input_sufficiency("apa itu closure di JavaScript?", {"intent": "ask", "stack": ["javascript"]})
         assert r["sufficient"] is True
 
     def test_fix_with_detail(self):
-        r = test_input_sufficiency("fix bug token expired di middleware auth", {"intent": "fix", "stack": []})
+        r = check_input_sufficiency("fix bug token expired di middleware auth", {"intent": "fix", "stack": []})
         assert r["sufficient"] is True
 
     def test_fix_short(self):
-        r = test_input_sufficiency("fix", {"intent": "fix", "stack": []})
+        r = check_input_sufficiency("fix", {"intent": "fix", "stack": []})
         assert r["sufficient"] is False
 
     def test_deploy_with_detail(self):
-        r = test_input_sufficiency("deploy docker kubernetes production", {"intent": "deploy", "stack": ["docker"]})
+        r = check_input_sufficiency("deploy docker kubernetes production", {"intent": "deploy", "stack": ["docker"]})
         assert r["sufficient"] is True
 
     def test_deploy_short(self):
-        r = test_input_sufficiency("deploy", {"intent": "deploy", "stack": []})
+        r = check_input_sufficiency("deploy", {"intent": "deploy", "stack": []})
         assert r["sufficient"] is False
 
     def test_build_with_entity_stack(self):
-        r = test_input_sufficiency(
+        r = check_input_sufficiency(
             "bikin CRUD user dengan auth JWT dan React",
             {"intent": "build", "stack": ["react"]},
         )
         assert r["sufficient"] is True
 
     def test_build_no_entity(self):
-        r = test_input_sufficiency(
+        r = check_input_sufficiency(
             "bikin sesuatu yang bagus",
             {"intent": "build", "stack": []},
         )
@@ -168,7 +168,7 @@ class TestInputSufficiency:
         assert "entity" in r["reason"]
 
     def test_build_no_stack(self):
-        r = test_input_sufficiency(
+        r = check_input_sufficiency(
             "bikin user login page",
             {"intent": "build", "stack": []},
         )

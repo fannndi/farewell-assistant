@@ -7,7 +7,7 @@ from .bootstrap import handle_first_run, bootstrap_check
 from .update import run_update_check, rebuild_9router_if_needed
 from .health import ensure_9router, ensure_ollama, check_gpu, ping_models
 from .helpers import (
-    get_llm_mode, read_json, write_info, write_ok, write_skip, write_step,
+    get_llm_mode, parse_api_key, read_json, write_info, write_ok, write_skip, write_step,
 )
 from .intent_router import invoke_intent_router
 from .log import sync_session_state, write_task_log
@@ -83,31 +83,7 @@ def _handle_config():
         write_skip("api-key.txt not found")
         return
 
-    try:
-        lines = api_key_file.read_text(encoding="utf-8").splitlines()
-    except Exception:
-        write_skip("api-key.txt read failed")
-        return
-
-    env = {}
-    combo_entries = {}
-    combo_models = {}
-    for line in lines:
-        line = line.strip()
-        if "=" in line:
-            key, val = line.split("=", 1)
-            key = key.strip()
-            val = val.strip()
-            env[key] = val
-            if key == "NINEROUTER_API_KEY":
-                import os
-                os.environ[key] = val
-            if key.startswith("COMBO_"):
-                idx = key.split("_")[1]
-                combo_entries[idx] = val
-            if key.startswith("MODELS_"):
-                idx = key.split("_")[1]
-                combo_models[idx] = [m.strip() for m in val.split(",") if m.strip()]
+    api_key, combo_entries, combo_models = parse_api_key()
 
     if combo_entries:
         write_ok("API keys loaded")
@@ -123,7 +99,7 @@ def _handle_config():
             save.append({
                 "name": idx,
                 "combo": combo_entries[idx],
-                "models": combo_models.get(idx, []),
+                "models": combo_models.get(idx, {}).get("models", []),
             })
         config.COMBO_FILE.parent.mkdir(parents=True, exist_ok=True)
         import json
@@ -149,7 +125,7 @@ def _generate_profile(combo_entries: dict, combo_models: dict):
         return
 
     sorted_indices = sorted(combo_entries.keys())
-    combos = [combo_entries[i] for i in sorted_indices]
+    combos = [combo_entries[i]["combo"] for i in sorted_indices if combo_entries[i].get("combo")]
 
     content = content.replace("{project}", str(config.ROOT_DIR).replace("\\", "/"))
     c0 = combos[0] if combos else ""

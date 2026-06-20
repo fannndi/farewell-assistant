@@ -338,10 +338,18 @@ function Get-ComboDetails {
     if (-not (Test-Path $dbPath -PathType Leaf)) { return $combos }
     try {
         $dbPathFs = $dbPath -replace '\\', '/'
-        $nodeScript = "const Database = require('better-sqlite3'); const db = new Database('$dbPathFs', {readonly:true}); const combos = db.prepare('SELECT name,kind,models FROM combos ORDER BY createdAt ASC').all(); combos.forEach(c => console.log(JSON.stringify({name:c.name,kind:c.kind,models:JSON.parse(c.models||'[]')}))); db.close();"
+        $nodeScript = "const Database = require('better-sqlite3'); const db = new Database('$dbPathFs', {readonly:true}); const combos = db.prepare('SELECT name,kind,models FROM combos ORDER BY createdAt ASC').all(); combos.forEach(c => { let models = []; if (typeof c.models === 'string') { try { models = JSON.parse(c.models); } catch(e) { models = c.models.split(',').map(m => m.trim()).filter(Boolean); } } else if (Array.isArray(c.models)) { models = c.models; } console.log(JSON.stringify({name:c.name, kind:c.kind||'llm', models:models})); }); db.close();"
         Push-Location $script:ROUTER_DIR
-        $combos = node -e $nodeScript 2>$null | Where-Object { $_ -match '^\{"name"' } | ForEach-Object { try { $_ | ConvertFrom-Json } catch {} }
+        $raw = node -e $nodeScript 2>$null
+        if ($raw) {
+            $combos = $raw | Where-Object { $_ -match '^\{"name"' } | ForEach-Object {
+                try { $_ | ConvertFrom-Json } catch { $null }
+            } | Where-Object { $_ -ne $null }
+        }
         Pop-Location
-    } catch { Pop-Location }
+    } catch {
+        Write-Verbose "Get-ComboDetails failed: $_"
+        Pop-Location
+    }
     return $combos
 }

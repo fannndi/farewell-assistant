@@ -60,10 +60,10 @@ function Write-ShortChangelog {
 function Write-StartReport {
     param(
         [bool]$RouterRunning,
-        [string[]]$ComboBadges,
         [string]$Mode,
-        [hashtable]$CurrentCombos,
-        [string[]]$ComboNamesFromFile
+        [string[]]$ComboNamesFromFile,
+        [hashtable]$ComboModelsByIndex,
+        [array]$PingResults
     )
 
     $startTs = if ($script:startTimestamp) { $script:startTimestamp } else { Get-Date }
@@ -95,37 +95,12 @@ function Write-StartReport {
     $taskExists = $false
     try { $taskExists = (Get-ScheduledTask -TaskName $script:TASK_NAME -ErrorAction Stop) -ne $null } catch {}
 
-    # Read combo models from 9Router SQLite
-    $comboDbModels = Get-ComboDetails
-
     # Agent-to-combo mapping
     $agentMap = @{}
     $combo0Agents = @("build", "tdd-guide", "security-reviewer")
     $combo1Agents = @("planner", "code-reviewer", "build-error-resolver", "doc-updater")
     if ($ComboNamesFromFile.Count -gt 0) { $agentMap[$ComboNamesFromFile[0]] = $combo0Agents }
     if ($ComboNamesFromFile.Count -gt 1) { $agentMap[$ComboNamesFromFile[1]] = $combo1Agents }
-
-    # Ping models (sequential, 10s timeout)
-    $pingResults = @()
-    if ($RouterRunning -and $env:NINEROUTER_API_KEY) {
-        $hdrs = @{ "Authorization" = "Bearer $env:NINEROUTER_API_KEY"; "Content-Type" = "application/json" }
-        foreach ($cd in $comboDbModels) {
-            if (-not $cd.models -or $cd.models.Count -eq 0) { continue }
-            foreach ($m in $cd.models) {
-                $pingBody = @{ model = $m; messages = @(@{ role = "user"; content = "ping" }); max_tokens = 5 } | ConvertTo-Json -Compress
-                $t0 = Get-Date; $ok = $false; $code = 0; $err = ""
-                try {
-                    $resp = Invoke-WebRequest -Uri "$($script:API_URL)/v1/chat/completions" -Method Post -Headers $hdrs -Body $pingBody -TimeoutSec 10 -ErrorAction Stop
-                    $code = [int]$resp.StatusCode; $ok = ($code -eq 200)
-                } catch {
-                    if ($_.Exception.Response) { try { $code = [int]$_.Exception.Response.StatusCode } catch {} }
-                    if ($_.Exception.Message -match "timeout|timed out") { $err = "timeout" } else { $err = "error" }
-                }
-                $elapsed = [math]::Round(((Get-Date) - $t0).TotalSeconds, 1)
-                $pingResults += @{ combo = $cd.name; model = $m; ok = $ok; code = $code; time = $elapsed; err = $err }
-            }
-        }
-    }
 
     # ============== RENDER ==============
     Write-Host ""
@@ -164,18 +139,19 @@ function Write-StartReport {
     for ($i = 0; $i -lt $ComboNamesFromFile.Count; $i++) {
         $cName = $ComboNamesFromFile[$i]
         $cAgents = if ($i -eq 0) { "build, tdd-guide, security-reviewer" } else { "planner, code-reviewer, build-error-resolver, doc-updater" }
-        $cDb = $comboDbModels | Where-Object { $_.name -eq $cName }
-        $cModelCount = if ($cDb) { $cDb.models.Count } else { "?" }
+        $idxStr = "$i"
+        $cModels = if ($ComboModelsByIndex -and $ComboModelsByIndex[$idxStr]) { @($ComboModelsByIndex[$idxStr]) } else { @() }
+        $cModelStr = if ($cModels.Count -gt 0) { $cModels -join ', ' } else { "?" }
         Write-Host "    COMBO_$i`:       $cName" -ForegroundColor White
         Write-Host "      Agents:      $cAgents" -ForegroundColor Gray
-        Write-Host "      Models:      $cModelCount models" -ForegroundColor Gray
+        Write-Host "      Models:      $cModelStr" -ForegroundColor Gray
     }
     Write-Host "    Profile:       $($script:OPENCODE_CFG)" -ForegroundColor Gray
     Write-Host ""
 
     Write-Host "  MODEL HEALTH" -ForegroundColor Cyan
-    if ($pingResults.Count -gt 0) {
-        $groups = $pingResults | Group-Object combo
+    if ($PingResults.Count -gt 0) {
+        $groups = $PingResults | Group-Object combo
         foreach ($g in $groups) {
             Write-Host "    $($g.Name):" -ForegroundColor White
             foreach ($pr in $g.Group) {
@@ -214,6 +190,45 @@ function Write-StartReport {
 
     Write-Host "  =================================================" -ForegroundColor Magenta
     Write-Host ""
+}
+
+# ------ ApiKeyFile Parser ------
+
+function Read-ApiKeyFile {
+    $result = @{
+        apiKey             = $null
+        comboEntries       = @()
+        comboModelsByIndex = @{}
+        comboNamesFromFile = @()
+    }
+    if (-not (Test-Path $script:API_KEY_FILE)) { return $result }
+
+    Get-Content $script:API_KEY_FILE | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -match '^([A-Z_0-9]+)=(.*)') {
+            $key = $matches[1]; $val = $matches[2]
+            Set-Item -Path "env:$key" -Value $val -ErrorAction SilentlyContinue
+            if ($key -eq "NINEROUTER_API_KEY") { $result.apiKey = $val }
+            if ($key -match '^COMBO_(\d+)$' -and $val) {
+                $result.comboEntries += @{ name = $matches[1]; value = $val.Trim() }
+            }
+            if ($key -match '^MODELS_(\d+)$' -and $val) {
+                $midx = $matches[1]
+                $result.comboModelsByIndex[$midx] = $val -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+            }
+        }
+    }
+
+    $comboNamesByIndex = @{}
+    foreach ($entry in $result.comboEntries) {
+        $comboNamesByIndex[$entry.name] = $entry.value
+    }
+    $sortedIndices = $comboNamesByIndex.Keys | Sort-Object
+    foreach ($idx in $sortedIndices) {
+        $result.comboNamesFromFile += $comboNamesByIndex[$idx]
+    }
+
+    return $result
 }
 
 # ============================================================
@@ -302,18 +317,8 @@ if ($needsInit) {
     try { Read-Host "  Press Enter when done" } catch { Write-Host "  (non-interactive -- continuing)" }
 
     # Validate API key
-    $apiKey = $null
-    $comboEntries = @()
-    if (Test-Path $script:API_KEY_FILE) {
-        Get-Content $script:API_KEY_FILE | ForEach-Object {
-            $line = $_.Trim()
-            if ($line -match '^([A-Z_0-9]+)=(.*)') {
-                $key = $matches[1]; $val = $matches[2]
-                if ($key -eq "NINEROUTER_API_KEY") { $apiKey = $val }
-                if ($key -match '^COMBO_(.+)$' -and $val) { $comboEntries += @{ name = $key; combo = $matches[1]; value = $val } }
-            }
-        }
-    }
+    $akf = Read-ApiKeyFile
+    $apiKey = $akf.apiKey
     if ($apiKey -and $apiKey -ne "sk-your-api-key-here") {
         try {
             $null = Invoke-RestMethod -Uri "$($script:API_URL)/api/v1/models" -TimeoutSec 5 -ErrorAction Stop
@@ -322,17 +327,13 @@ if ($needsInit) {
     } else { Write-Skip "API key not set -- edit api-key.txt" }
 
     # Save combos
-    if ($comboEntries.Count -gt 0) {
+    if ($akf.comboEntries.Count -gt 0) {
         $validCombos = @()
-        foreach ($entry in $comboEntries) {
-            $models = @()
-            foreach ($m in ($entry.value -split ',')) {
-                $mClean = $m.Trim() -replace '^<|>$', ''
-                if ($mClean) { $models += $mClean }
-            }
+        foreach ($entry in $akf.comboEntries) {
+            $models = if ($akf.comboModelsByIndex[$entry.name]) { @($akf.comboModelsByIndex[$entry.name]) } else { @() }
             if ($models.Count -gt 0) {
-                $validCombos += @{ name = $entry.combo; models = $models }
-                Write-OK "Combo '$($entry.combo)': $($models -join ', ')"
+                $validCombos += @{ name = $entry.name; combo = $entry.value; models = $models }
+                Write-OK "Combo '$($entry.value)': $($models -join ', ')"
             }
         }
         if ($validCombos.Count -gt 0) {
@@ -469,94 +470,79 @@ if (-not $routerRunning) {
 
 Write-Step "5/7" "Load Configuration"
 
-# Parse api-key.txt -> env vars + combo entries
-$apiKeyInFile = $null
-$comboEntries = @()
-$comboBadges = @()
-$currentCombos = @{}
-$comboNamesFromFile = @()
-if (Test-Path $script:API_KEY_FILE) {
-    Get-Content $script:API_KEY_FILE | ForEach-Object {
-        $line = $_.Trim()
-        if ($line -match '^([A-Z_0-9]+)=(.*)') {
-            $key = $matches[1]; $val = $matches[2]
-            Set-Item -Path "env:$key" -Value $val -ErrorAction SilentlyContinue
-            if ($key -eq "NINEROUTER_API_KEY") { $apiKeyInFile = $val }
-            if ($key -match '^COMBO_(.+)$' -and $val) {
-                $comboName = $matches[1]
-                $comboEntries += @{ name = $comboName; combo = $key; value = $val }
-            }
-        }
-    }
+# Parse api-key.txt
+$akf = Read-ApiKeyFile
+$comboNamesFromFile = $akf.comboNamesFromFile
+$comboModelsByIndex = $akf.comboModelsByIndex
+
+if ($comboNamesFromFile.Count -gt 0) {
     Write-OK "API keys loaded"
 
-    # Bandingkan combo definitions dengan cached combo.json
+    # Sort indices for predictable iteration
+    $sortedIndices = $akf.comboEntries | Sort-Object { [int]$_.name } | ForEach-Object { $_.name }
+
+    # Diff vs cached combo.json
     $cached = @()
     if (Test-Path $script:COMBO_FILE) {
         try { $cached = Get-Content $script:COMBO_FILE -Raw | ConvertFrom-Json } catch {}
     }
 
-    $comboNamesFromFile = @()
-    $currentCombos = @{}
-    foreach ($entry in $comboEntries) {
-        $models = @()
-        foreach ($m in ($entry.value -split ',')) {
-            $mClean = $m.Trim() -replace '^<|>$', ''
-            if ($mClean) { $models += $mClean }
-        }
-        $currentCombos[$entry.name] = $models
-    }
-
-    # Sort keys: numeric first (COMBO_0, COMBO_1), then alpha
-    $sortedComboKeys = $currentCombos.Keys | Sort-Object
-
-    # Diff vs cached
     $changed = @()
     $newCombos = @()
-    foreach ($cn in $sortedComboKeys) {
-        $cachedEntry = $cached | Where-Object { $_.name -eq $cn }
+    foreach ($idx in $sortedIndices) {
+        $cachedEntry = $cached | Where-Object { $_.name -eq $idx }
+        $entry = $akf.comboEntries | Where-Object { $_.name -eq $idx }
+        $cName = $entry.value
         if (-not $cachedEntry) {
-            $newCombos += $cn
+            $newCombos += "$idx ($cName)"
         } else {
-            $cachedModels = @($cachedEntry.models) -join ','
-            $currentModels = $currentCombos[$cn] -join ','
-            if ($cachedModels -ne $currentModels) { $changed += $cn }
+            $oldModels = if ($cachedEntry.models) { @($cachedEntry.models) -join ',' } else { "" }
+            $newModels = if ($comboModelsByIndex[$idx]) { $comboModelsByIndex[$idx] -join ',' } else { "" }
+            if ($cachedEntry.combo -ne $cName -or $oldModels -ne $newModels) { $changed += $idx }
         }
-        $comboNamesFromFile += ($currentCombos[$cn] -join ',')
-        $comboNameDisplay = ($currentCombos[$cn] -join ',')
-        $comboBadges += "$comboNameDisplay"
     }
 
-    # Show status
     if ($newCombos.Count -gt 0 -or $changed.Count -gt 0) {
-        foreach ($nc in $newCombos) { Write-Host "  NEW combo: $nc -- $($currentCombos[$nc] -join ', ')" -ForegroundColor Green }
+        foreach ($nc in $newCombos) { Write-Host "  NEW combo: $nc" -ForegroundColor Green }
         foreach ($ch in $changed) {
             $cachedEntry = $cached | Where-Object { $_.name -eq $ch }
-            $old = if ($cachedEntry) { @($cachedEntry.models) -join ', ' } else { "(none)" }
-            Write-Host "  CHANGED combo: $ch" -ForegroundColor Yellow
-            Write-Host "    Before: $old" -ForegroundColor Gray
-            Write-Host "    After:  $($currentCombos[$ch] -join ', ')" -ForegroundColor White
+            $entry = $akf.comboEntries | Where-Object { $_.name -eq $ch }
+            if ($cachedEntry) {
+                Write-Host "  CHANGED combo: $ch ($($entry.value))" -ForegroundColor Yellow
+                Write-Host "    Before: combo=$($cachedEntry.combo), models=$(@($cachedEntry.models) -join ',')" -ForegroundColor Gray
+                Write-Host "    After:  combo=$($entry.value), models=$($comboModelsByIndex[$ch] -join ',')" -ForegroundColor White
+            }
         }
     } else {
-        Write-OK "Combos unchanged: $($comboBadges -join ', ')"
+        Write-OK "Combos unchanged: $($comboNamesFromFile -join ', ')"
     }
 
-    # Save current combos to combo.json for next-run diff
-    if ($comboNamesFromFile.Count -gt 0) {
-        $saveCombos = @()
-        foreach ($cn in ($currentCombos.Keys | Sort-Object)) {
-            $saveCombos += @{ name = $cn; models = $currentCombos[$cn] }
+    # Save to combo.json for next-run diff
+    $saveCombos = @()
+    foreach ($idx in $sortedIndices) {
+        $entry = $akf.comboEntries | Where-Object { $_.name -eq $idx }
+        $saveCombos += @{
+            name   = $idx
+            combo  = $entry.value
+            models = if ($comboModelsByIndex[$idx]) { @($comboModelsByIndex[$idx]) } else { @() }
         }
-        New-Item -ItemType Directory -Path $script:STATE_DIR -Force | Out-Null
-        $saveCombos | ConvertTo-Json -Depth 5 | Set-Content -Path $script:COMBO_FILE -Encoding UTF8
     }
+    New-Item -ItemType Directory -Path $script:STATE_DIR -Force | Out-Null
+    $saveCombos | ConvertTo-Json -Depth 5 | Set-Content -Path $script:COMBO_FILE -Encoding UTF8
 } else {
-    Write-Skip "api-key.txt not found"
-}
-
-# Load combo names for profile generation (fallback to combo.json)
-if ($comboNamesFromFile.Count -eq 0 -and (Test-Path $script:COMBO_FILE)) {
-    try { $comboNamesFromFile = Get-Content $script:COMBO_FILE -Raw | ConvertFrom-Json | ForEach-Object { $_.models -join ',' } } catch {}
+    # Fallback to combo.json
+    if (Test-Path $script:COMBO_FILE) {
+        try {
+            $cached = Get-Content $script:COMBO_FILE -Raw | ConvertFrom-Json
+            $comboNamesFromFile = @($cached | ForEach-Object { $_.combo })
+            foreach ($ce in $cached) {
+                if ($ce.models -and @($ce.models).Count -gt 0) {
+                    $comboModelsByIndex[$ce.name] = @($ce.models)
+                }
+            }
+        } catch {}
+    }
+    if ($comboNamesFromFile.Count -eq 0) { Write-Skip "api-key.txt not found" }
 }
 
 # ============================================================
@@ -564,21 +550,21 @@ if ($comboNamesFromFile.Count -eq 0 -and (Test-Path $script:COMBO_FILE)) {
 # ============================================================
 
 if ($comboNamesFromFile.Count -gt 0) {
-    $modelEntries = ""
-    for ($i = 0; $i -lt $comboNamesFromFile.Count; $i++) {
-        if ($i -gt 0) { $modelEntries += "," }
-        $modelEntries += "`n      `"$($comboNamesFromFile[$i])`": { `"name`": `"$($comboNamesFromFile[$i]) combo`" }"
-    }
-    $comboModels = "{$modelEntries`n    }"
-
     $config = Get-Content $script:PROFILE_SRC -Raw
     $config = $config -replace '\{project\}', ($script:ROOT_DIR -replace '\\', '/')
+
+    # Build combo models object
+    $modelObj = @{}
+    foreach ($c in $comboNamesFromFile) {
+        $modelObj[$c] = @{ name = "$c combo" }
+    }
+    $comboModelsJson = $modelObj | ConvertTo-Json -Depth 3
+
     $config = $config -replace '\$\{COMBO_0\}', $comboNamesFromFile[0]
     $combo1 = if ($comboNamesFromFile.Count -gt 1) { $comboNamesFromFile[1] } else { $comboNamesFromFile[0] }
     $config = $config -replace '\$\{COMBO_1\}', $combo1
-    $config = $config -replace '\$\{COMBO_MODELS\}', $comboModels
+    $config = $config -replace '\$\{COMBO_MODELS\}', $comboModelsJson
 
-    # Resolve context_file from registry
     $contextSlug = "farewell-assistant"
     try {
         if (Test-Path $script:REGISTRY_FILE) {
@@ -604,21 +590,13 @@ Write-Step "6/7" "Autostart"
 $taskExists = $false
 try { $taskExists = (Get-ScheduledTask -TaskName $script:TASK_NAME -ErrorAction Stop) -ne $null } catch {}
 
-if (-not $taskExists) {
-    Write-Info "Registering Scheduled Task..."
-    $pwshExe = (Get-Process -Id $PID).Path
-    if (-not $pwshExe) { $pwshExe = "powershell.exe" }
-    $actionArg = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$($script:TASK_BG_SCRIPT)`""
-    $action = New-ScheduledTaskAction -Execute $pwshExe -Argument $actionArg
-    $trigger = New-ScheduledTaskTrigger -AtLogOn
-    $settings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 5) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-    try {
-        Register-ScheduledTask -TaskName $script:TASK_NAME -Action $action -Trigger $trigger -Settings $settings -Description "farewell-assistant: 9Router on logon" -Force | Out-Null
-        Write-OK "Scheduled task registered: $($script:TASK_NAME)"
-    } catch { Write-Fail "Register failed: $_" }
-} else { Write-Skip "Scheduled task already registered" }
+if ($taskExists) {
+    Write-Skip "Autostart task registered (manual start via /start)"
+} else {
+    Write-Skip "Autostart disabled — start 9Router via /start"
+}
 
-# Cleanup stale VBS
+# Cleanup stale VBS (legacy)
 $oldVbs = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup\9router.vbs"
 if (Test-Path $oldVbs) { try { Remove-Item $oldVbs -Force; Write-OK "Removed stale VBS" } catch {} }
 
@@ -651,7 +629,32 @@ try {
     Write-Skip "Pipeline skip: $_"
 }
 
-Write-StartReport -RouterRunning $routerRunning -ComboBadges $comboBadges -Mode $mode -CurrentCombos $currentCombos -ComboNamesFromFile $comboNamesFromFile
+# Ping models from MODELS_N (file-based, no SQLite dependency)
+$pingResults = @()
+if ($routerRunning -and $env:NINEROUTER_API_KEY -and @($comboNamesFromFile).Count -gt 0) {
+    $hdrs = @{ "Authorization" = "Bearer $env:NINEROUTER_API_KEY"; "Content-Type" = "application/json" }
+    foreach ($i in 0..($comboNamesFromFile.Count - 1)) {
+        $midx = "$i"
+        $models = if ($comboModelsByIndex -and $comboModelsByIndex.ContainsKey($midx)) { @($comboModelsByIndex[$midx]) } else { @() }
+        if ($models.Count -eq 0) { continue }
+        $cName = $comboNamesFromFile[$i]
+        foreach ($m in $models) {
+            $pingBody = @{ model = $m; messages = @(@{ role = "user"; content = "ping" }); max_tokens = 5 } | ConvertTo-Json -Compress
+            $t0 = Get-Date; $ok = $false; $code = 0; $err = ""
+            try {
+                $resp = Invoke-WebRequest -Uri "$($script:API_URL)/v1/chat/completions" -Method Post -Headers $hdrs -Body $pingBody -TimeoutSec 10 -ErrorAction Stop
+                $code = [int]$resp.StatusCode; $ok = ($code -eq 200)
+            } catch {
+                if ($_.Exception.Response) { try { $code = [int]$_.Exception.Response.StatusCode } catch {} }
+                if ($_.Exception.Message -match "timeout|timed out") { $err = "timeout" } else { $err = "error" }
+            }
+            $elapsed = [math]::Round(((Get-Date) - $t0).TotalSeconds, 1)
+            $pingResults += @{ combo = $cName; model = $m; ok = $ok; code = $code; time = $elapsed; err = $err }
+        }
+    }
+}
+
+Write-StartReport -RouterRunning $routerRunning -Mode $mode -ComboNamesFromFile $comboNamesFromFile -ComboModelsByIndex $comboModelsByIndex -PingResults $pingResults
 
 Sync-SessionState
 Write-TaskLog -Stage "START" -Action "Consolidated start completed" -Result "success"

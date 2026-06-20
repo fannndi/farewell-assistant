@@ -180,6 +180,7 @@ def get_9router_pid() -> int | None:
 
 
 def stop_9router():
+    stop_headroom()
     existing_pid = get_9router_pid()
     if existing_pid:
         try:
@@ -226,6 +227,93 @@ def stop_9router():
 
     if config.ROUTER_PID_FILE.exists():
         config.ROUTER_PID_FILE.unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Headroom proxy (context compression for 9Router)
+# ---------------------------------------------------------------------------
+
+def stop_headroom():
+    """Kill headroom proxy process."""
+    pid_file = config.HEADROOM_PID_FILE
+    if pid_file.exists():
+        try:
+            pid = int(pid_file.read_text().strip())
+            if platform.system() == "Windows":
+                subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True)
+            else:
+                os.kill(pid, 15)
+            time.sleep(1)
+        except Exception:
+            pass
+        pid_file.unlink(missing_ok=True)
+
+    # Fallback: kill by port
+    try:
+        if platform.system() == "Windows":
+            result = subprocess.run(
+                ["netstat", "-ano"], capture_output=True, text=True, timeout=5,
+            )
+            for line in result.stdout.splitlines():
+                if f":{config.HEADROOM_PORT}" in line and "LISTENING" in line:
+                    pid = line.strip().split()[-1]
+                    subprocess.run(["taskkill", "/PID", pid, "/F"], capture_output=True)
+        else:
+            result = subprocess.run(
+                ["lsof", "-ti", f":{config.HEADROOM_PORT}"],
+                capture_output=True, text=True, timeout=5,
+            )
+            for pid_str in result.stdout.strip().split("\n"):
+                if pid_str.strip():
+                    try:
+                        os.kill(int(pid_str.strip()), 15)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
+    if config.HEADROOM_PID_FILE.exists():
+        config.HEADROOM_PID_FILE.unlink(missing_ok=True)
+
+
+def start_headroom() -> bool:
+    """Start headroom proxy for context compression."""
+    import shutil
+
+    headroom_bin = shutil.which("headroom")
+    if not headroom_bin:
+        write_skip("Headroom not installed, skipping")
+        return False
+
+    stop_headroom()
+
+    config.LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_out = config.LOG_DIR / "headroom.log"
+
+    try:
+        proc = subprocess.Popen(
+            ["headroom", "proxy", "--port", config.HEADROOM_PORT],
+            stdout=open(log_out, "w"),
+            stderr=subprocess.STDOUT,
+            shell=(platform.system() == "Windows"),
+        )
+        if proc.pid:
+            config.HEADROOM_PID_FILE.write_text(str(proc.pid), encoding="utf-8")
+
+        # Quick health check
+        time.sleep(3)
+        try:
+            r = httpx.get(f"http://localhost:{config.HEADROOM_PORT}/health", timeout=3)
+            if r.status_code == 200:
+                write_ok(f"Headroom proxy started (port {config.HEADROOM_PORT}, PID: {proc.pid})")
+                return True
+        except Exception:
+            pass
+        write_skip("Headroom proxy started but not reachable")
+        return False
+    except Exception as e:
+        write_skip(f"Headroom proxy failed to start: {e}")
+        return False
 
 
 def start_9router() -> bool:
@@ -282,6 +370,8 @@ def start_9router() -> bool:
             r = httpx.get(f"{config.API_URL}/api/health", timeout=10)
             if r.status_code == 200:
                 write_ok(f"9Router started ({total}s, PID: {proc.pid})")
+                # Start headroom proxy after 9Router is healthy
+                start_headroom()
                 return True
         except Exception:
             pass

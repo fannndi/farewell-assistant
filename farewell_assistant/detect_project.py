@@ -2,6 +2,7 @@
 
 import re
 from collections import OrderedDict
+from datetime import datetime, timezone
 from pathlib import Path
 
 from . import config
@@ -146,7 +147,29 @@ def detect_project(path: str = "", emit_context: bool = False) -> dict:
         ]
         ctx_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
         write_ok("Context template written: " + str(ctx_file))
-        write_info("Edit it to add focus + key files, then register in projects/registry.json")
+
+        # Register in registry and set as active
+        import json
+        reg_file = config.REGISTRY_FILE
+        data = {}
+        if reg_file.exists():
+            try:
+                data = json.loads(reg_file.read_text(encoding="utf-8"))
+            except Exception:
+                data = {}
+        projects = data.get("projects", {})
+        if slug not in projects:
+            projects[slug] = {
+                "type": detected or "unknown",
+                "last_used": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "context_file": slug + ".md",
+                "path": str(root).replace("\\", "/"),
+            }
+            data["projects"] = projects
+        data["active"] = slug
+        reg_file.parent.mkdir(parents=True, exist_ok=True)
+        reg_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        write_ok("Active project set to: " + slug)
 
     write_task_log("DETECT", "Detect " + str(root) + " -> " + display_type, "success", str(root))
     return {"type": display_type, "stack": stack, "sub_type": sub_type}

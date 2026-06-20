@@ -57,6 +57,28 @@ def cmd_enrich_check(args):
     show_intent_router_result(result)
 
 
+def cmd_project(args):
+    import json
+    registry = config.REGISTRY_FILE
+    if not registry.exists():
+        print("  Registry not found: " + str(registry))
+        return
+    data = json.loads(registry.read_text(encoding="utf-8"))
+    projects = data.get("projects", {})
+    if args.action == "list":
+        active = data.get("active", "")
+        for name, info in projects.items():
+            marker = " *" if name == active else ""
+            print(f"  {name}{marker}  ({info.get('type', 'unknown')}, {info.get('dominan', '')})")
+        print(f"\n  Active: {active}")
+    elif args.action in projects:
+        data["active"] = args.action
+        registry.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"  Active project: {args.action}")
+    else:
+        print(f"  Unknown project '{args.action}'. Use 'project list' to see available.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="farewell-assistant",
@@ -113,6 +135,12 @@ def main():
     ec_p = subparsers.add_parser("enrich-check", help="Verify enrichment pipeline")
     ec_p.add_argument("args", nargs="*", help="Optional test input text")
     ec_p.set_defaults(func=cmd_enrich_check)
+
+    # project
+    proj_p = subparsers.add_parser("project", help="Switch active project")
+    proj_p.add_argument("action", nargs="?", default="list",
+                        help="Project name or 'list'")
+    proj_p.set_defaults(func=cmd_project)
 
     args = parser.parse_args()
 

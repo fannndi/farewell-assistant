@@ -827,6 +827,12 @@ def activate_project_by_code(code: str) -> bool:
             reg["active"] = proj_name
             write_json(config.REGISTRY_FILE, reg)
             write_ok(f"Active project: {code}-{proj_name}")
+            # Clear intent cache — different project may have different stack
+            try:
+                from .enrichment_pipeline import clear_intent_cache
+                clear_intent_cache()
+            except Exception:
+                pass
             # Force pipeline refresh for new project context
             _refresh_project_context(proj_name)
             return True

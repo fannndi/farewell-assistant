@@ -181,6 +181,8 @@ def sync_turn_state(result: dict, user_input: str = ""):
         })
         if secondary:
             pipeline_data["secondary_intents"] = secondary
+        if result.get("post_steps"):
+            pipeline_data["post_steps"] = result["post_steps"]
     else:
         pipeline_data.update({
             "project": active,
@@ -338,8 +340,10 @@ def invoke_intent_router(
             task_warning = validate_task_vs_project(classified["intent"], project_type, project_stack)
 
     # Step 3.3: Remind eksekutor to run self-heal after build/fix edits
+    post_steps = []
     if classified["intent"] in ("build", "fix") and not task_warning:
         task_warning = "Setelah mengedit file, jalankan: py -m farewell_assistant.cli self-heal --file <path>"
+        post_steps.append("self-heal")
 
     # Step 3.5: Filter chain by work mode (remove WRITE skills in PLAN mode)
     chain = filter_chain_by_mode(chain, work_mode)
@@ -359,7 +363,7 @@ def invoke_intent_router(
     # Step 6: Build blocked intents list
     blocked = ["build", "fix", "deploy"] if work_mode == "plan" else []
 
-    # Step 7: Chain summary
+    # Step 7: Chain summary + post-steps
     chain_summary = " → ".join(s["name"] for s in chain)
 
     result = {
@@ -374,6 +378,7 @@ def invoke_intent_router(
         "blocked": blocked,
         "chain_summary": chain_summary,
         "task_warning": task_warning,
+        "post_steps": post_steps if post_steps else None,
     }
 
     # Persist to context files

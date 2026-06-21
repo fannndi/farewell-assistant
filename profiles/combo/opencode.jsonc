@@ -24,6 +24,8 @@
     "{project}/.opencode/context.md",
     "{project}/instructions/user-rules.md",
     "{project}/instructions/preprocess.md",
+    "{project}/instructions/plan-mode-rules.md",
+    "{project}/instructions/build-mode-rules.md",
     "{project}/data/context/{context_file}.md"
   ],
 
@@ -96,6 +98,22 @@
     "start": {
       "description": "★ Consolidated: git pull + bootstrap + update + health + config + autostart + launch",
       "template": "py -m farewell_assistant.cli start $ARGUMENTS"
+    },
+    "daily": {
+      "description": "★ Daily session: full startup + session log",
+      "template": "py -m farewell_assistant.cli daily $ARGUMENTS"
+    },
+    "setup-project": {
+      "description": "Clone git project to TEMP/ and register with auto code",
+      "template": "py -m farewell_assistant.cli setup-project $ARGUMENTS"
+    },
+    "start-project": {
+      "description": "List projects and activate one by code",
+      "template": "py -m farewell_assistant.cli start-project $ARGUMENTS"
+    },
+    "project": {
+      "description": "Switch active project by code (or list)",
+      "template": "py -m farewell_assistant.cli project $ARGUMENTS"
     },
     "setup": {
       "description": "Set LLM mode (eco/on/hot/balance/performance) — redirects to llm-setup",

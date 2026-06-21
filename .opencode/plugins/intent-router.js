@@ -75,7 +75,24 @@ exports.server = async (ctx) => {
 
                 const footer = `Farewell: ON | Project: ${projectLabel} | ${workMode} | Turn: ${turn} | Chain: ${chainLen} | ${confidence} | ${llmDisplay}\n`;
 
-                output.parts.unshift({ type: "text", text: footer });
+                // Prepend task warning if present
+                const parts = [{ type: "text", text: footer }];
+                if (data.task_warning) {
+                    parts.push({ type: "text", text: `⚠️ ${data.task_warning}\n` });
+                }
+
+                // Dynamic project context injection
+                if (data.project) {
+                    const contextFile = path.join(ctx.directory, "data", "context", `${data.project}.md`);
+                    if (fs.existsSync(contextFile)) {
+                        const ctxContent = fs.readFileSync(contextFile, "utf-8").trim();
+                        if (ctxContent) {
+                            parts.push({ type: "text", text: `\n--- Project Context (${data.project}) ---\n${ctxContent}\n--- End Project Context ---\n` });
+                        }
+                    }
+                }
+
+                output.parts.unshift(...parts);
             } catch (e) {
                 console.error("[intent-router] pipeline error:", e.message || e);
             }

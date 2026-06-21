@@ -183,12 +183,14 @@ def _prime_pipeline():
 
 
 def run_daily() -> bool:
-    """Daily session start: full startup + session-log."""
+    """Daily session start: full startup + session-log + reset turn counter."""
+    from .intent_router import _reset_turn_count
     print()
     print("  =================================================")
     print("  farewell-assistant - Daily")
     print("  =================================================")
     print()
+    _reset_turn_count()
     ok = run_start()
     # Log session after startup
     log_session()

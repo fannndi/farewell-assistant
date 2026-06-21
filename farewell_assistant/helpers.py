@@ -677,6 +677,109 @@ def detect_type_from_path(path: str) -> str:
     return "unknown"
 
 
+def detect_stack_from_path(path: str, max_depth: int = 2) -> list[str]:
+    """Detect stack/frameworks from project files. Works in eco mode (no LLM)."""
+    p = Path(path)
+    if not p.exists():
+        return []
+    stack = []
+    # Check root files
+    try:
+        for f in p.iterdir():
+            if f.is_file():
+                name = f.name.lower()
+                if name == "pyproject.toml" or name == "requirements.txt":
+                    stack.append("python")
+                elif name == "package.json":
+                    stack.append("node")
+                elif name == "cargo.toml":
+                    stack.append("rust")
+                elif name == "go.mod":
+                    stack.append("go")
+                elif name == "pubspec.yaml":
+                    stack.append("flutter")
+                elif name == "composer.json":
+                    stack.append("php")
+                elif name == "pom.xml" or name == "build.gradle" or name == "build.gradle.kts":
+                    stack.append("java")
+                elif name == "sln" or name.endswith(".sln"):
+                    stack.append("dotnet")
+    except PermissionError:
+        pass
+    # Deep scan for framework detection (limited depth)
+    if max_depth > 0:
+        try:
+            for f in p.rglob("*"):
+                if f.is_file() and len(str(f)) < 200:
+                    name = f.name.lower()
+                    rel = str(f.relative_to(p)).lower()
+                    # Python frameworks
+                    if name == "manage.py" and "django" not in stack:
+                        stack.append("django")
+                    if name == "main.py" and "fastapi" not in stack:
+                        # Check content for FastAPI/Flask
+                        try:
+                            content = f.read_text(encoding="utf-8", errors="ignore")[:500]
+                            if "fastapi" in content.lower():
+                                stack.append("fastapi")
+                            elif "flask" in content.lower():
+                                stack.append("flask")
+                        except Exception:
+                            pass
+                    # Node frameworks
+                    if "next.config" in name:
+                        stack.append("nextjs")
+                    if "nuxt.config" in name:
+                        stack.append("nuxt")
+                    if "angular.json" in name:
+                        stack.append("angular")
+                    if "vue.config" in name or "vite.config" in name:
+                        stack.append("vue")
+                    # Mobile
+                    if "android" in rel and "app" in rel and name == "build.gradle.kts":
+                        stack.append("android")
+                    if "ios" in rel and name == "podfile":
+                        stack.append("ios")
+                    # Database
+                    if name == "prisma" and rel.endswith("schema.prisma"):
+                        stack.append("prisma")
+                    if name == "docker-compose.yml" or name == "docker-compose.yaml":
+                        stack.append("docker")
+                    if name == "kubernetes.yml" or "k8s" in rel:
+                        stack.append("kubernetes")
+        except Exception:
+            pass
+    # Deduplicate
+    seen = set()
+    result = []
+    for s in stack:
+        if s not in seen:
+            seen.add(s)
+            result.append(s)
+    return result
+
+
+def validate_task_vs_project(intent: str, project_type: str, project_stack: list[str]) -> str | None:
+    """Check if task intent matches project type. Returns warning or None."""
+    if not project_stack:
+        return None
+    type_stack_set = set(project_stack)
+    # Web/backend tasks on non-web projects
+    web_tasks = {"build", "fix"}
+    web_domains = {"node", "python", "django", "fastapi", "flask", "nextjs", "vue", "angular", "nuxt", "laravel", "php"}
+    rust_tasks = {"build", "fix"}
+    mobile_tasks = {"build", "fix"}
+    # Check for mismatch
+    if intent in web_tasks and not (type_stack_set & web_domains) and "unknown" not in type_stack_set:
+        project_types = ", ".join(sorted(type_stack_set))
+        return f"Warning: Task '{intent}' is web/backend oriented but project is {project_types}. Are you working in the right project?"
+    if intent in rust_tasks and "rust" in type_stack_set:
+        return None  # Rust project, rust task = ok
+    if intent in mobile_tasks and "flutter" in type_stack_set:
+        return None  # Flutter project, mobile task = ok
+    return None
+
+
 def clone_project(url: str, temp_dir: str | None = None) -> str | None:
     """Clone git repo to TEMP/, return project name or None."""
     import urllib.parse
@@ -724,9 +827,33 @@ def activate_project_by_code(code: str) -> bool:
             reg["active"] = proj_name
             write_json(config.REGISTRY_FILE, reg)
             write_ok(f"Active project: {code}-{proj_name}")
+            # Force pipeline refresh for new project context
+            _refresh_project_context(proj_name)
             return True
     write_fail(f"Project code {code} tidak ditemukan")
     return False
+
+
+def _refresh_project_context(project_name: str):
+    """Update context.md to reflect active project."""
+    from .intent_router import sync_turn_state
+    result = {
+        "success": True,
+        "intent": {"intent": "ask", "domain": "general", "stack": [], "complexity": "low", "confidence": 0.6},
+        "skill_chain": [],
+        "model_route": {"primary": "Free", "secondary": "Free", "heavy": "Free"},
+        "needs_planning": False,
+        "work_mode": get_work_mode(),
+        "profile": get_llm_mode(),
+        "turn": 0,
+        "blocked": [],
+        "chain_summary": "",
+        "task_warning": None,
+    }
+    try:
+        sync_turn_state(result, "project switch")
+    except Exception:
+        pass
 
 
 def list_registered_projects() -> list[dict]:

@@ -72,8 +72,8 @@ def cmd_project(args):
             return
         print()
         for p in projects:
-            marker = " ← active" if p["active"] else ""
-            print(f"  {p['code']} — {p['name']} ({p['type']}, {p['dominan']}){marker}")
+            marker = " <- active" if p["active"] else ""
+            print(f"  {p['code']} - {p['name']} ({p['type']}, {p['dominan']}){marker}")
         print()
     else:
         # Try as code (001, 002, etc.)
@@ -96,8 +96,8 @@ def cmd_start_project(args):
             return
         print()
         for p in projects:
-            marker = " ← active" if p["active"] else ""
-            print(f"  {p['code']} — {p['name']} ({p['type']}, {p['dominan']}){marker}")
+            marker = " <- active" if p["active"] else ""
+            print(f"  {p['code']} - {p['name']} ({p['type']}, {p['dominan']}){marker}")
         print()
         print("  Pilih project: /start-project <code>")
         print()

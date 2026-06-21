@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 
 from . import config
-from .helpers import get_llm_mode, get_work_mode, read_json, write_json, _c
+from .helpers import get_llm_mode, get_work_mode, read_json, write_json, _c, read_project_active, detect_stack_from_path, validate_task_vs_project
 from .enrichment_pipeline import (
     invoke_structured_enrichment,
     get_quick_intent,
@@ -35,6 +35,10 @@ def _set_turn_count(count: int):
     path.write_text(str(count), encoding="utf-8")
 
 
+def _reset_turn_count():
+    _set_turn_count(0)
+
+
 # ---------------------------------------------------------------------------
 # Permission Check
 # ---------------------------------------------------------------------------
@@ -43,6 +47,14 @@ def check_task_permission(intent: dict, work_mode: str) -> dict:
     if work_mode == "plan" and intent.get("intent") in ("build", "fix", "deploy"):
         return {"allowed": False, "reason": f"Intent '{intent['intent']}' requires BUILD mode. Current mode: PLAN"}
     return {"allowed": True}
+
+
+def _get_project_info(project_name: str) -> dict | None:
+    """Get project info from registry."""
+    reg = read_json(config.REGISTRY_FILE)
+    if reg and reg.get("projects", {}).get(project_name):
+        return reg["projects"][project_name]
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -157,6 +169,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
             "blocked": result.get("blocked", []),
             "work_mode": result.get("work_mode", ""),
             "profile": result.get("profile", ""),
+            "task_warning": result.get("task_warning"),
         })
     else:
         pipeline_data.update({
@@ -264,6 +277,20 @@ def invoke_intent_router(
         else:
             classified = quick
             classified["source"] = "quick"
+
+        # Eco mode fallback: file-based stack detection when enrichment disabled
+        if not classified.get("stack") or classified["stack"] == ["-"]:
+            active_project = read_project_active()
+            if active_project:
+                import os as _os
+                project_info = _get_project_info(active_project)
+                if project_info and project_info.get("path"):
+                    project_path = project_info["path"].replace("$ROOT", str(config.ROOT_DIR))
+                    if _os.path.isdir(project_path):
+                        file_stack = detect_stack_from_path(project_path)
+                        if file_stack:
+                            classified["stack"] = file_stack
+
         set_cached_intent(text_input, classified)
 
     # Step 2: Check permissions
@@ -289,6 +316,16 @@ def invoke_intent_router(
 
     # Step 3: Build skill chain
     chain = get_skill_chain(classified["intent"], classified["domain"])
+
+    # Step 3.2: Project-task validation
+    task_warning = None
+    active_project = read_project_active()
+    if active_project:
+        project_info = _get_project_info(active_project)
+        if project_info:
+            project_type = project_info.get("type", "unknown")
+            project_stack = project_info.get("dominan", "").split("+") if project_info.get("dominan") else []
+            task_warning = validate_task_vs_project(classified["intent"], project_type, project_stack)
 
     # Step 3.5: Filter chain by work mode (remove WRITE skills in PLAN mode)
     chain = filter_chain_by_mode(chain, work_mode)
@@ -316,6 +353,7 @@ def invoke_intent_router(
         "turn": turn_count,
         "blocked": blocked,
         "chain_summary": chain_summary,
+        "task_warning": task_warning,
     }
 
     # Persist to context files

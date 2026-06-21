@@ -210,5 +210,46 @@ def _show_dashboard_info():
         print(f"    URL:      {dashboard_url}/dashboard/endpoint")
         print(f"    Password: {dashboard_password}")
         print()
+        # Ping models in combos
+        try:
+            import httpx as _httpx
+            # Verify 9Router is reachable
+            r = _httpx.get(f"{config.API_URL}/api/health", timeout=3)
+            if r.status_code != 200:
+                print("  [SKIP] 9Router not reachable, ping skipped")
+                print()
+                return
+            # Parse combos and ping each model
+            api_key = parsed.api_key or ""
+            grouped = {}
+            for idx, entry in sorted(parsed.combo_entries.items()):
+                combo_name = entry.get("combo", idx)
+                models = parsed.combo_models.get(idx, {}).get("models", [])
+                grouped[combo_name] = models
+            if grouped:
+                print("  Model Status:")
+                for combo_name, models in grouped.items():
+                    ok_count = 0
+                    for model in models:
+                        try:
+                            t_start = time.monotonic()
+                            r = _httpx.post(
+                                f"{config.API_URL}/v1/chat/completions",
+                                json={"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 1},
+                                headers={"Authorization": f"Bearer {api_key}"},
+                                timeout=10,
+                            )
+                            elapsed = round(time.monotonic() - t_start, 2)
+                            ok = r.status_code == 200
+                            if ok:
+                                ok_count += 1
+                            status = "OK" if ok else f"FAIL({r.status_code})"
+                            print(f"      [{status}] {model} ({elapsed}s)")
+                        except Exception as e:
+                            print(f"      [FAIL] {model} ({str(e)[:60]})")
+                    print(f"    {combo_name}: {ok_count}/{len(models)} online")
+                print()
+        except Exception:
+            pass
     except Exception:
         pass

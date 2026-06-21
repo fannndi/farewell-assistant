@@ -334,6 +334,10 @@ def invoke_intent_router(
             project_stack = project_info.get("dominan", "").split("+") if project_info.get("dominan") else []
             task_warning = validate_task_vs_project(classified["intent"], project_type, project_stack)
 
+    # Step 3.3: Remind eksekutor to run self-heal after build/fix edits
+    if classified["intent"] in ("build", "fix") and not task_warning:
+        task_warning = "Setelah mengedit file, jalankan: py -m farewell_assistant.cli self-heal --file <path>"
+
     # Step 3.5: Filter chain by work mode (remove WRITE skills in PLAN mode)
     chain = filter_chain_by_mode(chain, work_mode)
 

@@ -561,9 +561,9 @@ def get_skill_count(work_mode: str) -> int:
     idx = read_json(config.SKILL_IDX_FILE)
     if idx:
         mode_data = idx.get(work_mode, {})
-        skills = mode_data.get("skills", {})
-        if isinstance(skills, dict):
-            for group in skills.values():
+        skill_groups = mode_data.get("skill_groups", {})
+        if isinstance(skill_groups, dict):
+            for group in skill_groups.values():
                 if isinstance(group, list):
                     count += len(group)
     return count

@@ -291,7 +291,7 @@ def invoke_auto_mode():
     if vram_mb < 1024:
         recommendation = "hot"
         label = "HOT - qwen3.5-0.8b, ~600MB VRAM"
-    elif vram_mb < 2048:
+    elif vram_mb <= 2048:
         recommendation = "balance"
         label = "BALANCE - qwen3.5-2b, ~1.4GB VRAM"
     else:

@@ -194,4 +194,21 @@ def run_daily() -> bool:
     ok = run_start()
     # Log session after startup
     log_session()
+    # Tampilkan info 9Router dashboard
+    _show_dashboard_info()
     return ok
+
+
+def _show_dashboard_info():
+    """Print 9Router dashboard URL + password after startup."""
+    try:
+        parsed = parse_api_key()
+        dashboard_password = parsed.router_password or "123456"
+        dashboard_url = f"http://localhost:{config.ROUTER_PORT}"
+        print()
+        print("  9Router Dashboard:")
+        print(f"    URL:      {dashboard_url}/dashboard/endpoint")
+        print(f"    Password: {dashboard_password}")
+        print()
+    except Exception:
+        pass

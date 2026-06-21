@@ -160,6 +160,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
     pipeline_data = {"timestamp": now, "input": user_input, "turn": result.get("turn", 0), "project_code": project_code}
 
     if result.get("success"):
+        secondary = result["intent"].get("secondary_intents")
         pipeline_data.update({
             "project": active,
             "intent": result["intent"]["intent"],
@@ -178,6 +179,8 @@ def sync_turn_state(result: dict, user_input: str = ""):
             "profile": result.get("profile", ""),
             "task_warning": result.get("task_warning"),
         })
+        if secondary:
+            pipeline_data["secondary_intents"] = secondary
     else:
         pipeline_data.update({
             "project": active,

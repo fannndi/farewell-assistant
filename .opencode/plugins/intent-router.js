@@ -80,6 +80,9 @@ exports.server = async (ctx) => {
                 if (data.task_warning) {
                     parts.push({ type: "text", text: `⚠️ ${data.task_warning}\n` });
                 }
+                if (Array.isArray(data.secondary_intents) && data.secondary_intents.length > 0) {
+                    parts.push({ type: "text", text: `⚠️ Multi-intent terdeteksi: intent utama=[${data.intent}], intent tambahan=[${data.secondary_intents.join(", ")}]. Intent tambahan tidak dijalankan dalam chain ini.\n` });
+                }
 
                 // Dynamic project context injection
                 if (data.project) {

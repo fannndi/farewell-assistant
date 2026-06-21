@@ -246,7 +246,7 @@ Berisi session state + turn state yang diupdate setiap turn:
 ### 3. Plugin Auto-Prefix (single consistent indicator)
 Plugin `.opencode/plugins/intent-router.js` menambahkan **satu baris footer konsisten** ke setiap user message:
 ```
-Intent: build | Complexity: medium (95%) | Domain: web | Chain: 3 steps | Model: Free | Turn: 12 | Mode: balance
+Farewell: ON | Project: farewell-assistant | BUILD | Turn: 12 | Chain: 8 | 85% | Balance
 ```
 
 **Format konsisten** dipakai di SEMUA tempat — plugin prefix, context.md, dan dokumentasi. AI melihat footer ini sebagai baris pertama dari setiap user input.

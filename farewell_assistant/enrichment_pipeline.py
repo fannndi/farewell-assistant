@@ -233,7 +233,7 @@ _INTENT_PATTERNS: list[tuple[str, str, str | None]] = [
 
 
 def get_quick_intent(text_input: str) -> dict:
-    """Pattern-based intent classification (no LLM)."""
+    """Pattern-based intent classification (no LLM). Detects multiple intents."""
     input_lower = text_input.lower().strip()
     domain = "general"
     stack: list[str] = []
@@ -250,21 +250,43 @@ def get_quick_intent(text_input: str) -> dict:
             stack = [s]
             break
 
-    # Detect intent
+    # Detect intent — collect ALL matches for multi-intent warning
+    matched_intents: list[str] = []
     for pattern, intent, fixed_complexity in _INTENT_PATTERNS:
         if re.search(pattern, input_lower):
-            return {"intent": intent, "domain": domain, "stack": stack, "complexity": fixed_complexity or "medium", "confidence": 0.7}
+            matched_intents.append(intent)
 
-    # build intent
+    # Also check build patterns
     if re.search(r"create|build|make|add|implement|bikin|buat|tambah", input_lower):
+        matched_intents.append("build")
+
+    if not matched_intents:
+        return {"intent": "ask", "domain": domain, "stack": stack, "complexity": "low", "confidence": 0.6}
+
+    # Primary = first match (backward compatible)
+    primary = matched_intents[0]
+    secondary = matched_intents[1:]
+
+    # Complexity from primary
+    if primary == "build":
         complexity = "medium"
         if re.search(r"simple|basic|quick|tipis", input_lower):
             complexity = "low"
         if re.search(r"full|complex|advanced|enterprise|sistem", input_lower):
             complexity = "high"
-        return {"intent": "build", "domain": domain, "stack": stack, "complexity": complexity, "confidence": 0.8}
+    else:
+        # Get complexity from the matching pattern
+        complexity = "medium"
+        for pattern, intent, fixed_complexity in _INTENT_PATTERNS:
+            if intent == primary and fixed_complexity:
+                complexity = fixed_complexity
+                break
 
-    return {"intent": "ask", "domain": domain, "stack": stack, "complexity": "low", "confidence": 0.6}
+    confidence = 0.8 if primary == "build" else 0.7
+    result = {"intent": primary, "domain": domain, "stack": stack, "complexity": complexity, "confidence": confidence}
+    if secondary:
+        result["secondary_intents"] = secondary
+    return result
 
 
 # ---------------------------------------------------------------------------

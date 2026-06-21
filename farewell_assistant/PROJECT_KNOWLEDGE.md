@@ -177,7 +177,7 @@ User Input
 - Hook: `chat.message` — fires on every user message
 - Runs: `run-router.ps1` → `py -m farewell_assistant.run_router`
 - Output: footer prepended to user message
-- Footer format: `Intent: build | Complexity: medium (95%) | Domain: web | Chain: 3 steps | Model: Free | Turn: 12 | Mode: balance`
+- Footer format: `Farewell: ON | Project: {project} | BUILD | Turn: 12 | Chain: 8 | 85% | Balance`
 
 ### Data Flow
 ```

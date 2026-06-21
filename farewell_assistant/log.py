@@ -20,7 +20,8 @@ def write_task_log(stage: str, action: str, result: str = "success", files: str 
         with open(log_file, "a", encoding="utf-8") as f:
             f.write(entry)
     except Exception:
-        pass
+        import sys as _sys
+        print(f"[LOGGING ERROR] write_task_log: couldn't write to {config.LOG_FILE}", file=_sys.stderr)
 
 
 def sync_session_state():
@@ -77,5 +78,6 @@ def sync_session_state():
 - **Started:** {now}
 """
             context_path.write_text(ctx, encoding="utf-8")
-    except Exception:
-        pass
+    except Exception as e:
+        import sys as _sys
+        print(f"[LOGGING ERROR] sync_session_state: {e}", file=_sys.stderr)

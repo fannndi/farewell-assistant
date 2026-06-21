@@ -2,8 +2,6 @@
 
 import argparse
 import sys
-
-from . import config
 from .detect_project import detect_project
 from .intent_router import invoke_intent_router, show_intent_router_result
 from .llm_setup import handle_llm_setup

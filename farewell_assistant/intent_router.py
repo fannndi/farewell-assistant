@@ -1,6 +1,5 @@
 """Intent Router - Routes user intent to appropriate skill chain and model."""
 
-import json
 from datetime import datetime, timezone
 
 from . import config
@@ -183,6 +182,8 @@ def sync_turn_state(result: dict, user_input: str = ""):
             pipeline_data["secondary_intents"] = secondary
         if result.get("post_steps"):
             pipeline_data["post_steps"] = result["post_steps"]
+        if result.get("degraded"):
+            pipeline_data["degraded"] = result["degraded"]
     else:
         pipeline_data.update({
             "project": active,
@@ -327,7 +328,7 @@ def invoke_intent_router(
         return result
 
     # Step 3: Build skill chain
-    chain = get_skill_chain(classified["intent"], classified["domain"])
+    chain, chain_degraded = get_skill_chain(classified["intent"], classified["domain"])
 
     # Step 3.2: Project-task validation
     task_warning = None
@@ -349,10 +350,24 @@ def invoke_intent_router(
     chain = filter_chain_by_mode(chain, work_mode)
 
     # Step 3.7: Validate chain skills exist on disk
+    degraded = chain_degraded
     if chain:
         chain_check = test_skill_chain(chain)
         if chain_check["missing"]:
             write_task_log("CHAIN", f"Missing skills: {chain_check['missing']}", "warn")
+            total = chain_check["total_count"]
+            missing_count = len(chain_check["missing"])
+            if missing_count > total * 0.5:
+                result = {
+                    "success": False,
+                    "reason": f"Chain rusak: {missing_count}/{total} skill hilang. Missing: {', '.join(chain_check['missing'])}",
+                    "intent": classified,
+                    "turn": turn_count,
+                }
+                sync_turn_state(result, text_input)
+                return result
+            chain = [s for s in chain if s["name"] not in chain_check["missing"]]
+            degraded = f"Stripped {missing_count} missing skills dari chain"
 
     # Step 4: Select model route
     model_route = select_model_route(classified["complexity"])
@@ -379,6 +394,7 @@ def invoke_intent_router(
         "chain_summary": chain_summary,
         "task_warning": task_warning,
         "post_steps": post_steps if post_steps else None,
+        "degraded": degraded,
     }
 
     # Persist to context files

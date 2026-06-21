@@ -61,29 +61,31 @@ class TestQuickIntent:
 
 class TestSkillChain:
     def test_build_web(self):
-        chain = get_skill_chain("build", "web")
+        chain, degraded = get_skill_chain("build", "web")
         assert len(chain) == 8
         assert chain[0]["name"] == "orch-add-feature"
         assert chain[-1]["name"] == "git-workflow"
+        assert degraded is None
 
     def test_build_mobile(self):
-        chain = get_skill_chain("build", "mobile")
+        chain, degraded = get_skill_chain("build", "mobile")
         assert len(chain) == 7
         assert chain[1]["name"] == "dart-flutter-patterns"
 
     def test_fix_general(self):
-        chain = get_skill_chain("fix", "general")
+        chain, degraded = get_skill_chain("fix", "general")
         assert len(chain) == 3
         assert chain[0]["name"] == "search-first"
 
     def test_deploy(self):
-        chain = get_skill_chain("deploy", "general")
+        chain, degraded = get_skill_chain("deploy", "general")
         assert len(chain) == 4
         assert chain[0]["name"] == "production-audit"
 
     def test_unknown_fallback(self):
-        chain = get_skill_chain("unknown", "general")
+        chain, degraded = get_skill_chain("unknown", "general")
         assert chain[0]["name"] == "documentation-lookup"
+        assert degraded is not None
 
 
 class TestCheckTaskPermission:

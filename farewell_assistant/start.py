@@ -72,6 +72,9 @@ def run_start() -> bool:
 
     _prime_pipeline()
 
+    # Step 6.5: Self-heal check — scan recently modified Python/TS files
+    _run_self_heal_check(project_root=config.ROOT_DIR)
+
     # Sync & log
     sync_session_state()
     duration = round(time.monotonic() - start, 1)
@@ -180,6 +183,24 @@ def _prime_pipeline():
             write_ok("Pipeline primed (startup)")
     except Exception as e:
         write_skip("Pipeline skip: " + str(e))
+
+
+def _run_self_heal_check(project_root):
+    """Scan recently modified .py files in the project for type errors."""
+    try:
+        py_files = [f for f in project_root.rglob("*.py")
+                    if "ecc" not in str(f) and "9router" not in str(f)
+                    and ".venv" not in str(f) and ".git" not in str(f)
+                    and "__pycache__" not in str(f)]
+        if not py_files:
+            return
+        from .self_heal import self_heal
+        for f in py_files[:5]:
+            issues = self_heal(str(f), str(project_root))
+            if issues:
+                write_skip(f"  self_heal({f.name}): {len(issues)} issue(s) — jalankan: py -m farewell_assistant.cli self-heal --file {f}")
+    except Exception:
+        pass
 
 
 def run_daily() -> bool:

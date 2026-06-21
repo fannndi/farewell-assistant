@@ -1,5 +1,3 @@
-import platform
-import subprocess
 import time
 import httpx
 from . import config

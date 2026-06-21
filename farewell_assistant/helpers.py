@@ -89,7 +89,13 @@ def read_json(path: Path, default=None):
 
 def write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    try:
+        tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(path)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -109,6 +115,19 @@ def get_work_mode() -> str:
 def get_llm_model() -> str:
     state = read_json(config.LLM_MODE_FILE, default={"model": ""})
     return state.get("model", "") if state else ""
+
+
+BLOCKED_TOOLS_PLAN = {"write", "edit"}
+
+
+def check_tool_permission(tool_name: str) -> None:
+    """Raise ValueError if tool is blocked in current work mode."""
+    work = get_work_mode()
+    if work == "plan" and tool_name in BLOCKED_TOOLS_PLAN:
+        raise ValueError(
+            f"Tool '{tool_name}' blocked in PLAN mode. "
+            f"Switch to BUILD: /workmode build"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -547,8 +566,12 @@ def invoke_llm(
                 "duration": elapsed,
                 "tokens_per_second": tps,
             }
-    except Exception:
-        pass
+    except Exception as e:
+        try:
+            from .log import write_task_log as _log
+            _log("LLM", f"invoke_llm failed: {e}", "fail")
+        except Exception:
+            pass
     return None
 
 

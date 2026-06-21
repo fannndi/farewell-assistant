@@ -1,6 +1,5 @@
 """LLM configuration - profiles, modes, GGUF download, Ollama import, GPU detection."""
 
-import os
 import platform
 import shutil
 import subprocess

@@ -143,16 +143,17 @@ SKILL_CHAINS: dict[str, list[dict[str, str]]] = {
 }
 
 
-def get_skill_chain(intent: str, domain: str) -> list[dict[str, str]]:
-    """Get skill chain by intent + domain, with fallback."""
+def get_skill_chain(intent: str, domain: str) -> tuple[list[dict[str, str]], str | None]:
+    """Get skill chain by intent + domain, with fallback.
+    Returns (chain, degraded_reason) where degraded_reason is None if exact match."""
     key = f"{intent}_{domain}"
     chain = SKILL_CHAINS.get(key)
     if chain:
-        return chain
+        return chain, None
     chain = SKILL_CHAINS.get(intent)
     if chain:
-        return chain
-    return SKILL_CHAINS["ask"]
+        return chain, f"Domain '{domain}' tidak ditemukan, fallback ke '{intent}' umum"
+    return SKILL_CHAINS["ask"], f"Intent '{intent}' tidak ditemukan, fallback ke chain 'ask'"
 
 
 def test_skill_chain(chain: list[dict[str, str]]) -> dict:

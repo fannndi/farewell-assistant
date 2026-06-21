@@ -1,7 +1,6 @@
 // Run precision pipeline on every user message.
-// Blocking: waits for pipeline to complete (PIPELINE_TIMEOUT env or 15s default).
+// Blocking: waits for pipeline to complete (PIPELINE_TIMEOUT env or 60s default).
 // Prepend footer to user message parts — project awareness + pipeline status.
-//
 // Security: User input passed as separate argv arg, NOT interpolated into shell command.
 
 const { execFileSync } = require("child_process");
@@ -9,6 +8,15 @@ const path = require("path");
 const fs = require("fs");
 
 const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT || "60000", 10);
+const LOG_DIR = ".opencode" + path.sep + "logs";
+
+function logError(msg) {
+    try {
+        const logPath = path.join(".opencode", "logs", "plugin-error.log");
+        const ts = new Date().toISOString();
+        fs.appendFileSync(logPath, `[${ts}] ${msg}\n`);
+    } catch (_) {}
+}
 
 exports.server = async (ctx) => {
     return {
@@ -20,6 +28,7 @@ exports.server = async (ctx) => {
                 const py = findPython(ctx.directory);
                 const callTime = Date.now();
 
+                let pipelineFailed = false;
                 try {
                     execFileSync(
                         py,
@@ -32,13 +41,27 @@ exports.server = async (ctx) => {
                         }
                     );
                 } catch (e) {
-                    // Timeout or non-zero exit
+                    pipelineFailed = true;
+                    logError(`Pipeline exec error: ${e.message || e}`);
                 }
 
                 const pipelinePath = path.join(ctx.directory, ".opencode", "pipeline-result.json");
-                if (!fs.existsSync(pipelinePath)) return;
-                const raw = fs.readFileSync(pipelinePath, "utf-8").replace(/^\uFEFF/, "");
-                const data = JSON.parse(raw);
+                if (!fs.existsSync(pipelinePath)) {
+                    if (pipelineFailed) {
+                        output.parts.unshift({ type: "text", text: `[PIPELINE ERROR] Gagal menjalankan pipeline. Cek .opencode/logs/plugin-error.log\n` });
+                    }
+                    return;
+                }
+
+                let raw, data;
+                try {
+                    raw = fs.readFileSync(pipelinePath, "utf-8").replace(/^\uFEFF/, "");
+                    data = JSON.parse(raw);
+                } catch (e) {
+                    logError(`Pipeline parse error: ${e.message || e}`);
+                    output.parts.unshift({ type: "text", text: `[PIPELINE ERROR] Gagal parse pipeline result.\n` });
+                    return;
+                }
                 if (!data || !data.intent) return;
 
                 // Staleness check — pipeline result older than call = stale
@@ -75,7 +98,7 @@ exports.server = async (ctx) => {
 
                 const footer = `Farewell: ON | Project: ${projectLabel} | ${workMode} | Turn: ${turn} | Chain: ${chainLen} | ${confidence} | ${llmDisplay}\n`;
 
-                // Prepend task warning if present
+                // Prepend warnings and metadata
                 const parts = [{ type: "text", text: footer }];
                 if (data.task_warning) {
                     parts.push({ type: "text", text: `⚠️ ${data.task_warning}\n` });
@@ -85,6 +108,9 @@ exports.server = async (ctx) => {
                 }
                 if (Array.isArray(data.post_steps) && data.post_steps.length > 0) {
                     parts.push({ type: "text", text: `📋 Post-steps: ${data.post_steps.join(" → ")} — jalankan setelah chain selesai.\n` });
+                }
+                if (data.degraded) {
+                    parts.push({ type: "text", text: `⚠️ Chain degraded: ${data.degraded}\n` });
                 }
 
                 // Dynamic project context injection
@@ -100,7 +126,10 @@ exports.server = async (ctx) => {
 
                 output.parts.unshift(...parts);
             } catch (e) {
-                console.error("[intent-router] pipeline error:", e.message || e);
+                logError(`Unhandled plugin error: ${e.message || e}`);
+                try {
+                    output.parts.unshift({ type: "text", text: `[PIPELINE ERROR] ${e.message || "Unknown error"}\n` });
+                } catch (_) {}
             }
         },
     };

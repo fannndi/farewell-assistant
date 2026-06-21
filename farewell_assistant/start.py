@@ -75,6 +75,9 @@ def run_start() -> bool:
     # Step 6.5: Self-heal check — scan recently modified Python/TS files
     _run_self_heal_check(project_root=config.ROOT_DIR)
 
+    # Dashboard info + model pings
+    _show_dashboard_info()
+
     # Sync & log
     sync_session_state()
     duration = round(time.monotonic() - start, 1)

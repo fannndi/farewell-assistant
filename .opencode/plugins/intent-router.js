@@ -8,7 +8,7 @@ const { execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
-const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT || "30000", 10);
+const PIPELINE_TIMEOUT = parseInt(process.env.PIPELINE_TIMEOUT || "60000", 10);
 
 exports.server = async (ctx) => {
     return {

@@ -140,8 +140,7 @@
         "netmiko-ssh-automation",
         "network-bgp-diagnostics",
         "network-config-validation",
-        "network-interface-health",
-        "homelab-network-readiness"
+        "network-interface-health"
       ],
       "security": [
         "safety-guard",

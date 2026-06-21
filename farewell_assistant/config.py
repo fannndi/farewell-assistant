@@ -71,6 +71,6 @@ ENRICHMENT = {
     "min_words": 3,
     "max_tokens": 150,
     "temperature": 0.1,
-    "timeout": 45,
+    "timeout": 25,
     "cache_ttl": 3600,
 }

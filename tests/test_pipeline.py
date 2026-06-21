@@ -107,15 +107,15 @@ class TestCheckTaskPermission:
 
 class TestModelRoute:
     def test_low_complexity(self):
-        r = select_model_route("low", "eco")
+        r = select_model_route("low")
         assert r["primary"] == "Free"
 
     def test_high_secondary(self):
-        r = select_model_route("high", "eco")
+        r = select_model_route("high")
         assert r["secondary"] == "Emergency"
 
     def test_critical_primary(self):
-        r = select_model_route("critical", "eco")
+        r = select_model_route("critical")
         assert r["primary"] == "Emergency"
 
 

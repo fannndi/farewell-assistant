@@ -156,13 +156,16 @@ def get_skill_chain(intent: str, domain: str) -> list[dict[str, str]]:
 
 
 def test_skill_chain(chain: list[dict[str, str]]) -> dict:
-    """Check if skills in chain exist on disk."""
-    skills_dir = config.ECC_DIR / "skills"
+    """Check if skills in chain exist on disk. Checks ecc/ and data/ skills dirs."""
+    search_dirs = [
+        config.ECC_DIR / "skills",
+        config.PROJECT_SKILLS_DIR,
+    ]
     valid = []
     missing = []
     for step in chain:
-        md_path = skills_dir / step["name"] / "SKILL.md"
-        if md_path.exists():
+        found = any((d / step["name"] / "SKILL.md").exists() for d in search_dirs)
+        if found:
             valid.append(step["name"])
         else:
             missing.append(step["name"])

@@ -12,7 +12,7 @@ from .enrichment_pipeline import (
     set_cached_intent,
     check_input_sufficiency,
 )
-from .skill_chain import get_skill_chain
+from .skill_chain import get_skill_chain, test_skill_chain
 from .log import write_task_log
 
 # ---------------------------------------------------------------------------
@@ -62,17 +62,18 @@ def _get_project_info(project_name: str) -> dict | None:
 # ---------------------------------------------------------------------------
 
 def filter_chain_by_mode(chain: list[dict[str, str]], work_mode: str) -> list[dict[str, str]]:
-    """Filter skill chain: remove WRITE skills if in PLAN mode."""
+    """Filter skill chain: remove EXCLUSIVE WRITE skills if in PLAN mode.
+    Skills shared with plan groups or hybrid groups are kept."""
     if work_mode != "plan":
         return chain
 
-    build_skills = _get_build_skills()
+    build_only = _get_build_only_skills()
     hybrid_skills = _get_hybrid_skills()
     filtered = []
     for step in chain:
         name = step["name"]
-        if name in build_skills:
-            continue  # skip WRITE skills in PLAN mode
+        if name in build_only:
+            continue  # skip WRITE-only skills in PLAN mode
         step_copy = dict(step)
         if name in hybrid_skills:
             step_copy["mode_hint"] = "PLAN: analysis only"
@@ -80,16 +81,22 @@ def filter_chain_by_mode(chain: list[dict[str, str]], work_mode: str) -> list[di
     return filtered
 
 
-def _get_build_skills() -> set[str]:
-    """Load WRITE-only skill names from skill-mode-index."""
+def _get_build_only_skills() -> set[str]:
+    """Load skills EXCLUSIVE to build mode (not shared with plan or hybrid)."""
     try:
-        idx = read_json(config.DATA_DIR / "skill-mode-index.json")
+        idx = read_json(config.SKILL_IDX_FILE)
         if not idx:
             return set()
-        skills = []
+        build_skills = set()
         for group in idx.get("build", {}).get("skill_groups", {}).values():
-            skills.extend(group)
-        return set(skills)
+            build_skills.update(group)
+        plan_skills = set()
+        for group in idx.get("plan", {}).get("skill_groups", {}).values():
+            plan_skills.update(group)
+        hybrid_skills = set()
+        for group in idx.get("hybrid", {}).get("skill_groups", {}).values():
+            hybrid_skills.update(group)
+        return build_skills - plan_skills - hybrid_skills
     except Exception:
         return set()
 
@@ -97,13 +104,13 @@ def _get_build_skills() -> set[str]:
 def _get_hybrid_skills() -> set[str]:
     """Load HYBRID skill names from skill-mode-index."""
     try:
-        idx = read_json(config.DATA_DIR / "skill-mode-index.json")
+        idx = read_json(config.SKILL_IDX_FILE)
         if not idx:
             return set()
-        skills = []
+        skills = set()
         for group in idx.get("hybrid", {}).get("skill_groups", {}).values():
-            skills.extend(group)
-        return set(skills)
+            skills.update(group)
+        return skills
     except Exception:
         return set()
 
@@ -112,7 +119,7 @@ def _get_hybrid_skills() -> set[str]:
 # Model Route Selection
 # ---------------------------------------------------------------------------
 
-def select_model_route(complexity: str, profile: str) -> dict:
+def select_model_route(complexity: str) -> dict:
     route = config.MODEL_ROUTES.get(complexity, config.MODEL_ROUTES["medium"])
     return route
 
@@ -330,8 +337,14 @@ def invoke_intent_router(
     # Step 3.5: Filter chain by work mode (remove WRITE skills in PLAN mode)
     chain = filter_chain_by_mode(chain, work_mode)
 
+    # Step 3.7: Validate chain skills exist on disk
+    if chain:
+        chain_check = test_skill_chain(chain)
+        if chain_check["missing"]:
+            write_task_log("CHAIN", f"Missing skills: {chain_check['missing']}", "warn")
+
     # Step 4: Select model route
-    model_route = select_model_route(classified["complexity"], active_profile)
+    model_route = select_model_route(classified["complexity"])
 
     # Step 5: Determine if planning phase needed
     needs_planning = classified["complexity"] in ("high", "critical") and classified["intent"] == "build"

@@ -203,10 +203,10 @@ def invoke_structured_enrichment(text_input: str, context: str = "", force: bool
 
 _DOMAIN_PATTERNS: list[tuple[str, str]] = [
     (r"react|nextjs|next\.js|vue|angular|frontend|ui|css|html|api|rest|express|fastapi|django|laravel|spring|nest|crud|auth|jwt|backend|server|middleware|token|login|register", "web"),
-    (r"flutter|dart|kotlin|android|ios|swift|compose|mobile|react.native", "mobile"),
+    (r"flutter|dart|kotlin|android|ios|swift|compose|mobile|react.native|gpu.monitor|jni|kernel|adreno", "mobile"),
     (r"docker|kubernetes|k8s|ci|cd|deploy|nginx|terraform|ansible|infra", "infra"),
     (r"postgres|mysql|redis|clickhouse|database|sql|etl|pipeline|data", "data"),
-    (r"pytorch|tensorflow|llm|model|train|inference|ml|ai|gpu|cuda", "ai_ml"),
+    (r"pytorch|tensorflow|llm|model|train|inference|ml|ai|cuda", "ai_ml"),
     (r"powershell|ps1|automate|task|schedule|registry|env", "automation"),
 ]
 

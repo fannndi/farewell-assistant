@@ -829,6 +829,19 @@ def clone_project(url: str, temp_dir: str | None = None) -> str | None:
     return name
 
 
+
+def setup_project_from_path(path: str) -> dict:
+    """Register existing project from local path."""
+    p = Path(path)
+    if not p.is_dir():
+        write_fail(f"Path tidak ditemukan: {path}")
+        return {"error": f"Path not found: {path}"}
+    name = p.name
+    project_type = detect_type_from_path(path)
+    code = register_project(name, project_type, path)
+    write_ok(f"{name} terdaftar dengan code project {code}")
+    return {"name": name, "code": code}
+
 def setup_project_from_url(url: str) -> dict:
     """Clone + detect + register. Returns {name, code, error}."""
     name = clone_project(url)
@@ -902,3 +915,4 @@ def list_registered_projects() -> list[dict]:
             "active": name == active,
         })
     return sorted(projects, key=lambda p: p["code"])
+

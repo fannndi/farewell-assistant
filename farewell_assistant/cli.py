@@ -79,8 +79,8 @@ def cmd_project(args):
 
 
 def cmd_setup_project(args):
-    from .helpers import setup_project_from_url
-    setup_project_from_url(args.url)
+    from .helpers import setup_project_from_path
+    setup_project_from_path(args.path)
 
 
 def cmd_start_project(args):
@@ -170,8 +170,8 @@ def main():
     proj_p.set_defaults(func=cmd_project)
 
     # setup-project (clone + register)
-    setup_p = subparsers.add_parser("setup-project", help="Clone project to TEMP/ and register")
-    setup_p.add_argument("url", help="Git clone URL")
+    setup_p = subparsers.add_parser("setup-project", help="Register existing project from local path")
+    setup_p.add_argument("path", help="Full path to project directory")
     setup_p.set_defaults(func=cmd_setup_project)
 
     # start-project (list + select)
@@ -191,3 +191,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

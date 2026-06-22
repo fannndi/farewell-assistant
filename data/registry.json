@@ -42,8 +42,17 @@
         "docs/": "DOCS",
         ".github/": "CI/CD"
       }
+    },
+    "test-farewell-project": {
+      "project_code": "002",
+      "type": "unknown",
+      "last_used": "2026-06-22",
+      "context_file": "test-farewell-project.md",
+      "path": "C:\\Users\\FANNNDI\\Documents\\test-farewell-project",
+      "dominan": "UNKNOWN",
+      "is_local": false
     }
   },
-  "active": "service-hub",
+  "active": "test-farewell-project",
   "_next_code": "002"
 }

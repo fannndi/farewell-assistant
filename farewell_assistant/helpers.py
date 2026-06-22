@@ -830,15 +830,49 @@ def clone_project(url: str, temp_dir: str | None = None) -> str | None:
 
 
 
+def _create_opencode_junction(project_path: Path) -> bool:
+    """Buat junction .opencode/ di project - farewell-assistant/.opencode/."""
+    target = project_path / ".opencode"
+    source = config.ROOT_DIR / ".opencode"
+
+    if target.exists():
+        return True  # sudah ada
+
+    try:
+        if platform.system() == "Windows":
+            result = subprocess.run(
+                ["cmd", "/c", "mklink", "/J", str(target), str(source)],
+                capture_output=True, text=True, timeout=10,
+            )
+        else:
+            os.symlink(str(source), str(target), target_is_directory=True)
+            return True
+
+        return result.returncode == 0 and target.exists()
+    except Exception as e:
+        write_skip(f"Junction gagal: {e}")
+        return False
+
+
 def setup_project_from_path(path: str) -> dict:
-    """Register existing project from local path."""
+    """Register existing project + buat junction .opencode/."""
     p = Path(path)
     if not p.is_dir():
         write_fail(f"Path tidak ditemukan: {path}")
         return {"error": f"Path not found: {path}"}
+
     name = p.name
     project_type = detect_type_from_path(path)
     code = register_project(name, project_type, path)
+
+    # Buat junction .opencode/ - farewell-assistant/.opencode/
+    write_step("Junction", "Buat .opencode/ link...")
+    junction_ok = _create_opencode_junction(p)
+    if junction_ok:
+        write_ok(f".opencode/ - farewell-assistant/.opencode/")
+    else:
+        write_skip("Junction gagal — pipeline tidak akan jalan di workspace ini")
+
     write_ok(f"{name} terdaftar dengan code project {code}")
     return {"name": name, "code": code}
 
@@ -915,4 +949,5 @@ def list_registered_projects() -> list[dict]:
             "active": name == active,
         })
     return sorted(projects, key=lambda p: p["code"])
+
 

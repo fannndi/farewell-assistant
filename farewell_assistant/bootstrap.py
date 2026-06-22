@@ -2,7 +2,6 @@
 
 import platform
 import subprocess
-from pathlib import Path
 
 from . import config
 from .helpers import write_info, write_ok, write_skip, write_step, write_fail

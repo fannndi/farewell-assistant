@@ -5,7 +5,7 @@ import platform
 import subprocess
 from pathlib import Path
 from . import config
-from .helpers import get_9router_pid, read_json, write_info, write_ok, write_skip, write_fail, write_step
+from .helpers import get_9router_pid, write_ok, write_skip, write_fail
 from .log import write_task_log
 
 
@@ -62,7 +62,7 @@ def _enable_linux() -> bool:
     service_dir.mkdir(parents=True, exist_ok=True)
     service_file = service_dir / f"{name}.service"
     # Use Python CLI directly
-    service_content = f"""[Unit]
+    service_content = """[Unit]
 Description=Farewell Assistant 9Router
 After=network-online.target
 Wants=network-online.target

@@ -2,9 +2,34 @@
 
 ## Unreleased
 
+### Added
+
+- **Layer4 proximity system**: agent-space distance metric + TCAS-style collision avoidance (v0), line-range channel + trigger firing, live messages-table wiring for proximity triggers
+- **Control-pane JIT board**: interactive claim/move cards from the webapp, work-items `claim` command, agent+human JIT assignment view
+- **New skills**: `brand-discovery`, `competitive-platform-analysis`, `benchmark-methodology`, `competitive-report-structure`, `ml-adoption-playbook`, `vue-patterns`, `config-gc`, `agent-self-evaluation`, `generating-python-installer`, `flox-environments`
+- **New agents**: `spec-miner` untuk brownfield spec extraction, `vue-reviewer` untuk Vue.js code review, `agent-evaluator`
+- **Vue ecosystem**: full review support, architecture patterns, security rules, composables/reactivity rules, testing rules
+- **Atlas Cloud** as LLM/AI provider
+- **Web capabilities dashboard**, dry-run mode for hook execution
+
+### Fixed
+
+- **Security (CRITICAL)**: gateguard classifier bypass (GHSA-4v57) + Windows CI + claw ReDoS — `isDestructiveFindExec` check on each command segment to close compound-command bypass (#2292)
+- **Security (CRITICAL)**: contain install-state file ops to trusted root — RCE fix (GHSA-hfpv-w6mp-5g95)
+- **Security (HIGH)**: discord bot SSRF/log-injection/DoS hardening + bump markdown-it/js-yaml
+- **Security (HIGH)**: close XSS in control-pane board controls
+- **Security**: host/origin allowlist + validate git refs + quote workflow input (#2185)
+- **Continuous-learning**: eliminate `_SECRET_RE` catastrophic backtracking + orphaned-CPU hang (#2278)
+- **Hooks**: stop pre/post Bash dispatcher from echoing input event, fix stdin truncation, Stop hook JSON
+- **Git commands**: harden against pager-based code execution
+- **Plugin cache**: add health check
+
 ### Changed
 
 - Default MCP connector set reduced to a single connector (`chrome-devtools`) per the new connector policy (`docs/MCP-CONNECTOR-POLICY.md`). The six previous defaults (`github`, `context7`, `exa`, `memory`, `playwright`, `sequential-thinking`) were retired after the June 2026 audit: their jobs are covered by skills wrapping CLIs/REST APIs (`github-ops`, `documentation-lookup`, `exa-search`, e2e skills) or by harness-native features (memory, extended thinking, web search). All six remain opt-in via `mcp-configs/mcp-servers.json`.
+- Skill counts updated to 262 after `config-gc` skill landed
+- Agent counts updated to 40+ with new agents
+- `ecc2` deps bumped (git2, crossterm, ureq, rusqlite, cron, toml, sha2)
 
 ## 2.0.0 - 2026-06-09
 

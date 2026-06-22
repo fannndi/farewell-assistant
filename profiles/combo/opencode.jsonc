@@ -3,7 +3,7 @@
   "model": "9router/Free",
   "small_model": "9router/Emergency",
   "default_agent": "build",
-  "plugin": [".opencode/plugins/intent-router.js"],
+  "plugin": ["C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/plugins/intent-router.js"],
 
   "provider": {
     "9router": {

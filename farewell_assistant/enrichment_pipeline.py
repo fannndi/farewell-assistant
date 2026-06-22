@@ -134,6 +134,7 @@ def invoke_structured_enrichment(text_input: str, context: str = "", force: bool
     context_block = f"\nProject context: {context}\n" if context else ""
     prompt = f"User input: {text_input}{context_block}"
 
+
     model = get_llm_model()
     result = invoke_llm(
         prompt=prompt,
@@ -206,7 +207,7 @@ _DOMAIN_PATTERNS: list[tuple[str, str]] = [
     (r"docker|kubernetes|k8s|ci|cd|deploy|nginx|terraform|ansible|infra", "infra"),
     (r"postgres|mysql|redis|clickhouse|database|sql|etl|pipeline|data", "data"),
     (r"pytorch|tensorflow|llm|model|train|inference|ml|ai|gpu|cuda", "ai_ml"),
-    (r"powershell|script|automate|task|schedule|windows|registry|env", "automation"),
+    (r"powershell|ps1|automate|task|schedule|registry|env", "automation"),
 ]
 
 _STACK_PATTERNS: list[tuple[str, str]] = [
@@ -221,10 +222,12 @@ _STACK_PATTERNS: list[tuple[str, str]] = [
     (r"java|spring", "java"),
     (r"kotlin", "kotlin"),
     (r"swift|ios", "swift"),
+    (r"bash|sh|shell|zsh", "bash"),
 ]
 
 _INTENT_PATTERNS: list[tuple[str, str, str | None]] = [
     (r"fix|bug|error|crash|broken|debug", "fix", None),
+    (r"optimize|improve|enhance|tune|refactor|upgrade|migrate|convert|clean|speed", "fix", "medium"),
     (r"review|audit|check|inspect|scan", "review", None),
     (r"deploy|release|ship|publish|ci|cd", "deploy", "high"),
     (r"research|search|find|investigate|compare", "research", "low"),

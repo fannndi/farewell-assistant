@@ -46,7 +46,7 @@ def show_mode_info(mode: str):
     print()
     write_step("SKILLS", "Groups loaded")
     total = 0
-    groups = mode_data.get("skills", {})
+    groups = mode_data.get("skill_groups", {})
     for group in defn["groups"]:
         skills = groups.get(group, [])
         count = len(skills) if isinstance(skills, list) else 0

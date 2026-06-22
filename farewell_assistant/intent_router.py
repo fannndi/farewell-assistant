@@ -234,9 +234,36 @@ def sync_turn_state(result: dict, user_input: str = ""):
     except Exception:
         pass
 
+    # Read project info for richer context
+    project_type = ""
+    project_dominan = ""
+    project_stack = ""
+    project_path = ""
+    try:
+        reg = read_json(config.REGISTRY_FILE)
+        if reg and reg.get("active") and reg.get("projects", {}).get(reg["active"]):
+            p = reg["projects"][reg["active"]]
+            project_type = p.get("type", "")
+            project_dominan = p.get("dominan", "")
+            project_path = p.get("path", "")
+    except Exception:
+        pass
+
+    # Chain step details
+    chain_steps = ""
+    if result.get("success") and result.get("skill_chain"):
+        steps = []
+        for i, s in enumerate(result["skill_chain"], 1):
+            mode_hint = s.get("mode_hint", "")
+            hint = f" ({mode_hint})" if mode_hint else ""
+            steps.append(f"    {i}. {s['name']}{hint} — {s['desc']}")
+        chain_steps = "\n" + "\n".join(steps)
+
     context_content = f"""# Session State
 
 - **Project:** {active}
+- **Project Type:** {project_type}
+- **Project Stack:** {project_dominan}
 - **Kategori:** {kategori}
 - **Mode:** {mode}
 - **Work:** {work}
@@ -244,14 +271,22 @@ def sync_turn_state(result: dict, user_input: str = ""):
 
 # Turn State
 
+- **Turn:** {turn_count}
+- **Input:** {result.get("input", "")}
 - **Intent:** {intent_display}
+- **Domain:** {result.get("intent", {}).get("domain", "") if result.get("success") else ""}
 - **Complexity:** {complexity_display}
 - **Confidence:** {confidence_display}
 - **Stack:** {stack_display}
 - **Chain:** {chain_display}
+- **Chain Steps:** {chain_steps if chain_steps else "-"}
 - **Model:** {model_display}
 - **Planning:** {planning_display}
-- **Turn:** {turn_count}
+- **Blocked:** {blocked_display}
+
+# AI Instructions
+
+Analisis input user berdasarkan context di atas. Gunakan Chain Steps sebagai panduan skill yang harus di-load. Jika blocked, informasikan user untuk switch mode.
 """
     (state_dir / "context.md").write_text(context_content, encoding="utf-8")
 

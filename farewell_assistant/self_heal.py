@@ -69,6 +69,54 @@ def self_heal(file_path: str, project_path: str = "") -> list[str]:
                 if line.strip():
                     issues.append(line.strip())
 
+    elif ext == ".rs":
+        if not _has_marker(root, ["Cargo.toml"]):
+            return issues
+        passed, output = _run_check(["cargo", "check"])
+        if not passed:
+            for line in output.splitlines():
+                if line.strip():
+                    issues.append(line.strip())
+
+    elif ext == ".go":
+        if not _has_marker(root, ["go.mod"]):
+            return issues
+        passed, output = _run_check(["go", "vet", str(path)])
+        if not passed:
+            for line in output.splitlines():
+                if line.strip():
+                    issues.append(line.strip())
+
+    elif ext == ".kt" or ext == ".kts":
+        if not _has_marker(root, ["build.gradle.kts", "build.gradle", "pom.xml"]):
+            return issues
+        passed, output = _run_check(["kotlinc", str(path)])
+        if not passed:
+            for line in output.splitlines():
+                if line.strip():
+                    issues.append(line.strip())
+
+    elif ext == ".sh":
+        passed, output = _run_check(["shellcheck", str(path)])
+        if not passed:
+            for line in output.splitlines():
+                if line.strip():
+                    issues.append(line.strip())
+
+    elif ext == ".yml" or ext == ".yaml":
+        passed, output = _run_check(["yamllint", str(path)])
+        if not passed:
+            for line in output.splitlines():
+                if line.strip():
+                    issues.append(line.strip())
+
+    elif path.name.lower() == "dockerfile":
+        passed, output = _run_check(["hadolint", str(path)])
+        if not passed:
+            for line in output.splitlines():
+                if line.strip():
+                    issues.append(line.strip())
+
     return issues
 
 

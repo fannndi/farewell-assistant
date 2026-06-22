@@ -26,6 +26,12 @@
     "{project}/instructions/preprocess.md",
     "{project}/instructions/plan-mode-rules.md",
     "{project}/instructions/build-mode-rules.md",
+    "{project}/instructions/rules/README.md",
+    "{project}/instructions/rules/01-pipeline-flow.md",
+    "{project}/instructions/rules/02-mode-enforcement.md",
+    "{project}/instructions/rules/03-model-routing.md",
+    "{project}/instructions/rules/04-execution-rules.md",
+    "{project}/instructions/rules/05-logging.md",
     "{project}/data/context/{context_file}.md"
   ],
 
@@ -104,7 +110,7 @@
       "template": "py -m farewell_assistant.cli daily $ARGUMENTS"
     },
     "setup-project": {
-      "description": "Clone git project to TEMP/ and register with auto code",
+      "description": "Register existing project from local path with auto code",
       "template": "py -m farewell_assistant.cli setup-project $ARGUMENTS"
     },
     "start-project": {

@@ -629,17 +629,25 @@ def log_session(project: str = "", llm_mode: str = "", work_mode: str = ""):
 # Project Registry
 # ---------------------------------------------------------------------------
 
-def read_project_active() -> str:
-    """Get active project name from registry."""
-    reg = read_json(config.REGISTRY_FILE)
+def read_project_active(registry_file=None) -> str:
+    """Get active project name from registry.
+    
+    If registry_file is provided, read from that file instead of default registry.
+    """
+    file_to_read = registry_file or config.REGISTRY_FILE
+    reg = read_json(file_to_read)
     if reg and reg.get("active"):
         return reg["active"]
     return "farewell-assistant"
 
 
-def read_project_code(project_name: str) -> str:
-    """Get project code by name."""
-    reg = read_json(config.REGISTRY_FILE)
+def read_project_code(project_name: str, registry_file=None) -> str:
+    """Get project code by name.
+    
+    If registry_file is provided, read from that file instead of default registry.
+    """
+    file_to_read = registry_file or config.REGISTRY_FILE
+    reg = read_json(file_to_read)
     if reg and reg.get("projects", {}).get(project_name, {}).get("project_code"):
         return reg["projects"][project_name]["project_code"]
     return "???"

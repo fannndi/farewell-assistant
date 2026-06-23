@@ -24,6 +24,16 @@ data/session/
 data/memory/
 TEMP/
 
+# Project registry files (managed projects)
+data/registry.json
+
+# Project context files (managed projects)
+data/context/
+
+# Project-specific configuration files (managed projects)
+data/*/registry.json
+data/*/context/*.md
+
 # Session profile logs (gitignored)
 profiles/logs/*.md
 

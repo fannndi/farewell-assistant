@@ -1,6 +1,7 @@
 """Intent Router - Routes user intent to appropriate skill chain and model."""
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from . import config
 from .helpers import get_llm_mode, get_work_mode, read_json, write_json, _c, read_project_active, detect_stack_from_path, validate_task_vs_project
@@ -48,9 +49,10 @@ def check_task_permission(intent: dict, work_mode: str) -> dict:
     return {"allowed": True}
 
 
-def _get_project_info(project_name: str) -> dict | None:
+def _get_project_info(project_name: str, registry_file=None) -> dict | None:
     """Get project info from registry."""
-    reg = read_json(config.REGISTRY_FILE)
+    file_to_read = registry_file or config.REGISTRY_FILE
+    reg = read_json(file_to_read)
     if reg and reg.get("projects", {}).get(project_name):
         return reg["projects"][project_name]
     return None
@@ -130,12 +132,21 @@ def select_model_route(complexity: str) -> dict:
 def sync_turn_state(result: dict, user_input: str = ""):
     """Write pipeline-result.json + context.md."""
     state_dir = config.STATE_DIR
-
     # Read registry for active project + kategori
+    # First check if there's a project-specific registry in the current directory
+    current_dir = Path.cwd()
+    project_registry_file = current_dir / "data" / "registry.json"
+    
+    # Determine which registry to use (project-specific or default)
+    if project_registry_file.exists():
+        reg_file = project_registry_file
+    else:
+        reg_file = config.REGISTRY_FILE
+    
     active = "farewell-assistant"
     kategori = "AUTOMATION"
     try:
-        reg = read_json(config.REGISTRY_FILE)
+        reg = read_json(reg_file)
         if reg and reg.get("active"):
             active = reg["active"]
             if reg.get("projects", {}).get(active, {}).get("kategori"):
@@ -151,7 +162,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
     # Get project code from registry
     project_code = ""
     try:
-        reg = read_json(config.REGISTRY_FILE)
+        reg = read_json(reg_file)
         if reg and reg.get("active") and reg.get("projects", {}).get(reg["active"], {}).get("project_code"):
             project_code = reg["projects"][reg["active"]]["project_code"]
     except Exception:
@@ -240,7 +251,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
     project_stack = ""
     project_path = ""
     try:
-        reg = read_json(config.REGISTRY_FILE)
+        reg = read_json(reg_file)
         if reg and reg.get("active") and reg.get("projects", {}).get(reg["active"]):
             p = reg["projects"][reg["active"]]
             project_type = p.get("type", "")
@@ -328,7 +339,7 @@ def invoke_intent_router(
 
         # Eco mode fallback: file-based stack detection when enrichment disabled
         if not classified.get("stack") or classified["stack"] == ["-"]:
-            active_project = read_project_active()
+            active_project = read_project_active(reg_file)
             if active_project:
                 import os as _os
                 project_info = _get_project_info(active_project)
@@ -367,9 +378,9 @@ def invoke_intent_router(
 
     # Step 3.2: Project-task validation
     task_warning = None
-    active_project = read_project_active()
+    active_project = read_project_active(reg_file)
     if active_project:
-        project_info = _get_project_info(active_project)
+        project_info = _get_project_info(active_project, reg_file)
         if project_info:
             project_type = project_info.get("type", "unknown")
             project_stack = project_info.get("dominan", "").split("+") if project_info.get("dominan") else []

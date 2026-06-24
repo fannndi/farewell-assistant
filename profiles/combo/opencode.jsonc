@@ -24,14 +24,7 @@
     "{project}/.opencode/context.md",
     "{project}/instructions/user-rules.md",
     "{project}/instructions/preprocess.md",
-    "{project}/instructions/plan-mode-rules.md",
-    "{project}/instructions/build-mode-rules.md",
-    "{project}/instructions/rules/README.md",
-    "{project}/instructions/rules/01-pipeline-flow.md",
-    "{project}/instructions/rules/02-mode-enforcement.md",
-    "{project}/instructions/rules/03-model-routing.md",
-    "{project}/instructions/rules/04-execution-rules.md",
-    "{project}/instructions/rules/05-logging.md",
+    "{project}/instructions/mode-rules.md",
     "{project}/data/context/{context_file}.md"
   ],
 

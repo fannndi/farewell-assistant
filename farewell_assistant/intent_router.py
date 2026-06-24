@@ -366,7 +366,11 @@ def invoke_intent_router(
         return result
 
     # Step 3: Build skill chain
-    chain, chain_degraded = get_skill_chain(classified["intent"], classified["domain"])
+    # Refactor override — if input contains "refactor", route to fix_refactor chain
+    if "refactor" in text_input.lower() and classified["intent"] == "fix":
+        chain, chain_degraded = get_skill_chain("fix_refactor", classified["domain"])
+    else:
+        chain, chain_degraded = get_skill_chain(classified["intent"], classified["domain"])
 
     # Step 3.2: Project-task validation
     task_warning = None

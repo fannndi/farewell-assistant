@@ -87,7 +87,21 @@ SKILL_CHAINS: dict[str, list[dict[str, str]]] = {
         {"name": "orch-fix-defect",       "desc": "Fix the defect"},
         {"name": "verification-loop",     "desc": "Verify fix"},
     ],
-    # REVIEW CHAINS
+    # REVIEW CHAINS (domain-specific aliases)
+    "review_web": [
+        {"name": "coding-standards",      "desc": "Baseline conventions check"},
+        {"name": "error-handling",        "desc": "Error handling audit"},
+        {"name": "security-review",       "desc": "Vulnerability check"},
+        {"name": "codehealth-mcp",        "desc": "Structural health score"},
+        {"name": "verification-loop",     "desc": "Final verification"},
+    ],
+    "review_mobile": [
+        {"name": "coding-standards",      "desc": "Baseline conventions check"},
+        {"name": "error-handling",        "desc": "Error handling audit"},
+        {"name": "security-review",       "desc": "Vulnerability check"},
+        {"name": "codehealth-mcp",        "desc": "Structural health score"},
+        {"name": "verification-loop",     "desc": "Final verification"},
+    ],
     "review_code": [
         {"name": "coding-standards",      "desc": "Baseline conventions check"},
         {"name": "error-handling",        "desc": "Error handling audit"},
@@ -106,7 +120,35 @@ SKILL_CHAINS: dict[str, list[dict[str, str]]] = {
         {"name": "security-review",       "desc": "Security check"},
         {"name": "verification-loop",     "desc": "Verify"},
     ],
-    # DEPLOY CHAINS
+    # FIX REFACTOR — behavior-preserving restructure
+    "fix_refactor": [
+        {"name": "search-first",          "desc": "Check existing patterns"},
+        {"name": "orch-refine-code",      "desc": "Restructure without changing behavior"},
+        {"name": "verification-loop",     "desc": "Verify tests still green"},
+        {"name": "git-workflow",          "desc": "Commit the refactor"},
+    ],
+    # FIX domain aliases
+    "fix_web": [
+        {"name": "search-first",          "desc": "Check if bug is known"},
+        {"name": "orch-fix-defect",       "desc": "Reproduce -> fix -> verify"},
+        {"name": "ai-regression-testing", "desc": "Write regression test"},
+        {"name": "verification-loop",     "desc": "Verify fix doesn't break others"},
+        {"name": "git-workflow",          "desc": "Commit the fix"},
+    ],
+    "fix_mobile": [
+        {"name": "search-first",          "desc": "Check if bug is known"},
+        {"name": "orch-fix-defect",       "desc": "Reproduce -> fix -> verify"},
+        {"name": "ai-regression-testing", "desc": "Write regression test"},
+        {"name": "verification-loop",     "desc": "Verify fix doesn't break others"},
+        {"name": "git-workflow",          "desc": "Commit the fix"},
+    ],
+    # DEPLOY CHAINS (domain-specific)
+    "deploy_web": [
+        {"name": "production-audit",      "desc": "Pre-deploy readiness"},
+        {"name": "deployment-patterns",   "desc": "Deploy strategy"},
+        {"name": "canary-watch",          "desc": "Post-deploy monitoring"},
+        {"name": "git-workflow",          "desc": "Release tagging"},
+    ],
     "deploy": [
         {"name": "production-audit",      "desc": "Pre-deploy readiness"},
         {"name": "deployment-patterns",   "desc": "Deploy strategy"},
@@ -143,6 +185,8 @@ SKILL_CHAINS: dict[str, list[dict[str, str]]] = {
 }
 
 
+_STANDARD_DOMAINS = {"web", "mobile", "infra", "data", "ai_ml", "automation", "general"}
+
 def get_skill_chain(intent: str, domain: str) -> tuple[list[dict[str, str]], str | None]:
     """Get skill chain by intent + domain, with fallback.
     Returns (chain, degraded_reason) where degraded_reason is None if exact match."""
@@ -152,6 +196,8 @@ def get_skill_chain(intent: str, domain: str) -> tuple[list[dict[str, str]], str
         return chain, None
     chain = SKILL_CHAINS.get(intent)
     if chain:
+        if domain in _STANDARD_DOMAINS:
+            return chain, None  # silent fallback — standard domain
         return chain, f"Domain '{domain}' tidak ditemukan, fallback ke '{intent}' umum"
     return SKILL_CHAINS["ask"], f"Intent '{intent}' tidak ditemukan, fallback ke chain 'ask'"
 

@@ -230,7 +230,8 @@ _STACK_PATTERNS: list[tuple[str, str]] = [
 _INTENT_PATTERNS: list[tuple[str, str, str | None]] = [
     (r"review|audit|check|inspect|scan", "review", None),
     (r"fix|bug|error|crash|broken|debug", "fix", None),
-    (r"optimize|improve|enhance|tune|refactor|upgrade|migrate|convert|clean|speed", "fix", "medium"),
+    (r"refactor", "fix", "medium"),
+    (r"optimize|improve|enhance|tune|upgrade|migrate|convert|clean|speed", "fix", "medium"),
     (r"deploy|release|ship|publish|ci|cd", "deploy", "high"),
     (r"research|search|find|investigate|compare", "research", "low"),
     (r"write|document|readme|docs|guide", "docs", "low"),
@@ -301,6 +302,14 @@ def get_quick_intent(text_input: str) -> dict:
 # Input Sufficiency Check
 # ---------------------------------------------------------------------------
 
+_DANGER_PATTERNS = re.compile(
+    r"(delete\s+all|hapus\s+semua|remove\s+all|rm\s+-rf|"
+    r"drop\s+table|drop\s+database|truncate\s+|"
+    r"format\s+|shutdown|reboot|kill\s+-9|"
+    r"shutdown\s+[-/]s|del\s+[/]f|rd\s+[/]s)"
+)
+
+
 def check_input_sufficiency(text_input: str, classified: dict | None) -> dict:
     """Check if user input has enough detail for precise execution."""
     input_lower = text_input.lower().strip()
@@ -308,6 +317,14 @@ def check_input_sufficiency(text_input: str, classified: dict | None) -> dict:
     intent = classified.get("intent", "unknown") if classified else "unknown"
     domain = classified.get("domain", "general") if classified else "general"
     stack = classified.get("stack", []) if classified else []
+
+    # Danger phrase check — force BLOCK on destructive commands
+    if _DANGER_PATTERNS.search(input_lower):
+        return {
+            "sufficient": False,
+            "reason": f"Input terdeteksi mengandung perintah destruktif. Intent di-set ke 'fix' untuk investigasi aman.",
+            "missing": ["konfirmasi keamanan"],
+        }
 
     # Always sufficient: questions, research, docs
     if intent in ("research", "docs"):
@@ -329,16 +346,22 @@ def check_input_sufficiency(text_input: str, classified: dict | None) -> dict:
     if intent == "deploy" and re.search(r"(deploy|release)\s+\w+", input_lower):
         return {"sufficient": True}
 
-    # BUILD intent — always sufficient, flag auto-detection
+    # BUILD intent — HOLD if too ambiguous
     if intent == "build":
         has_stack = bool(stack) and stack[0] != ""
-        if not has_stack:
-            has_stack_hint = bool(re.search(
-                r"(react|vue|angular|next|nuxt|django|fastapi|laravel|spring|express|nest|"
-                r"flutter|swift|kotlin|python|node|go|rust|php|java|typescript|javascript|"
-                r"powershell|postgres|mysql|redis|docker|kubernetes|crud|auth|jwt|rest|graphql)",
-                input_lower,
-            ))
+        has_domain_hint = not has_stack and bool(re.search(
+            r"(react|vue|angular|next|nuxt|django|fastapi|laravel|spring|express|nest|"
+            r"flutter|swift|kotlin|python|node|go|rust|php|java|typescript|javascript|"
+            r"powershell|postgres|mysql|redis|docker|kubernetes|crud|auth|jwt|rest|graphql|"
+            r"app|api|web|mobile|desktop|backend|frontend|db|database|server|client)",
+            input_lower,
+        ))
+        if word_count < 5 and not has_stack and not has_domain_hint:
+            return {
+                "sufficient": False,
+                "reason": "Input terlalu ambigu untuk 'build'. Sebutkan stack/framework (cth: Python FastAPI, Flutter, React) atau domain yang jelas.",
+                "missing": ["tech stack atau domain"],
+            }
         return {"sufficient": True, "auto_detect_stack": not has_stack}
 
     # HOLD: fix/deploy too short

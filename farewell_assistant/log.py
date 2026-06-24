@@ -1,7 +1,6 @@
 """Structured task logging to logging.md + session state sync."""
 
 from datetime import datetime, timezone
-from pathlib import Path
 
 from . import config
 from .helpers import read_json, write_json

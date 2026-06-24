@@ -148,7 +148,7 @@ Skill chain dijalankan berurutan. Setiap skill:
 ### ⚡ Execution: Plugin Auto-Runs Pipeline
 
 **Plugin `.opencode/plugins/intent-router.js`** secara otomatis menjalankan pipeline setiap user input:
-1. Menjalankan `Invoke-IntentRouter` via `run-router.ps1` di `chat.message` hook
+1. Menjalankan `Invoke-IntentRouter` via `py -m farewell_assistant.run_router` di `chat.message` hook
 2. Menulis hasil ke `pipeline-result.json` + `context.md`
 3. Prepend footer konsisten ke user message
 
@@ -256,7 +256,7 @@ Farewell: ON | Project: farewell-assistant | BUILD | Turn: 12 | Chain: 8 | 85% |
 ```
 User Input
   → Plugin chat.message hook
-    → Run run-router.ps1 (classify + route)
+    → Run py -m farewell_assistant.run_router (classify + route)
     → Write pipeline-result.json + context.md
     → Prepend footer ke user message
   → AI reads: footer + context.md + pipeline-result.json

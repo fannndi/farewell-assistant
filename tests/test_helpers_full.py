@@ -133,7 +133,8 @@ class TestReadWriteJson:
 class TestGetSkillCount:
     def test_returns_int(self, tmp_path: Path, monkeypatch: MonkeyPatch):
         idx_file = tmp_path / "skill-mode-index.json"
-        idx_file.write_text('{"build": {"skill_groups": {"coding": ["a","b"]}}}')
+        idx_file.write_text('{"build": {"skill_groups": {"coding": ["coding-standards","tdd-workflow"]}}}')
         monkeypatch.setattr(config, "SKILL_IDX_FILE", idx_file)
+        monkeypatch.setattr("farewell_assistant.helpers._SKILL_WHITELIST", None)
         result = get_skill_count("build")
         assert result == 2

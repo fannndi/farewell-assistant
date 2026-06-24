@@ -3,7 +3,7 @@
 import time
 
 from . import config
-from .helpers import get_llm_mode, write_ok, write_skip, write_step
+from .helpers import write_ok, write_skip, write_step
 from .intent_router import invoke_intent_router
 from .log import sync_session_state, write_task_log
 

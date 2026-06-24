@@ -203,7 +203,12 @@ def get_skill_chain(intent: str, domain: str) -> tuple[list[dict[str, str]], str
 
 
 def test_skill_chain(chain: list[dict[str, str]]) -> dict:
-    """Check if skills in chain exist on disk. Checks ecc/ and data/ skills dirs."""
+    """Check if skills in chain exist on disk AND are whitelisted."""
+    try:
+        from .helpers import is_skill_whitelisted
+    except ImportError:
+        is_skill_whitelisted = lambda _: True  # passthrough if import fails
+
     search_dirs = [
         config.ECC_DIR / "skills",
         config.PROJECT_SKILLS_DIR,
@@ -211,8 +216,9 @@ def test_skill_chain(chain: list[dict[str, str]]) -> dict:
     valid = []
     missing = []
     for step in chain:
-        found = any((d / step["name"] / "SKILL.md").exists() for d in search_dirs)
-        if found:
+        on_disk = any((d / step["name"] / "SKILL.md").exists() for d in search_dirs)
+        allowed = is_skill_whitelisted(step["name"])
+        if on_disk and allowed:
             valid.append(step["name"])
         else:
             missing.append(step["name"])

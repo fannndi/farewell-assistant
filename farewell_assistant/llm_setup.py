@@ -11,7 +11,6 @@ from datetime import datetime, timezone
 from . import config
 from .helpers import (
     get_gpu_info,
-    get_llm_mode,
     read_json,
     start_ollama_service,
     stop_ollama_models,

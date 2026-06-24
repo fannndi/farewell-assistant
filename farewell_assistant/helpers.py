@@ -575,10 +575,43 @@ def invoke_llm(
             pass
     return None
 
+# ---------------------------------------------------------------------------
+# Skill whitelist — filter ecc/skills/ without deleting files
+# ---------------------------------------------------------------------------
+
+_SKILL_WHITELIST: set[str] | None = None
+
+
+def _load_skill_whitelist() -> set[str]:
+    """Load skill whitelist from data/skill-whitelist.json. Returns empty set if not found."""
+    wl = read_json(config.ROOT_DIR / "data" / "skill-whitelist.json")
+    if wl and isinstance(wl.get("kept"), list):
+        return set(wl["kept"])
+    return set()
+
+
+def is_skill_whitelisted(name: str) -> bool:
+    """Check if a skill is in the whitelist. Returns True if no whitelist exists (passthrough)."""
+    global _SKILL_WHITELIST
+    if _SKILL_WHITELIST is None:
+        _SKILL_WHITELIST = _load_skill_whitelist()
+    if not _SKILL_WHITELIST:
+        return True  # no whitelist → all skills allowed
+    return name in _SKILL_WHITELIST
+
+
+def get_whitelisted_skill_count() -> int:
+    """Return count of whitelisted skills."""
+    global _SKILL_WHITELIST
+    if _SKILL_WHITELIST is None:
+        _SKILL_WHITELIST = _load_skill_whitelist()
+    return len(_SKILL_WHITELIST)
+
 
 # ---------------------------------------------------------------------------
 # Skill count
 # ---------------------------------------------------------------------------
+
 
 def get_skill_count(work_mode: str) -> int:
     count = 0
@@ -589,7 +622,9 @@ def get_skill_count(work_mode: str) -> int:
         if isinstance(skill_groups, dict):
             for group in skill_groups.values():
                 if isinstance(group, list):
-                    count += len(group)
+                    for s in group:
+                        if is_skill_whitelisted(s):
+                            count += 1
     return count
 
 
@@ -814,7 +849,6 @@ def validate_task_vs_project(intent: str, project_type: str, project_stack: list
 
 def clone_project(url: str, temp_dir: str | None = None) -> str | None:
     """Clone git repo to TEMP/, return project name or None."""
-    import urllib.parse
     if not temp_dir:
         temp_dir = str(config.TEMP_DIR)
     name = os.path.basename(url)

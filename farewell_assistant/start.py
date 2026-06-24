@@ -1,4 +1,4 @@
-"""Startup orchestrator — pipeline prime + health check."""
+"""Startup orchestrator — pipeline prime + daily report."""
 
 import time
 
@@ -11,26 +11,51 @@ from .log import sync_session_state, write_task_log
 def run_start() -> bool:
     """Startup sequence. Returns True if pipeline primed."""
     start = time.monotonic()
-
     print()
     print("  =================================================")
     print("  farewell-assistant - Start")
     print("  =================================================")
     print()
-
-    # Pipeline prime
     write_step("1/2", "Pipeline Prime")
     _prime_pipeline()
-
-    # Health check
     write_step("2/2", "Health Check")
     _run_self_heal_check(project_root=config.ROOT_DIR)
-
-    # Sync & log
     sync_session_state()
     duration = round(time.monotonic() - start, 1)
     write_task_log("START", f"Boot completed ({duration}s)", "success")
     write_step("Ready", f"Ready ({duration}s)")
+    return True
+
+
+def run_daily() -> bool:
+    """Daily session start: pipeline prime + git pull + comprehensive report."""
+    from .daily import show_daily_report, save_session_memory, git_pull_self, get_last_commits
+    from .intent_router import _reset_turn_count
+
+    _reset_turn_count()
+
+    # Pipeline prime
+    _prime_pipeline()
+
+    # Git pull self
+    changes = git_pull_self()
+    if changes:
+        write_ok(f"Git pull: {len(changes)} change(s)")
+
+    # Log session
+    try:
+        from .helpers import log_session
+        log_session()
+    except Exception:
+        pass
+
+    # Save memory for next daily
+    commits = get_last_commits(3)
+    save_session_memory(0, commits, [])
+
+    # Show report
+    show_daily_report()
+
     return True
 
 
@@ -40,12 +65,7 @@ def _prime_pipeline():
         result = invoke_intent_router("session start", force=True)
         if result.get("success"):
             i = result.get("intent", {})
-            write_ok(
-                "Pipeline primed: "
-                + i.get("intent", "?") + "/"
-                + i.get("domain", "?") + "/"
-                + i.get("complexity", "?")
-            )
+            write_ok(f"Pipeline primed: {i.get('intent', '?')}/{i.get('domain', '?')}/{i.get('complexity', '?')}")
         else:
             write_ok("Pipeline primed (startup)")
     except Exception as e:

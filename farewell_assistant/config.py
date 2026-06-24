@@ -9,6 +9,7 @@ OLLAMA_PORT = os.environ.get("OLLAMA_PORT", "11434")
 OLLAMA_URL = f"http://localhost:{OLLAMA_PORT}"
 
 ECC_DIR = ROOT_DIR / "ecc"
+ROUTER_DIR = ROOT_DIR / "9router"
 MODELS_DIR = ROOT_DIR / "models"
 DATA_DIR = ROOT_DIR / "data"
 STATE_DIR = ROOT_DIR / ".opencode"

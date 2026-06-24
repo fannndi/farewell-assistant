@@ -1,4 +1,4 @@
-"""CLI entrypoint - argparse-based command dispatcher."""
+"""CLI entrypoint — argparse-based command dispatcher."""
 
 import argparse
 import sys
@@ -29,8 +29,7 @@ def cmd_self_heal(args):
 
 def cmd_enrich_check(args):
     input_text = " ".join(args.args) if args.args else "apa itu closure"
-    force = not input_text.startswith("_")
-    result = invoke_intent_router(input_text, force=force)
+    result = invoke_intent_router(input_text, force=not input_text.startswith("_"))
     show_intent_router_result(result)
 
 
@@ -50,57 +49,58 @@ def cmd_project(args):
         activate_project_by_code(args.action)
 
 
+def cmd_daily(args):
+    from .start import run_daily
+    run_daily()
+
+
+def cmd_self_improvement(args):
+    from .self_improvement import run_self_improvement
+    run_self_improvement()
+
+
 def main():
-    parser = argparse.ArgumentParser(
-        prog="farewell-assistant",
-        description="Intent-Driven AI assistant orchestrator",
-    )
+    parser = argparse.ArgumentParser(prog="farewell-assistant", description="Intent-Driven AI assistant orchestrator")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # route
     route_p = subparsers.add_parser("route", help="Run intent router on text input")
     route_p.add_argument("input", help="User input text to route")
     route_p.add_argument("--context", default="", help="Project context")
     route_p.add_argument("--force", action="store_true", help="Force enrichment")
     route_p.set_defaults(func=cmd_route)
 
-    # workmode
     wm_p = subparsers.add_parser("workmode", help="Switch or show work mode")
-    wm_p.add_argument("action", nargs="?", default="status",
-                      choices=["plan", "build", "status"],
-                      help="plan | build | status")
+    wm_p.add_argument("action", nargs="?", default="status", choices=["plan", "build", "status"])
     wm_p.set_defaults(func=cmd_workmode)
 
-    # llm
     llm_p = subparsers.add_parser("llm", help="LLM management")
     llm_p.add_argument("action", nargs="?", default="status",
-                       choices=["status", "list", "pull", "download", "remove"],
-                       help="status | list | pull | download | remove")
+                       choices=["status", "list", "pull", "download", "remove"])
     llm_p.set_defaults(func=cmd_llm)
 
-    # self-heal
     sh_p = subparsers.add_parser("self-heal", help="Post-edit typecheck hook")
     sh_p.add_argument("--file", required=True, help="Edited file path")
     sh_p.add_argument("--project", default="", help="Project root path")
     sh_p.set_defaults(func=cmd_self_heal)
 
-    # enrich-check
     ec_p = subparsers.add_parser("enrich-check", help="Verify enrichment pipeline")
     ec_p.add_argument("args", nargs="*", help="Optional test input text")
     ec_p.set_defaults(func=cmd_enrich_check)
 
-    # project
     proj_p = subparsers.add_parser("project", help="Switch active project")
-    proj_p.add_argument("action", nargs="?", default="list",
-                        help="Project code (001, 002, etc.) or 'list'")
+    proj_p.add_argument("action", nargs="?", default="list", help="Project code or 'list'")
     proj_p.set_defaults(func=cmd_project)
 
-    args = parser.parse_args()
+    daily_p = subparsers.add_parser("daily", help="Daily report: pipeline prime + session log + system health")
+    daily_p.set_defaults(func=cmd_daily)
 
+    si_p = subparsers.add_parser("self-improvement", help="Git pull ECC + 9Router, cek dampak, update changelog")
+    si_p.set_defaults(func=cmd_self_improvement)
+
+    args = parser.parse_args()
     if not args.command:
         parser.print_help()
         sys.exit(1)
-
     args.func(args)
 
 

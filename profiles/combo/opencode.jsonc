@@ -177,6 +177,10 @@
       "template": "{file:{project}/ecc/.opencode/commands/update-docs.md}\n\n$ARGUMENTS",
       "agent": "doc-updater",
       "subtask": true
+    },
+    "self-improvement": {
+      "description": "★ Git pull ECC + 9Router, analisis dampak, update changelog",
+      "template": "py -m farewell_assistant.cli self-improvement $ARGUMENTS"
     }
   },
 

@@ -2,7 +2,7 @@
 ████████████████████████████████████████████████████████████████
   AUDIT-TRAINING FRAMEWORK — SELF-EVOLVING EDITION
   Version  : 3.1
-  Run Count: 2
+  Run Count: 3
   Created  : 2026-06-24
   Last Run : 2026-06-24
   Author   : AI Agent (auto-maintained)
@@ -21,7 +21,7 @@
 
 # AUDIT-TRAINING FRAMEWORK
 ### AI Assistant System — Self-Evolving Daily Audit Protocol
-`v3.1` | Self-Improving | Run #2
+`v3.1` | Self-Improving | Run #3
 
 ---
 
@@ -785,6 +785,7 @@ RUN | DATE | TOTAL_SCORE | UX | REL | LAT | COST | CTX | ROU | SKL | EFF | ARC |
 ```
 # RUN HISTORY (terbaru di atas)
 # ─────────────────────────────────────────────────────────────────
+#3 | 2026-06-24 | 70/90 | 8 | 7 | 8 | 9 | 6 | 8 | 7 | 7 | 8 | ACCEPTABLE | B- | daily report, self-improvement cmd, README rewritten
 #2 | 2026-06-24 | 65/90 | 7 | 7 | 8 | 9 | 6 | 8 | 7 | 7 | 7 | ACCEPTABLE | C+ | README outdated, single LLM done
 #1 | 2026-06-24 | 62/90 | 7 | 7 | 7 | 9 | 5 | 8 | 6 | 6 | 7 | EXPERIMENTAL | C+ | 271 skill bloat
 # ─────────────────────────────────────────────────────────────────
@@ -793,11 +794,11 @@ RUN | DATE | TOTAL_SCORE | UX | REL | LAT | COST | CTX | ROU | SKL | EFF | ARC |
 **Statistik Agregat:**
 
 ```
-TOTAL RUN       : 2
-RATA-RATA SKOR  : 63.5/90
-SKOR TERTINGGI  : 65 (Run #2)
+TOTAL RUN       : 3
+RATA-RATA SKOR  : 65.7/90
+SKOR TERTINGGI  : 70 (Run #3)
 SKOR TERENDAH   : 62 (Run #1)
-TREN 7 HARI     : ↑ (improving)
+TREN 7 HARI     : ↑ (improving consistently)
 ```
 
 ---
@@ -838,6 +839,14 @@ Status: ACTIVE / RESOLVED / ACCEPTED_RISK
 > Riwayat evolusi script ini sendiri.
 
 ```
+v3.1 | 2026-06-24 | Run #3
+  + daily.py — informative /daily report engine (system health, projects, pending items)
+  + self_improvement.py — git pull ECC + 9Router, analisis dampak, update changelog
+  + /self-improvement command di CLI + opencode.jsonc
+  + README.md rewritten: workflow (/daily, /start-project, /setup-project), ECC skenario, 9Router
+  + cli.py + __main__.py — add daily + self-improvement commands
+  + Score improved: 65→70/90
+
 v3.1 | 2026-06-24 | Run #2
   + README.md fully rewritten to match current project state
   + Single LLM model confirmed (qwen2.5-coder-1.5b, no profiles)
@@ -897,14 +906,18 @@ Format:
 # [P0-3] | P0 | get_skill_count whitelist filter | Run #1 | — | DONE | Run #1
 # [P0-4] | P0 | Fix preprocess.md stale PS1 reference | Run #1 | — | DONE | Run #1
 # [P0-5] | P0 | Unused imports cleanup (8 fixed) | Run #1 | — | DONE | Run #1
+# [P3-1] | P3 | daily.py — informative /daily report | Run #3 | — | DONE | Run #3
+# [P3-2] | P3 | self_improvement.py — /self-improvement command | Run #3 | — | DONE | Run #3
+# [P3-3] | P3 | README rewrite with full workflow | Run #3 | — | DONE | Run #3
+# [P3-4] | P3 | opencode.jsonc — add self-improvement command | Run #3 | — | DONE | Run #3
 # ─────────────────────────────────────────────────────────────────
 ```
 
 **Summary:**
 
 ```
-TOTAL ITEMS  : 5
-DONE         : 5 (100%)
+TOTAL ITEMS  : 9
+DONE         : 9 (100%)
 IN_PROGRESS  : 0 (0%)
 CARRY_OVER   : 0 (0%)
 CANCELLED    : 0 (0%)

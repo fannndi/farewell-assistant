@@ -1,8 +1,8 @@
 <!--
 ████████████████████████████████████████████████████████████████
   AUDIT-TRAINING FRAMEWORK — SELF-EVOLVING EDITION
-  Version  : 3.0
-  Run Count: 1
+  Version  : 3.1
+  Run Count: 2
   Created  : 2026-06-24
   Last Run : 2026-06-24
   Author   : AI Agent (auto-maintained)
@@ -21,7 +21,7 @@
 
 # AUDIT-TRAINING FRAMEWORK
 ### AI Assistant System — Self-Evolving Daily Audit Protocol
-`v3.1` | Self-Improving | Run #1
+`v3.1` | Self-Improving | Run #2
 
 ---
 
@@ -785,6 +785,7 @@ RUN | DATE | TOTAL_SCORE | UX | REL | LAT | COST | CTX | ROU | SKL | EFF | ARC |
 ```
 # RUN HISTORY (terbaru di atas)
 # ─────────────────────────────────────────────────────────────────
+#2 | 2026-06-24 | 65/90 | 7 | 7 | 8 | 9 | 6 | 8 | 7 | 7 | 7 | ACCEPTABLE | C+ | README outdated, single LLM done
 #1 | 2026-06-24 | 62/90 | 7 | 7 | 7 | 9 | 5 | 8 | 6 | 6 | 7 | EXPERIMENTAL | C+ | 271 skill bloat
 # ─────────────────────────────────────────────────────────────────
 ```
@@ -792,11 +793,11 @@ RUN | DATE | TOTAL_SCORE | UX | REL | LAT | COST | CTX | ROU | SKL | EFF | ARC |
 **Statistik Agregat:**
 
 ```
-TOTAL RUN       : 1
-RATA-RATA SKOR  : 62/90
-SKOR TERTINGGI  : 62 (Run #1)
+TOTAL RUN       : 2
+RATA-RATA SKOR  : 63.5/90
+SKOR TERTINGGI  : 65 (Run #2)
 SKOR TERENDAH   : 62 (Run #1)
-TREN 7 HARI     : — (first run)
+TREN 7 HARI     : ↑ (improving)
 ```
 
 ---
@@ -837,6 +838,14 @@ Status: ACTIVE / RESOLVED / ACCEPTED_RISK
 > Riwayat evolusi script ini sendiri.
 
 ```
+v3.1 | 2026-06-24 | Run #2
+  + README.md fully rewritten to match current project state
+  + Single LLM model confirmed (qwen2.5-coder-1.5b, no profiles)
+  + No 9Router, no eco mode, no multi-provider references
+  + Footer format updated in README
+  + File structure updated (13 modules, 6 commands)
+  + Score improved: 62→65/90
+
 v3.1 | 2026-06-24 | Run #1
   + Updated: whitelist implementation (P0-1 through P0-5)
   + Updated: preprocess.md stale PS1 reference

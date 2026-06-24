@@ -203,12 +203,14 @@ def invoke_structured_enrichment(text_input: str, context: str = "", force: bool
 
 _DOMAIN_PATTERNS: list[tuple[str, str]] = [
     (r"react|nextjs|next\.js|vue|angular|frontend|ui|css|html|api|rest|express|fastapi|django|laravel|spring|nest|crud|auth|jwt|backend|server|middleware|token|login|register", "web"),
-    (r"flutter|dart|kotlin|android|ios|swift|compose|mobile|react.native|gpu.monitor|jni|kernel|adreno", "mobile"),
+    (r"flutter|dart|kotlin|android|ios|swift|compose|mobile|react.native|gpu.monitor|jni|kernel|adreno|widget|screen|tap|tombol|halaman|tampilan", "mobile"),
     (r"docker|kubernetes|k8s|ci|cd|deploy|nginx|terraform|ansible|infra", "infra"),
     (r"postgres|mysql|redis|clickhouse|database|sql|etl|pipeline|data", "data"),
     (r"pytorch|tensorflow|llm|model|train|inference|ml|ai|cuda", "ai_ml"),
     (r"powershell|ps1|automate|task|schedule|registry|env", "automation"),
 ]
+
+_MOBILE_PRIORITY = re.compile(r"flutter|dart|kotlin|android|ios|swift|compose|react.native|gpu.monitor|jni|kernel|adreno")
 
 _STACK_PATTERNS: list[tuple[str, str]] = [
     (r"python|fastapi|django|flask", "python"),
@@ -226,9 +228,9 @@ _STACK_PATTERNS: list[tuple[str, str]] = [
 ]
 
 _INTENT_PATTERNS: list[tuple[str, str, str | None]] = [
+    (r"review|audit|check|inspect|scan", "review", None),
     (r"fix|bug|error|crash|broken|debug", "fix", None),
     (r"optimize|improve|enhance|tune|refactor|upgrade|migrate|convert|clean|speed", "fix", "medium"),
-    (r"review|audit|check|inspect|scan", "review", None),
     (r"deploy|release|ship|publish|ci|cd", "deploy", "high"),
     (r"research|search|find|investigate|compare", "research", "low"),
     (r"write|document|readme|docs|guide", "docs", "low"),
@@ -241,11 +243,14 @@ def get_quick_intent(text_input: str) -> dict:
     domain = "general"
     stack: list[str] = []
 
-    # Detect domain
-    for pattern, d in _DOMAIN_PATTERNS:
-        if re.search(pattern, input_lower):
-            domain = d
-            break
+    # Detect domain — mobile takes priority when mobile-specific keywords found
+    if _MOBILE_PRIORITY.search(input_lower):
+        domain = "mobile"
+    else:
+        for pattern, d in _DOMAIN_PATTERNS:
+            if re.search(pattern, input_lower):
+                domain = d
+                break
 
     # Detect stack
     for pattern, s in _STACK_PATTERNS:
@@ -317,11 +322,11 @@ def check_input_sufficiency(text_input: str, classified: dict | None) -> dict:
         }
 
     # Always sufficient: fix/review/deploy with enough detail
-    if intent == "fix" and re.search(r"(bug|error|crash|broken|fix)\s+\w+\s+\w+", input_lower):
+    if intent == "fix" and re.search(r"(bug|error|crash|broken|fix)\s+\w+", input_lower):
         return {"sufficient": True}
-    if intent == "review" and re.search(r"(review|audit|check)\s+\w+\s+\w+", input_lower):
+    if intent == "review" and re.search(r"(review|audit|check)\s+\w+", input_lower):
         return {"sufficient": True}
-    if intent == "deploy" and re.search(r"(deploy|release)\s+\w+\s+\w+", input_lower):
+    if intent == "deploy" and re.search(r"(deploy|release)\s+\w+", input_lower):
         return {"sufficient": True}
 
     # BUILD intent — always sufficient, flag auto-detection

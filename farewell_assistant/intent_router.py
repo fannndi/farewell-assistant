@@ -133,15 +133,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
     """Write pipeline-result.json + context.md."""
     state_dir = config.STATE_DIR
     # Read registry for active project + kategori
-    # First check if there's a project-specific registry in the current directory
-    current_dir = Path.cwd()
-    project_registry_file = current_dir / "data" / "registry.json"
-    
-    # Determine which registry to use (project-specific or default)
-    if project_registry_file.exists():
-        reg_file = project_registry_file
-    else:
-        reg_file = config.REGISTRY_FILE
+    reg_file = config.REGISTRY_FILE
     
     active = "farewell-assistant"
     kategori = "AUTOMATION"

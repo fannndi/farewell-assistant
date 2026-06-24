@@ -339,7 +339,7 @@ def invoke_intent_router(
 
         # Eco mode fallback: file-based stack detection when enrichment disabled
         if not classified.get("stack") or classified["stack"] == ["-"]:
-            active_project = read_project_active(reg_file)
+            active_project = read_project_active(config.REGISTRY_FILE)
             if active_project:
                 import os as _os
                 project_info = _get_project_info(active_project)
@@ -378,9 +378,9 @@ def invoke_intent_router(
 
     # Step 3.2: Project-task validation
     task_warning = None
-    active_project = read_project_active(reg_file)
+    active_project = read_project_active(config.REGISTRY_FILE)
     if active_project:
-        project_info = _get_project_info(active_project, reg_file)
+        project_info = _get_project_info(active_project, config.REGISTRY_FILE)
         if project_info:
             project_type = project_info.get("type", "unknown")
             project_stack = project_info.get("dominan", "").split("+") if project_info.get("dominan") else []

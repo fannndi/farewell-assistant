@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 
 from . import config
-from .helpers import get_llm_mode, get_work_mode, read_json, write_json, _c, read_project_active, detect_stack_from_path, validate_task_vs_project
+from .helpers import get_work_mode, read_json, write_json, _c, read_project_active, detect_stack_from_path, validate_task_vs_project
 from .enrichment_pipeline import (
     invoke_structured_enrichment,
     get_quick_intent,
@@ -116,12 +116,11 @@ def _get_hybrid_skills() -> set[str]:
 
 
 # ---------------------------------------------------------------------------
-# Model Route Selection
+# Model Route — single model, always on
 # ---------------------------------------------------------------------------
 
 def select_model_route(complexity: str) -> dict:
-    route = config.MODEL_ROUTES.get(complexity, config.MODEL_ROUTES["medium"])
-    return route
+    return {"primary": "qwen2.5-coder-1.5b", "secondary": "qwen2.5-coder-1.5b", "heavy": "qwen2.5-coder-1.5b"}
 
 
 # ---------------------------------------------------------------------------
@@ -200,7 +199,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
     write_json(state_dir / "pipeline-result.json", pipeline_data)
 
     # 2. Update context.md
-    mode = get_llm_mode()
+    mode = "on"
     work = get_work_mode().upper()
 
     # Build chain display
@@ -301,14 +300,12 @@ def invoke_intent_router(
     text_input: str,
     context: str = "",
     work_mode: str = "",
-    active_profile: str = "",
+    active_profile: str = "on",
     force: bool = False,
 ) -> dict:
-    """Route user intent to skill chain + model selection."""
+    """Route user intent to skill chain + model."""
     if not work_mode:
         work_mode = get_work_mode()
-    if not active_profile:
-        active_profile = get_llm_mode()
 
     # Increment turn counter
     turn_count = _get_turn_count() + 1

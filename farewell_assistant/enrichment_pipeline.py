@@ -6,7 +6,7 @@ import re
 import time
 
 from . import config
-from .helpers import get_llm_mode, get_llm_model, invoke_llm, read_json, write_json
+from .helpers import get_llm_model, invoke_llm, read_json, write_json
 
 # ---------------------------------------------------------------------------
 # Intent Cache (per session, in-memory + disk persistence)
@@ -123,11 +123,7 @@ VALID_COMPLEXITY = {"low", "medium", "high", "critical"}
 
 
 def invoke_structured_enrichment(text_input: str, context: str = "", force: bool = False) -> dict | None:
-    """Structured intent classification via local LLM (JSON output).
-    Skipped in eco/performance mode (performance is too slow for chat hook, use CLI instead)."""
-    mode = get_llm_mode()
-    if mode in ("eco", "performance") and not force:
-        return None
+    """Structured intent classification via local LLM (JSON output). Falls back to quick classify."""
     if len(text_input.split()) < 3 and not force:
         return None
 

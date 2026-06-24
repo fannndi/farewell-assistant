@@ -1,4 +1,4 @@
-"""Common helpers - JSON state, mode, Ollama, 9Router, GPU, LLM, token estimation."""
+"""Common helpers — JSON state, Ollama, GPU, LLM, project registry."""
 
 import json
 import os
@@ -103,26 +103,22 @@ def write_json(path: Path, data):
 # Mode helpers
 # ---------------------------------------------------------------------------
 
-def get_llm_mode() -> str:
-    state = read_json(config.LLM_MODE_FILE, default={"mode": "eco"})
-    return state.get("mode", "eco") if state else "eco"
+DEFAULT_MODEL = "qwen2.5-coder-1.5b"
 
+def get_llm_mode() -> str:
+    return "on"
 
 def get_work_mode() -> str:
     state = read_json(config.WORK_MODE_FILE, default={"mode": "build"})
     return state.get("mode", "build") if state else "build"
 
-
 def get_llm_model() -> str:
-    state = read_json(config.LLM_MODE_FILE, default={"model": ""})
-    return state.get("model", "") if state else ""
-
+    state = read_json(config.LLM_MODE_FILE, default={"model": DEFAULT_MODEL})
+    return state.get("model", "") or DEFAULT_MODEL
 
 BLOCKED_TOOLS_PLAN = {"write", "edit"}
 
-
 def check_tool_permission(tool_name: str) -> None:
-    """Raise ValueError if tool is blocked in current work mode."""
     work = get_work_mode()
     if work == "plan" and tool_name in BLOCKED_TOOLS_PLAN:
         raise ValueError(
@@ -159,245 +155,7 @@ def start_ollama_service() -> bool:
         return False
 
 
-def stop_ollama_models():
-    if not test_ollama_running():
-        return
-    try:
-        r = httpx.get(f"{config.OLLAMA_URL}/api/tags", timeout=5)
-        data = r.json()
-        for m in data.get("models", []):
-            name = m.get("name", "")
-            if name:
-                subprocess.run(["ollama", "stop", name], capture_output=True)
-    except Exception:
-        pass
 
-
-# ---------------------------------------------------------------------------
-# 9Router helpers
-# ---------------------------------------------------------------------------
-
-def get_9router_pid() -> int | None:
-    try:
-        if config.ROUTER_PID_FILE.exists():
-            pid_val = int(config.ROUTER_PID_FILE.read_text(encoding="utf-8").strip())
-            if platform.system() == "Windows":
-                result = subprocess.run(
-                    ["tasklist", "/FI", f"PID eq {pid_val}", "/NH"],
-                    capture_output=True, text=True, timeout=5,
-                )
-                if "node.exe" in result.stdout:
-                    return pid_val
-            else:
-                try:
-                    os.kill(pid_val, 0)
-                    return pid_val
-                except OSError:
-                    return None
-    except Exception:
-        pass
-    return None
-
-
-def stop_9router():
-    stop_headroom()
-    existing_pid = get_9router_pid()
-    if existing_pid:
-        try:
-            if platform.system() == "Windows":
-                subprocess.run(["taskkill", "/PID", str(existing_pid), "/F"], capture_output=True)
-            else:
-                os.kill(existing_pid, 15)  # SIGTERM
-            time.sleep(1)
-        except Exception:
-            pass
-
-    # Fallback: kill process on router port
-    try:
-        router_port = config.ROUTER_PORT
-        if platform.system() == "Windows":
-            result = subprocess.run(
-                ["netstat", "-ano"],
-                capture_output=True, text=True, timeout=5,
-            )
-            for line in result.stdout.splitlines():
-                if f":{router_port}" in line and "LISTENING" in line:
-                    parts = line.split()
-                    if len(parts) >= 5:
-                        pid = int(parts[4])
-                        try:
-                            subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True)
-                        except Exception:
-                            pass
-        else:
-            # lsof + kill
-            result = subprocess.run(
-                ["lsof", "-ti", f":{router_port}"],
-                capture_output=True, text=True, timeout=5,
-            )
-            for pid_str in result.stdout.strip().split("\n"):
-                if pid_str.strip():
-                    try:
-                        os.kill(int(pid_str.strip()), 15)
-                    except Exception:
-                        pass
-        time.sleep(1)
-    except Exception:
-        pass
-
-    if config.ROUTER_PID_FILE.exists():
-        config.ROUTER_PID_FILE.unlink(missing_ok=True)
-
-
-# ---------------------------------------------------------------------------
-# Headroom proxy (context compression for 9Router)
-# ---------------------------------------------------------------------------
-
-def stop_headroom():
-    """Kill headroom proxy process."""
-    pid_file = config.HEADROOM_PID_FILE
-    if pid_file.exists():
-        try:
-            pid = int(pid_file.read_text().strip())
-            if platform.system() == "Windows":
-                subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True)
-            else:
-                os.kill(pid, 15)
-            time.sleep(1)
-        except Exception:
-            pass
-        pid_file.unlink(missing_ok=True)
-
-    # Fallback: kill by port
-    try:
-        if platform.system() == "Windows":
-            result = subprocess.run(
-                ["netstat", "-ano"], capture_output=True, text=True, timeout=5,
-            )
-            for line in result.stdout.splitlines():
-                if f":{config.HEADROOM_PORT}" in line and "LISTENING" in line:
-                    pid = line.strip().split()[-1]
-                    subprocess.run(["taskkill", "/PID", pid, "/F"], capture_output=True)
-        else:
-            result = subprocess.run(
-                ["lsof", "-ti", f":{config.HEADROOM_PORT}"],
-                capture_output=True, text=True, timeout=5,
-            )
-            for pid_str in result.stdout.strip().split("\n"):
-                if pid_str.strip():
-                    try:
-                        os.kill(int(pid_str.strip()), 15)
-                    except Exception:
-                        pass
-    except Exception:
-        pass
-
-    if config.HEADROOM_PID_FILE.exists():
-        config.HEADROOM_PID_FILE.unlink(missing_ok=True)
-
-
-def start_headroom() -> bool:
-    """Start headroom proxy for context compression."""
-    import shutil
-
-    headroom_bin = shutil.which("headroom")
-    if not headroom_bin:
-        write_skip("Headroom not installed, skipping")
-        return False
-
-    stop_headroom()
-
-    config.LOG_DIR.mkdir(parents=True, exist_ok=True)
-    log_out = config.LOG_DIR / "headroom.log"
-
-    try:
-        proc = subprocess.Popen(
-            ["headroom", "proxy", "--port", config.HEADROOM_PORT],
-            stdout=open(log_out, "w"),
-            stderr=subprocess.STDOUT,
-            shell=(platform.system() == "Windows"),
-        )
-        if proc.pid:
-            config.HEADROOM_PID_FILE.write_text(str(proc.pid), encoding="utf-8")
-
-        # Quick health check
-        time.sleep(3)
-        try:
-            r = httpx.get(f"http://localhost:{config.HEADROOM_PORT}/health", timeout=3)
-            if r.status_code == 200:
-                write_ok(f"Headroom proxy started (port {config.HEADROOM_PORT}, PID: {proc.pid})")
-                return True
-        except Exception:
-            pass
-        write_skip("Headroom proxy started but not reachable")
-        return False
-    except Exception as e:
-        write_skip(f"Headroom proxy failed to start: {e}")
-        return False
-
-
-def start_9router() -> bool:
-    standalone_js = config.ROUTER_DIR / ".next" / "standalone" / "server.js"
-    if not standalone_js.exists():
-        write_fail("9Router standalone build missing. Run: python -m farewell_assistant.cli start")
-        return False
-
-    stop_9router()
-
-    # Ensure static assets present
-    standalone_next = config.ROUTER_DIR / ".next" / "standalone" / ".next" / "static"
-    static_source = config.ROUTER_DIR / ".next" / "static"
-    if not standalone_next.exists() and static_source.exists():
-        import shutil
-        shutil.copytree(str(static_source), str(standalone_next))
-
-    # Logs dir
-    config.LOG_DIR.mkdir(parents=True, exist_ok=True)
-    log_out = config.LOG_DIR / "9router.log"
-    log_err = config.LOG_DIR / "9router-error.log"
-
-    env = os.environ.copy()
-    env["PORT"] = config.ROUTER_PORT
-    env["NODE_ENV"] = "production"
-    home = Path(os.environ.get("USERPROFILE") or os.environ.get("HOME", ""))
-    if platform.system() == "Windows":
-        env["DATA_DIR"] = str(home / "AppData" / "Roaming" / "9router")
-    else:
-        env["DATA_DIR"] = str(home / ".config" / "9router")
-    env["INITIAL_PASSWORD"] = os.environ.get("9ROUTER_PASSWORD", "")
-
-    cmd = ["node", ".next/standalone/server.js"]
-    with open(log_out, "w") as fout, open(log_err, "w") as ferr:
-        proc = subprocess.Popen(
-            cmd,
-            cwd=str(config.ROUTER_DIR),
-            env=env,
-            stdout=fout,
-            stderr=ferr,
-            shell=(platform.system() == "Windows"),
-        )
-
-    if proc and proc.pid:
-        config.ROUTER_PID_FILE.write_text(str(proc.pid), encoding="utf-8")
-
-    # Health-check with backoff
-    waits = [2, 3, 5, 8, 12, 15]
-    total = 0
-    for w in waits:
-        time.sleep(w)
-        total += w
-        try:
-            r = httpx.get(f"{config.API_URL}/api/health", timeout=10)
-            if r.status_code == 200:
-                write_ok(f"9Router started ({total}s, PID: {proc.pid})")
-                # Start headroom proxy after 9Router is healthy
-                start_headroom()
-                return True
-        except Exception:
-            pass
-
-    write_fail(f"9Router not reachable after {total}s (see {log_err})")
-    return False
 
 
 # ---------------------------------------------------------------------------

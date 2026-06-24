@@ -40,7 +40,7 @@ class TestInvokeIntentRouter:
         result = invoke_intent_router("deploy docker kubernetes production")
         assert result["success"] is True
         assert result["intent"]["intent"] == "deploy"
-        assert result["model_route"]["primary"] == "Free"
+        assert result["model_route"]["primary"] == "qwen2.5-coder-1.5b"
 
     @patch("farewell_assistant.enrichment_pipeline.invoke_structured_enrichment", return_value=None)
     def test_blocked_in_plan_mode(self, mock_enrich):

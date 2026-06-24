@@ -12,7 +12,7 @@ else:
     print("Commands:")
     print("  route <text>  Run intent router on text input")
     print("  workmode      Switch work mode (plan|build)")
-    print("  llm           LLM management (eco|hot|balance|performance|status|list)")
+    print("  llm           LLM management (status|list|pull|download|remove)")
     print("  project       Switch active project (list|<name>)")
     print("  self-heal     Post-edit typecheck hook")
     print("  enrich-check  Verify enrichment pipeline")

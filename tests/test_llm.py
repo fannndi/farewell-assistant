@@ -1,26 +1,21 @@
 from pathlib import Path
-
 import pytest
 from pytest import MonkeyPatch
-
 from farewell_assistant import config
-from farewell_assistant.llm_setup import PROFILES, get_gguf_path, get_modelfile_content
+from farewell_assistant.llm_setup import MODEL, HF_FILE, get_gguf_path
 
 
 class TestLlmSetup:
-    def test_profiles_defined(self):
-        assert "hot" in PROFILES
-        assert "eco" in PROFILES
-        assert "balance" in PROFILES
-        assert "performance" in PROFILES
+    def test_model_defined(self):
+        assert MODEL == "qwen2.5-coder-1.5b"
+        assert HF_FILE == "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
 
-    def test_get_gguf_path_returns_none_for_unknown(self):
-        assert get_gguf_path("unknown") is None
+    def test_get_gguf_path(self, monkeypatch: MonkeyPatch, tmp_path: Path):
+        gguf = tmp_path / HF_FILE
+        gguf.write_text("dummy")
+        monkeypatch.setattr(config, "MODELS_DIR", tmp_path)
+        assert get_gguf_path() == gguf
 
-    def test_get_modelfile_content_template(self):
-        content = get_modelfile_content("eco", "custom.gguf")
-        assert "FROM" in content
-        assert "custom.gguf" in content
-
-    def test_get_modelfile_content_unknown(self):
-        assert get_modelfile_content("unknown", "x") == ""
+    def test_get_gguf_path_returns_path_or_none(self):
+        path = get_gguf_path()
+        assert path is None or path.name == HF_FILE

@@ -74,10 +74,8 @@ def main():
     # llm
     llm_p = subparsers.add_parser("llm", help="LLM management")
     llm_p.add_argument("action", nargs="?", default="status",
-                       choices=["eco", "on", "hot", "balance", "performance",
-                                "list", "pull", "status", "remove", "auto"],
-                       help="eco | on | hot | balance | performance | list | pull | status | remove | auto")
-    llm_p.add_argument("--profile", default="", help="Profile name for pull action")
+                       choices=["status", "list", "pull", "download", "remove"],
+                       help="status | list | pull | download | remove")
     llm_p.set_defaults(func=cmd_llm)
 
     # self-heal

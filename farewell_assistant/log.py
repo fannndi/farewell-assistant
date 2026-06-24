@@ -26,9 +26,9 @@ def write_task_log(stage: str, action: str, result: str = "success", files: str 
 def sync_session_state():
     """Write session-state.json + initial context.md."""
     try:
-        from .helpers import get_llm_mode, get_work_mode, get_skill_count
+        from .helpers import get_work_mode, get_skill_count
 
-        mode = get_llm_mode()
+        mode = "on"
         work = get_work_mode()
         now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
 

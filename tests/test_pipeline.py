@@ -108,17 +108,13 @@ class TestCheckTaskPermission:
 
 
 class TestModelRoute:
-    def test_low_complexity(self):
+    def test_model_always_same(self):
         r = select_model_route("low")
-        assert r["primary"] == "Free"
-
-    def test_high_secondary(self):
+        assert r["primary"] == "qwen2.5-coder-1.5b"
         r = select_model_route("high")
-        assert r["secondary"] == "Emergency"
-
-    def test_critical_primary(self):
+        assert r["secondary"] == "qwen2.5-coder-1.5b"
         r = select_model_route("critical")
-        assert r["primary"] == "Emergency"
+        assert r["primary"] == "qwen2.5-coder-1.5b"
 
 
 class TestCheckInputSufficiency:

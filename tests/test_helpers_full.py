@@ -40,15 +40,8 @@ class TestGetGpuInfo:
 
 
 class TestGetLlmMode:
-    def test_defaults_to_eco(self, tmp_path: Path, monkeypatch: MonkeyPatch):
-        monkeypatch.setattr(config, "LLM_MODE_FILE", tmp_path / "nonexistent.json")
-        assert get_llm_mode() == "eco"
-
-    def test_reads_existing(self, tmp_path: Path, monkeypatch: MonkeyPatch):
-        f = tmp_path / "llm-mode.json"
-        f.write_text('{"mode": "balance"}')
-        monkeypatch.setattr(config, "LLM_MODE_FILE", f)
-        assert get_llm_mode() == "balance"
+    def test_always_on(self):
+        assert get_llm_mode() == "on"
 
 
 class TestGetWorkMode:
@@ -87,26 +80,7 @@ class TestEstimateTokens:
         assert n > 100
 
 
-class TestParseApiKey:
-    def test_parses_full(self, tmp_path: Path, monkeypatch: MonkeyPatch):
-        f = tmp_path / "api-key.txt"
-        f.write_text("NINEROUTER_API_KEY=sk-test\nCOMBO_0=Free\nMODELS_0=model-a,model-b\n")
-        monkeypatch.setattr(config, "API_KEY_FILE", f)
-        api_key, entries, models = parse_api_key()
-        assert api_key == "sk-test"
-        assert entries["0"]["combo"] == "Free"
-        assert models["0"]["models"] == ["model-a", "model-b"]
-
-    def test_empty_file(self, tmp_path: Path, monkeypatch: MonkeyPatch):
-        f = tmp_path / "api-key.txt"
-        f.write_text("")
-        monkeypatch.setattr(config, "API_KEY_FILE", f)
-        api_key, _, _ = parse_api_key()
-        assert api_key is None
-
-    def test_no_file(self, monkeypatch: MonkeyPatch):
-        fake = Path(tempfile.gettempdir()) / "_nonexistent_test_.txt"
-        monkeypatch.setattr(config, "API_KEY_FILE", fake)
+class TestGetLlmModel:
         api_key, _, _ = parse_api_key()
         assert api_key is None
 

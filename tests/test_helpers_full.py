@@ -1,4 +1,4 @@
-"""Full coverage for helpers — GPU, Ollama, 9Router, token estimation."""
+"""Full coverage for helpers — GPU, LLM, 9Router, token estimation."""
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from pytest import MonkeyPatch
@@ -10,7 +10,6 @@ from farewell_assistant.helpers import (
     get_llm_mode,
     get_work_mode,
     get_llm_model,
-    test_ollama_running as test_ollama_running_fn,
     estimate_tokens,
     parse_api_key,
     get_skill_count,

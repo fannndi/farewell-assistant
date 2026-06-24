@@ -1,4 +1,4 @@
-"""LLM configuration — single-profile, always-on."""
+"""LLM configuration — dual-model download & status."""
 
 import platform
 import shutil
@@ -11,8 +11,6 @@ from . import config
 from .helpers import (
     get_gpu_info,
     read_json,
-    start_ollama_service,
-    test_ollama_running,
     write_fail,
     write_info,
     write_json,
@@ -21,41 +19,44 @@ from .helpers import (
     write_step,
 )
 from .log import sync_session_state, write_task_log
-
-MODEL = "qwen2.5-coder-1.5b"
-HF_REPO = "Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF"
-HF_FILE = "qwen2.5-coder-1.5b-instruct-q4_k_m.gguf"
-SIZE_GB = 1.0
+from .models import set_llm_mode, get_active_model_info
 
 
-def get_gguf_path() -> Path | None:
-    gguf = config.MODELS_DIR / HF_FILE
+HF_REPOS = {
+    "qwen3.5-0.8b": "bartowski/Qwen_Qwen3.5-0.8B-GGUF",
+    "qwen3.5-2b": "unsloth/Qwen3.5-2B-GGUF",
+}
+
+
+def get_gguf_path(model_name: str = "") -> Path | None:
+    info = get_active_model_info() if not model_name else config.MODEL_DEFS.get(model_name.split("-")[0] if "-" in model_name else model_name, config.MODEL_DEFS["online"])
+    if model_name:
+        # Find matching model def
+        for key, md in config.MODEL_DEFS.items():
+            if md["model_name"] == model_name or key == model_name:
+                info = md
+                break
+    gguf = info["gguf_path"]
     return gguf if gguf.exists() else None
 
 
-def set_llm_mode():
-    state = {"mode": "on", "model": MODEL, "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")}
-    write_json(config.LLM_MODE_FILE, state)
-    try:
-        from .enrichment_pipeline import clear_intent_cache
-        clear_intent_cache()
-    except Exception:
-        pass
-    sync_session_state()
-    write_task_log("LLM", f"Set model: {MODEL}", "success")
-
-
-def invoke_download_gguf() -> bool:
+def invoke_download_gguf(llm_mode: str = "online") -> bool:
+    model_def = config.MODEL_DEFS[llm_mode]
     out_dir = config.MODELS_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / HF_FILE
+    out_file = model_def["gguf_path"]
     if out_file.exists():
-        write_skip(f"GGUF already exists: {HF_FILE}")
+        write_skip(f"GGUF already exists: {model_def['gguf_file']}")
         return True
-    url = f"https://huggingface.co/{HF_REPO}/resolve/main/{HF_FILE}"
-    write_step("DOWNLOAD", f"Downloading {MODEL} ({HF_FILE}) ~{SIZE_GB}GB...")
+    repo = HF_REPOS.get(model_def["model_name"])
+    if not repo:
+        write_fail(f"Unknown model: {model_def['model_name']}")
+        return False
+    url = f"https://huggingface.co/{repo}/resolve/main/{model_def['gguf_file']}"
+    size_str = f"{model_def['vram_mb']/1024:.1f}GB"
+    write_step("DOWNLOAD", f"Downloading {model_def['model_name']} ({model_def['gguf_file']}) ~{size_str}...")
     write_info(f"  URL: {url}")
-    temp_file = Path(tempfile.gettempdir()) / HF_FILE
+    temp_file = Path(tempfile.gettempdir()) / model_def['gguf_file']
     try:
         proc = subprocess.run(["curl.exe", "-L", "-o", str(temp_file), url], shell=(platform.system() == "Windows"))
         if proc.returncode != 0 or not temp_file.exists():
@@ -66,27 +67,6 @@ def invoke_download_gguf() -> bool:
         return False
     shutil.move(str(temp_file), str(out_file))
     write_ok(f"Downloaded to {out_file}")
-    return True
-
-
-def invoke_import_ollama() -> bool:
-    gguf_path = get_gguf_path()
-    if not gguf_path:
-        write_fail(f"GGUF not found: {HF_FILE}")
-        return False
-    existing = subprocess.run(["ollama", "list"], capture_output=True, text=True)
-    if MODEL in existing.stdout:
-        write_skip(f"Model '{MODEL}' already exists in Ollama")
-        return True
-    write_step("IMPORT", f"Importing {MODEL} into Ollama...")
-    modelfile_path = Path(tempfile.gettempdir()) / f"Modelfile.{MODEL}"
-    modelfile_path.write_text(f"FROM .\\models\\{HF_FILE}\n", encoding="utf-8")
-    proc = subprocess.run(["ollama", "create", MODEL, "-f", str(modelfile_path)], shell=(platform.system() == "Windows"))
-    modelfile_path.unlink(missing_ok=True)
-    if proc.returncode != 0:
-        write_fail(f"Import failed (exit code: {proc.returncode})")
-        return False
-    write_ok(f"Imported '{MODEL}' into Ollama")
     return True
 
 
@@ -101,66 +81,58 @@ def invoke_status():
             write_info(f"  Temp: {temp}C")
     else:
         write_skip("No GPU detected")
-    write_step("STATUS", "Ollama Service...")
-    write_ok("Ollama is running") if test_ollama_running() else write_skip("Ollama is not running")
-    write_step("STATUS", "Loaded Models...")
+
+    write_step("STATUS", "Models...")
+    for mode_key, md in config.MODEL_DEFS.items():
+        gguf = md["gguf_path"]
+        if gguf.exists():
+            size_gb = round(gguf.stat().st_size / (1024 ** 3), 2)
+            active = "(active)" if md["model_name"] == get_active_model_info()["model_name"] else ""
+            write_ok(f"  [{mode_key}] {md['model_name']} ({size_gb} GB) {active}")
+        else:
+            write_skip(f"  [{mode_key}] {md['model_name']} (not downloaded)")
+
+    write_step("STATUS", "LLM Engine...")
     try:
-        result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
-        if result.stdout.strip():
-            for line in result.stdout.strip().splitlines():
-                write_info(f"  {line}")
-        else:
-            write_skip("No models loaded")
-    except Exception:
-        write_skip("No models loaded")
-    write_step("STATUS", "GGUF Files...")
-    model_dir = config.MODELS_DIR
-    if model_dir.is_dir():
-        ggufs = list(model_dir.glob("*.gguf"))
-        if ggufs:
-            for f in ggufs:
-                size_gb = round(f.stat().st_size / (1024 ** 3), 2)
-                write_info(f"  {f.name} ({size_gb} GB)")
-        else:
-            write_skip("No GGUF files")
+        from llama_cpp import Llama
+        write_ok("llama-cpp-python available")
+    except ImportError:
+        write_fail("llama-cpp-python not installed")
+
+
+def invoke_remove(llm_mode: str = ""):
+    write_step("REMOVE", "Removing GGUF model...")
+    if llm_mode:
+        targets = [config.MODEL_DEFS[llm_mode]]
     else:
-        write_skip("No models directory")
-
-
-def invoke_remove():
-    write_step("REMOVE", "Removing Ollama models...")
-    try:
-        result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
-        lines = result.stdout.strip().splitlines()
-        start = 1 if lines and "NAME" in lines[0] else 0
-        for line in lines[start:]:
-            model_name = line.split()[0] if line.split() else ""
-            if model_name:
-                subprocess.run(["ollama", "rm", model_name], capture_output=True)
-                write_ok(f"Removed model: {model_name}")
-    except Exception:
-        pass
+        targets = list(config.MODEL_DEFS.values())
+    for md in targets:
+        gguf = md["gguf_path"]
+        if gguf and gguf.exists():
+            gguf.unlink()
+            write_ok(f"Removed: {md['gguf_file']}")
+        else:
+            write_skip(f"Not found: {md['gguf_file']}")
 
 
 def handle_llm_setup(action: str = "status", profile: str = ""):
+    llm_mode = profile if profile in ("online", "offline") else "online"
     if action in ("pull", "download"):
-        if invoke_download_gguf():
-            invoke_import_ollama()
-            set_llm_mode()
-            write_ok(f"LLM ready: {MODEL}")
+        if invoke_download_gguf(llm_mode):
+            set_llm_mode(llm_mode)
+            model_name = config.MODEL_DEFS[llm_mode]["model_name"]
+            write_ok(f"LLM ready: {model_name} ({llm_mode})")
     elif action == "status":
         invoke_status()
     elif action == "list":
-        write_step("MODEL", f"Active: {MODEL} ({HF_FILE}, ~{SIZE_GB}GB)")
-        gguf = get_gguf_path()
-        write_info(f"  GGUF: {'Downloaded' if gguf else 'Not downloaded'}")
-        try:
-            result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
-            write_info(f"  Ollama: {'Loaded' if MODEL in result.stdout else 'Not loaded'}")
-        except Exception:
-            write_info("  Ollama: Not reachable")
+        write_step("MODELS", "Available models:")
+        for mode_key, md in config.MODEL_DEFS.items():
+            gguf = md["gguf_path"]
+            status = "Downloaded" if gguf.exists() else "Not downloaded"
+            write_info(f"  [{mode_key}] {md['model_name']} ({md['description']}) — {status}")
     elif action == "remove":
-        invoke_remove()
+        invoke_remove("online")
+        invoke_remove("offline")
     else:
-        write_step("LLM", f"Current model: {MODEL}")
+        write_step("LLM", "Usage: py -m farewell_assistant.cli llm [download|status|list|remove] [online|offline]")
         invoke_status()

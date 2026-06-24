@@ -1,21 +1,17 @@
 import time
-import httpx
 from . import config
-from .helpers import get_gpu_info, test_ollama_running, start_ollama_service, write_info, write_skip
+from .helpers import get_gpu_info, write_info, write_skip
 from .log import write_task_log
-
-
-def ensure_ollama() -> bool:
-    if test_ollama_running():
-        return True
-    write_info("Ollama not running, attempting start...")
-    ok = start_ollama_service()
-    write_task_log("HEALTH", "ensure_ollama", "started" if ok else "fail", "ollama")
-    return ok
 
 
 def check_gpu() -> dict:
     return get_gpu_info("name,memory.total,temperature.gpu")
+
+
+def check_llm() -> bool:
+    from .models import get_active_model_info
+    info = get_active_model_info()
+    return info["gguf_path"].exists()
 
 
 def ping_model() -> list:

@@ -159,6 +159,8 @@ def sync_turn_state(result: dict, user_input: str = ""):
         pass
     pipeline_data = {"timestamp": now, "input": user_input, "turn": result.get("turn", 0), "project_code": project_code}
 
+    from .helpers import get_llm_mode_label
+
     if result.get("success"):
         secondary = result["intent"].get("secondary_intents")
         pipeline_data.update({
@@ -172,6 +174,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
             "needs_planning": result.get("needs_planning", False),
             "model_primary": result["model_route"]["primary"],
             "model_heavy": result["model_route"]["heavy"],
+            "llm_mode": get_llm_mode_label(),
             "chain": [s["name"] for s in result.get("skill_chain", [])],
             "chain_summary": result.get("chain_summary", ""),
             "blocked": result.get("blocked", []),

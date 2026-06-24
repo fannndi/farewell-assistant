@@ -1,7 +1,4 @@
-import subprocess
-from unittest.mock import patch, MagicMock
-
-from farewell_assistant.health import ensure_ollama, check_gpu
+from farewell_assistant.health import check_gpu, check_llm
 from farewell_assistant import config
 from pytest import MonkeyPatch
 from pathlib import Path
@@ -14,7 +11,7 @@ class TestCheckGpu:
         assert "available" in result
 
 
-class TestEnsureOllama:
-    def test_returns_true_when_already_running(self, monkeypatch: MonkeyPatch):
-        monkeypatch.setattr("farewell_assistant.helpers.test_ollama_running", lambda: True)
-        assert ensure_ollama() is True
+class TestCheckLlm:
+    def test_returns_bool(self):
+        result = check_llm()
+        assert isinstance(result, bool)

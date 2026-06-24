@@ -1,4 +1,4 @@
-"""Common helpers — JSON state, Ollama, GPU, LLM, project registry."""
+"""Common helpers — JSON state, GPU, LLM (llama-cpp-python), project registry."""
 
 import json
 import os
@@ -9,8 +9,6 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-
-import httpx
 
 from . import config
 
@@ -103,7 +101,7 @@ def write_json(path: Path, data):
 # Mode helpers
 # ---------------------------------------------------------------------------
 
-DEFAULT_MODEL = "qwen2.5-coder-1.5b"
+DEFAULT_MODEL = "qwen3.5-0.8b"
 
 def get_llm_mode() -> str:
     return "on"
@@ -115,6 +113,11 @@ def get_work_mode() -> str:
 def get_llm_model() -> str:
     state = read_json(config.LLM_MODE_FILE, default={"model": DEFAULT_MODEL})
     return state.get("model", "") or DEFAULT_MODEL
+
+def get_llm_mode_label() -> str:
+    """Return current LLM mode label: 'Online' or 'Offline'."""
+    from .models import get_current_llm_label
+    return get_current_llm_label()
 
 BLOCKED_TOOLS_PLAN = {"write", "edit"}
 
@@ -128,34 +131,31 @@ def check_tool_permission(tool_name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Ollama helpers
+# LLM — delegated to models.py (dual-model manager)
 # ---------------------------------------------------------------------------
 
-def test_ollama_running() -> bool:
-    try:
-        r = httpx.get(f"{config.OLLAMA_URL}/api/tags", timeout=3)
-        return r.status_code == 200
-    except Exception:
-        return False
+def _get_llm():
+    from .models import get_llm as _mget
+    return _mget()
+
+def unload_llm():
+    pass
 
 
-def start_ollama_service() -> bool:
-    if test_ollama_running():
-        return True
-    try:
-        subprocess.Popen(
-            ["ollama", "serve"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            shell=(platform.system() == "Windows"),
-        )
-        time.sleep(3)
-        return test_ollama_running()
-    except Exception:
-        return False
+# ---------------------------------------------------------------------------
+# LLM call
+# ---------------------------------------------------------------------------
 
-
-
+def invoke_llm(
+    prompt: str,
+    system: str = "You are a helpful assistant.",
+    model: str = "",
+    max_tokens: int = 1024,
+    temperature: float = 0.3,
+    timeout_sec: int = 60,
+) -> dict | None:
+    from .models import invoke_llm as _minvoke
+    return _minvoke(prompt, system, "", max_tokens, temperature, timeout_sec)
 
 
 # ---------------------------------------------------------------------------
@@ -270,68 +270,6 @@ def estimate_tokens(text: str) -> int:
             tokens += 0.25
     return max(1, int(tokens + 0.999))  # ceiling
 
-
-# ---------------------------------------------------------------------------
-# LLM call
-# ---------------------------------------------------------------------------
-
-def invoke_llm(
-    prompt: str,
-    system: str = "You are a helpful assistant.",
-    model: str = "",
-    max_tokens: int = 1024,
-    temperature: float = 0.3,
-    timeout_sec: int = 60,
-) -> dict | None:
-    if not model:
-        model = get_llm_model()
-    if not model:
-        return None
-
-    messages = []
-    if system:
-        messages.append({"role": "system", "content": system})
-    messages.append({"role": "user", "content": prompt})
-
-    body = {
-        "model": model,
-        "messages": messages,
-        "stream": False,
-        "keep_alive": "5m",
-        "think": False,
-        "options": {
-            "num_predict": max_tokens,
-            "temperature": temperature,
-            "num_gpu": 99,
-        },
-    }
-
-    try:
-        start = time.monotonic()
-        r = httpx.post(
-            f"{config.OLLAMA_URL}/api/chat",
-            json=body,
-            timeout=timeout_sec,
-        )
-        elapsed = time.monotonic() - start
-        data = r.json()
-        content = data.get("message", {}).get("content")
-        if content:
-            tokens = data.get("eval_count") or estimate_tokens(content)
-            tps = round(tokens / elapsed, 2) if elapsed > 0 else 0
-            return {
-                "response": content,
-                "tokens": tokens,
-                "duration": elapsed,
-                "tokens_per_second": tps,
-            }
-    except Exception as e:
-        try:
-            from .log import write_task_log as _log
-            _log("LLM", f"invoke_llm failed: {e}", "fail")
-        except Exception:
-            pass
-    return None
 
 # ---------------------------------------------------------------------------
 # Skill whitelist — filter ecc/skills/ without deleting files

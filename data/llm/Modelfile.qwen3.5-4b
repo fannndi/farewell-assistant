@@ -1,4 +1,0 @@
-# Qwen3.5-4B — Performance profile (indoor, plugged, fan active)
-FROM ./models/Qwen3.5-4B-Q4_K_M.gguf
-PARAMETER num_ctx 4096
-PARAMETER num_gpu 50

@@ -5,6 +5,8 @@ import sys
 from .intent_router import invoke_intent_router, show_intent_router_result
 from .llm_setup import handle_llm_setup
 from .workmode import switch_workmode
+from .helpers import write_ok, write_skip, write_step
+from .models import set_llm_mode, get_active_model_info
 
 
 def cmd_route(args):
@@ -20,6 +22,29 @@ def cmd_workmode(args):
 
 def cmd_llm(args):
     handle_llm_setup(args.action, args.profile)
+
+
+def cmd_offline(args):
+    if args.action == "on":
+        set_llm_mode("offline")
+        info = get_active_model_info()
+        write_step("OFFLINE", "Offline mode ON")
+        write_ok(f"Model: {info['model_name']} ({info['description']})")
+        write_ok("Cloud AI akan mendelegasikan eksekusi ke local LLM")
+    elif args.action == "off":
+        set_llm_mode("online")
+        info = get_active_model_info()
+        write_step("OFFLINE", "Offline mode OFF")
+        write_ok(f"Model: {info['model_name']} ({info['description']})")
+        write_ok("Cloud AI akan mengeksekusi langsung")
+    else:
+        info = get_active_model_info()
+        mode = "ON" if info["label"] == "Offline" else "OFF"
+        write_step("OFFLINE", f"Status: {mode}")
+        write_ok(f"Model lokal: {info['model_name']} ({info['gguf_file']})")
+        write_ok(f"Role: {info['description']}")
+        from .health import check_llm
+        write_ok("GGUF tersedia" if check_llm() else "GGUF tidak ditemukan")
 
 
 def cmd_self_heal(args):
@@ -77,6 +102,10 @@ def main():
     llm_p.add_argument("action", nargs="?", default="status",
                        choices=["status", "list", "pull", "download", "remove"])
     llm_p.set_defaults(func=cmd_llm)
+
+    off_p = subparsers.add_parser("offline", help="Offline mode: delegate execution to local LLM")
+    off_p.add_argument("action", nargs="?", default="status", choices=["on", "off", "status"])
+    off_p.set_defaults(func=cmd_offline)
 
     sh_p = subparsers.add_parser("self-heal", help="Post-edit typecheck hook")
     sh_p.add_argument("--file", required=True, help="Edited file path")

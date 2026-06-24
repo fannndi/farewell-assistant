@@ -86,36 +86,26 @@ _load_cache()
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """\
-You are a structured intent classifier. Analyze user input and return ONLY valid JSON.
+Classify user input into structured JSON. Return ONLY valid JSON.
 
-Return this exact schema (no markdown, no explanation, no code fences):
-{
-  "intent": "<build|fix|review|deploy|research|docs|ask>",
-  "domain": "<web|mobile|infra|data|ai_ml|automation|general>",
-  "stack": ["<detected framework or language>"],
-  "complexity": "<low|medium|high|critical>",
-  "confidence": <0.0 to 1.0>
-}
+Schema:
+{"intent": "build|fix|review|deploy|research|docs|ask", "domain": "web|mobile|infra|data|ai_ml|automation|general", "stack": ["framework"], "complexity": "low|medium|high|critical", "confidence": 0.0-1.0}
 
-Domain classification rules:
-- web: APIs, REST endpoints, CRUD, frontend, backend, authentication, web frameworks (React, Django, FastAPI, Express, Laravel, NestJS)
-- mobile: Flutter, Dart, iOS, Android, Swift, Kotlin, React Native
-- infra: Docker, Kubernetes, CI/CD, deployment, server configuration, networking
-- data: databases, SQL, migrations, ETL, data pipelines, PostgreSQL, MySQL, Redis
-- ai_ml: machine learning, model training, inference, LLM, PyTorch, TensorFlow
-- automation: PowerShell, scripts, task automation, scheduling, Windows automation
-- general: programming concepts, generic questions, unclear domain
+Domain by keyword (keyword found = forced domain):
+- flutter, dart, kotlin, swift, ios, android, react native -> mobile
+- pytorch, tensorflow, llm, model training, inference, ml -> ai_ml
+- docker, kubernetes, deployment, ci/cd -> infra
+- postgresql, sql, migration, database, etl -> data
+- powershell -> automation
+- api, crud, rest, auth, jwt, frontend, backend, django, fastapi, react -> web
+- default -> general
 
-Stack detection: identify specific technologies mentioned (e.g., ["python", "fastapi"], ["flutter", "dart"])
+Rules:
+- stack = only tech mentioned (e.g., ["flutter"], ["python", "fastapi"])
+- complexity: low=simple, medium=feature/fix, high=architectural, critical=security/prod-down
+- confidence: 0.0-1.0 based on keyword match strength
 
-Complexity rules:
-- low: simple question, one-line fix, typo
-- medium: feature implementation, bug fix
-- high: architectural change, multi-file refactor, system design
-- critical: security vulnerability, production down
-
-Return ONLY the JSON object, nothing else.
-"""
+Return ONLY the JSON."""
 
 VALID_INTENTS = {"build", "fix", "review", "deploy", "research", "docs", "ask"}
 VALID_DOMAINS = {"web", "mobile", "infra", "data", "ai_ml", "automation", "general"}

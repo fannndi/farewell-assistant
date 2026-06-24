@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import config
 from .helpers import (
-    _c, get_gpu_info, test_ollama_running, get_llm_model, get_work_mode,
+    _c, get_gpu_info, get_llm_model, get_work_mode, get_llm_mode_label,
     read_project_active, read_json, write_json, list_registered_projects,
 )
 
@@ -120,7 +120,11 @@ def show_daily_report():
     active_project = read_project_active(config.REGISTRY_FILE)
 
     # System health
-    ollama_ok = test_ollama_running()
+    from .models import get_active_model_info
+    from .health import check_llm
+    model_info = get_active_model_info()
+    gguf_ok = check_llm()
+    llm_label = get_llm_mode_label()
     gpu = get_gpu_info("name,memory.total,memory.used,temperature.gpu")
     gpu_name = gpu.get("name", "N/A") if gpu.get("available") else "N/A"
     gpu_mem = f"{gpu.get('memory_used', 0)}/{gpu.get('memory_total', 0)}MB" if gpu.get("available") else "N/A"
@@ -159,9 +163,9 @@ def show_daily_report():
     # System Health
     print(f"\n  {_c('SYSTEM HEALTH', 'yellow')}")
     print(f"  {sub}")
-    ollama_icon = _c("[OK]", "green") if ollama_ok else _c("[FAIL]", "red")
-    model_display = f" ({model})" if ollama_ok else ""
-    print(f"    Ollama    : {ollama_icon}{model_display}")
+    llm_icon = _c("[OK]", "green") if gguf_ok else _c("[FAIL]", "red")
+    model_display = f" ({model})" if gguf_ok else ""
+    print(f"    LLM       : {llm_icon}{model_display} [{llm_label}]")
     gpu_icon = _c("[OK]", "green") if gpu.get("available") else _c("[FAIL]", "red")
     print(f"    GPU       : {gpu_icon} {gpu_name} ({gpu_temp}, {gpu_mem})")
     print(f"    Mode      : {_c(mode, 'green')}")

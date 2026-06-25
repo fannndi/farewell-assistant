@@ -118,6 +118,10 @@
       "description": "Register project from path",
       "template": "py -m farewell_assistant setup-project $ARGUMENTS"
     },
+    "save": {
+      "description": "Save session summary to memory (checkpoint)",
+      "template": "py -m farewell_assistant save $ARGUMENTS"
+    },
     "plan": {
       "description": "Create implementation plan",
       "template": "{file:ecc/.opencode/commands/plan.md}\n\n$ARGUMENTS",

@@ -66,18 +66,32 @@ def _write_context_footer(project: str, mode: str):
     from .helpers import read_project_code, read_json
     from .indexer import get_indexed_skills
     from .tracker import get_today_usage
+    from .memory import get_last_session
     code = read_project_code(project)
     team = _get_team()
     skills = get_indexed_skills(str(config.ROOT_DIR))
     usage = get_today_usage()
+    last = get_last_session(code, project)
     sk = f" | Skills: {len(skills)}" if skills else ""
+    last_line = f"\nLast: {last}" if last else ""
     ctx = f"""# State
 Team: {team}
 Project: {code}-{project}
 Mode: {mode.upper()}{sk}
-Tokens: {usage['today']} today ({usage['total']} total)
+Tokens: {usage['today']} today ({usage['total']} total){last_line}
 """
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
+
+
+def cmd_save(args):
+    from .helpers import read_project_code, read_project_active, get_work_mode
+    from .memory import save_session
+    active = read_project_active()
+    code = read_project_code(active)
+    save_session(code, active, args.summary)
+    from .helpers import _c
+    print(f"\n  {_c('[SAVED]', 'green')} {code}-{active}: {args.summary[:60]}...\n")
+    _write_context_footer(active, get_work_mode())
 
 
 def cmd_start_project(args):
@@ -159,6 +173,10 @@ def main():
 
     daily_p = subparsers.add_parser("daily", help="Daily: 9Router health + system status")
     daily_p.set_defaults(func=cmd_daily)
+
+    save_p = subparsers.add_parser("save", help="Save session summary to memory")
+    save_p.add_argument("summary", help="Session summary text")
+    save_p.set_defaults(func=cmd_save)
 
     sp_p = subparsers.add_parser("start-project", help="Switch active project + show footer")
     sp_p.add_argument("code", nargs="?", default="list", help="Project code (001/002/003) or 'list'")

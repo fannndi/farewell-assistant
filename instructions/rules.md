@@ -1,6 +1,10 @@
-# Mode
-- **BUILD**: write, edit, bash. Full access.
-- **PLAN**: read-only. Jika user minta write: "Anda dalam PLAN mode. /workmode build untuk eksekusi."
+# Footer (cek state di context.md — binding setiap turn)
+Parameter dari footer dan implikasinya:
+- **Project**: {code}-{name} — semua context/memory/skill untuk project ini
+- **Mode**: BUILD=full write, PLAN=read-only. Tool permission mengikuti mode
+- **Session**: #{N} — N = sesi ke berapa. Memory dari sesi sebelumnya tersedia
+- **Team**: ON=reasoning untuk task berat, OFF=direct execution untuk task ringan. Kalau ragu ON
+- **Skills**: {N} — jumlah skill terindex. Skill priority mengikuti daftar di bawah
 
 # Execution
 - YAGNI: best code is code never written
@@ -8,11 +12,6 @@
 - Bug fix: langsung eksekusi tanpa hold
 - NEW task: HOLD → PLAN → APPROVE → eksekusi
 - Commit: hanya jika user minta. Cek git status + diff dulu
-
-# Team (cek state di footer context.md)
-- **ON** → professional: reasoning untuk task berat (arsitektur, planning, security, complex logic)
-- **OFF** → personal: direct execution untuk task ringan (typo, basic CRUD, explore)
-- **Balance**: AI nilai sendiri. Kalau ragu, ON.
 
 # Model Priority (Hemat Token)
 1. **Free combo** — paling hemat. Prioritas utama.

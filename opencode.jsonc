@@ -12,8 +12,7 @@
       "options": {
         "baseURL": "http://localhost:20128/v1",
         "apiKey": "{env:NINEROUTER_API_KEY}"
-      },
-      "models": ${COMBO_MODELS}
+      }
     }
   },
 
@@ -25,7 +24,7 @@
     "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/user-rules.md",
     "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/preprocess.md",
     "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/mode-rules.md",
-    "C:/Users/FANNNDI/Documents/farewell-assistant/data/context/{context_file}.md"
+    "C:/Users/FANNNDI/Documents/farewell-assistant/data/context/farewell-assistant.md"
   ],
 
   "skills": {

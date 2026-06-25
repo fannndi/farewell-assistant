@@ -1,13 +1,13 @@
 <!--
 ████████████████████████████████████████████████████████████████
   SELF-IMPROVEMENT FRAMEWORK — farewell-assistant v1.5.0
-  Framework Version : 5.1
-  Run Count         : 1
+  Framework Version : 5.2
+  Run Count         : 2
   Created           : 2026-06-25
-  Last Run          : 2026-06-25T05:32:00Z
+  Last Run          : 2026-06-25T05:38:00Z
   ──────────────────────────────────────────────────────────────
-  ██  CURRENT MODE : EXECUTE                                  ██
-  ██  NEXT MODE    : AUDIT                                    ██
+  ██  CURRENT MODE : AUDIT                                    ██
+  ██  NEXT MODE    : EXECUTE                                  ██
   ──────────────────────────────────────────────────────────────
   SIKLUS KERJA:
     AUDIT run   → AI analisis sistem → output: Appendix F (temuan)
@@ -18,7 +18,7 @@
 
 # SELF-IMPROVEMENT FRAMEWORK
 ### farewell-assistant — Two-Phase Daily Cycle
-`v5.1` | Mode: **EXECUTE** | Run #1
+`v5.2` | Mode: **AUDIT** | Run #2
 
 ---
 
@@ -380,19 +380,20 @@ Perbarui:
 # Kolom: RUN|DATE|MODE|SCORE/90|ROUTING/11|FINDINGS_ADDED|FINDINGS_DONE|HEALTH|TOP_ISSUE
 # Terbaru di atas
 # ────────────────────────────────────────────────────────
-1|2026-06-25|AUDIT|—|8.8|3 pre-loaded|0 (pending)|B+ (GPU VRAM 67%)|FIX-003 partially done
+2|2026-06-25|EXECUTE|—|8.8|0 (from F)|3 DONE + 1 PARTIAL→DONE|B+|All P0+P1 fixed
+1|2026-06-25|AUDIT|—|8.8|3 pre-loaded|0 (pending)|B+|FIX-003 partially done
 # ────────────────────────────────────────────────────────
 ```
 
 **Agregat:**
 ```
-TOTAL RUN          : 1
+TOTAL RUN          : 2
 AUDIT RUNS         : 1
-EXECUTE RUNS       : 0
+EXECUTE RUNS       : 1
 RATA-RATA SCORE    : —/90
 RATA-RATA ROUTING  : 8.8/11
-FINDINGS TOTAL     : 3 (pre-populated)
-FINDINGS RESOLVED  : 0
+FINDINGS TOTAL     : 3
+FINDINGS RESOLVED  : 3 (100%)
 ```
 
 ---
@@ -448,6 +449,12 @@ Status     : Split self_heal_hint from task_warning (prev commit).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ```
+v5.2 | 2026-06-25 | Run #2 (EXECUTE)
+  + EXECUTED FIX-003 (P0): project_warning + self_heal_reminder merged
+  + EXECUTED FIX-001 (P1): select_model_route → 9router-managed + complexity
+  + EXECUTED FIX-002 (P1): fix_web/mobile removed → fix_bug alias (-44 lines)
+  + Post-fix routing: 8.8/11 (no regressions)
+  + 3/3 findings DONE — mode back to AUDIT
 v5.1 | 2026-06-25 | Run #1 (AUDIT)
   + Run pertama AUDIT mode — routing 8.8/11, GPU VRAM 67%
   + FIX-001: still PENDING (select_model_route)
@@ -471,7 +478,9 @@ v5.0 | 2026-06-25 | Run #0
 ```
 # Format: [ID] | Priority | Judul | File | Done: Run #N | Tanggal
 # ────────────────────────────────────────────────────────
-# [kosong — akan diisi setelah EXECUTE pertama]
+FIX-003 | P0 | Split task_warning — merge warnings | intent_router.py | Done: Run #2 | 2026-06-25
+FIX-001 | P1 | Perjelas select_model_route() | intent_router.py | Done: Run #2 | 2026-06-25
+FIX-002 | P1 | Merge fix_web/mobile → fix_bug | skill_chain.py | Done: Run #2 | 2026-06-25
 # ────────────────────────────────────────────────────────
 ```
 
@@ -536,7 +545,7 @@ Mitigation : Tambahkan secondary keyword check di check_task_permission.
 ### FIX-001
 ```
 Priority   : P1
-Status     : PENDING
+Status     : DONE (Run #2)
 Judul      : Perjelas select_model_route() — hardcoded atau intentional?
 File       : farewell_assistant/intent_router.py
 Baris      : ~93-95
@@ -598,8 +607,8 @@ Notes      : Tanya owner: apakah ingin Option A atau B?
 ### FIX-002
 ```
 Priority   : P1
-Status     : PENDING
-Judul      : Merge fix_web + fix_mobile ke fix_bug + domain parameter
+Status     : DONE (Run #2)
+Judul      : Merge fix_web + fix_mobile ke fix_bug + domain alias
 File       : farewell_assistant/skill_chain.py
 Baris      : ~55-90 (sekitar area fix_web dan fix_mobile definitions)
 Jenis      : REFACTOR
@@ -650,7 +659,7 @@ Catatan    : Jika di masa depan fix_web perlu step berbeda dari fix_bug,
 ### FIX-003
 ```
 Priority   : P0
-Status     : PARTIAL — self_heal_hint created separate but no merge
+Status     : DONE (Run #2)
 Judul      : Split task_warning jadi dua field — hindari overwrite
 File       : farewell_assistant/intent_router.py
 Baris      : ~380-390 (saat ini)
@@ -757,5 +766,5 @@ ATURAN PENTING:
 
 ---
 
-*self-improvement.md — v5.1 | Two-Phase: AUDIT→EXECUTE*
-*Run #1: 8.8/11 routing | 3 exploits verified | Appendix F populated*
+*self-improvement.md — v5.2 | Mode: AUDIT | Run #2*
+*3/3 findings EXECUTED | Routing stable 8.8/11 | No regressions*

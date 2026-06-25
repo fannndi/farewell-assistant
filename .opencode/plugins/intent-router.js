@@ -24,6 +24,8 @@ exports.server = async (ctx) => {
             try {
                 const text = extractText(output?.parts);
                 if (!text || text.length < 3) return;
+                // Skip footer for slash commands (/daily, /workmode, etc.)
+                if (text.startsWith("/")) return;
 
                 const py = findPython(ctx.directory);
                 const callTime = Date.now();

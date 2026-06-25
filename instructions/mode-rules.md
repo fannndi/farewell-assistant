@@ -23,3 +23,7 @@ If user asks execute: "Anda dalam PLAN mode. Untuk eksekusi, gunakan /workmode b
 2. **Verification**: Sebelum commit, run verification (lint → test → typecheck)
 3. **TDD**: Fitur baru WAJIB tulis test dulu
 4. **Security**: Endpoint/auth/input WAJIB security-review
+
+## Footer Rule
+1. Input normal (chat/ask/perintah biasa) → Wajib sertakan footer di response
+2. Input command (/daily, /workmode, /project, /start-project, dll) → Footer TIDAK perlu muncul

@@ -95,6 +95,14 @@ def parse_api_key() -> str | None:
     except Exception: pass
     return None
 
+def get_project_path(project_name: str, registry_file=None) -> str:
+    file_to_read = registry_file or config.REGISTRY_FILE
+    reg = read_json(file_to_read)
+    if reg and reg.get("projects", {}).get(project_name, {}).get("path"):
+        return reg["projects"][project_name]["path"]
+    return str(config.ROOT_DIR)
+
+
 def read_project_active(registry_file=None) -> str:
     file_to_read = registry_file or config.REGISTRY_FILE
     reg = read_json(file_to_read)
@@ -133,14 +141,10 @@ def log_session(project: str = "", work_mode: str = ""):
 
 
 def get_next_project_code() -> str:
-    reg = read_json(config.REGISTRY_FILE)
-    next_code = reg.get("_next_code", "001") if reg else "001"
-    val = int(next_code) if next_code.isdigit() else 0
-    code = f"{val:03d}"
-    if reg:
-        reg["_next_code"] = f"{val + 1:03d}"
-        write_json(config.REGISTRY_FILE, reg)
-    return code
+    reg = read_json(config.REGISTRY_FILE) or {}
+    codes = [int(p.get("project_code", 0)) for p in reg.get("projects", {}).values()]
+    next_val = max(codes) + 1 if codes else 1
+    return f"{next_val:03d}"
 
 
 def detect_type_from_path(path: str) -> str:
@@ -158,13 +162,15 @@ def detect_type_from_path(path: str) -> str:
 
 
 def register_project(name: str, project_type: str, path: str, dominan: str = "") -> str:
-    code = get_next_project_code()
     reg = read_json(config.REGISTRY_FILE) or {"projects": {}, "active": "", "_next_code": "001"}
+    lower = name.lower().replace(" ", "-")
+    # Re-use existing code if project already registered
+    existing = reg.get("projects", {}).get(lower, {})
+    code = existing.get("project_code") or get_next_project_code()
     if not project_type:
         project_type = detect_type_from_path(path)
     if not dominan:
         dominan = project_type.upper()
-    lower = name.lower().replace(" ", "-")
     reg["projects"][lower] = {
         "project_code": code, "type": project_type,
         "last_used": datetime.now(timezone.utc).strftime("%Y-%m-%d"),

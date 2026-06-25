@@ -1,60 +1,69 @@
 # farewell-assistant
 
-Lightweight Python orchestrator for **9Router** + **OpenCode** + **ECC skills**.
+Lightweight Python orchestrator — **9Router** + **ECC skills** + **OpenCode**.
 
-9Router handles ALL models, subscriptions, and combos. OpenCode handles coding. ECC skills (271) provide expert guidance per domain.
+9Router handles ALL models, subscriptions, combos. ECC skills (271) provide expert guidance per domain.
 
 ## Architecture
 
 ```
 User → OpenCode (PLAN/BUILD) → 9Router /v1/chat/completions (26 models)
                                   ↑
-                              ECC Skills (271, web+mobile priority)
+                              ECC Skills (271, per-project indexed)
 ```
 
-- **9Router**: model routing, combo management, API keys, subscriptions
-- **OpenCode**: AI coding agent with ECC skills integration
-- **ECC**: 271 SKILL.md files loaded on demand by OpenCode
+## Per-Project Setup
 
-## Model Strategy
+Every project has its own `.farewell/` directory with isolated context.
 
-| Mode | Combo | Use |
-|------|-------|-----|
-| Team ON | Deepseek-GO-Flash (instructor) + Free 5 (executors) | Professional: architecture, planning, security, complex logic |
-| Team OFF | Free Round Robin (5 models) | Personal: typo, CRUD, exploration |
+```
+C:/Users/.../service-hub/
+├── .farewell/
+│   ├── manifest.json       ← skill index (10 skills for this project)
+│   ├── memory/             ← session history per project
+│   └── context/            ← project context files
+└── (project files)
+```
 
-Team status shown in footer: `Farewell: ON | 001-project | BUILD | Team: ON`
+## Flow (Game-like Checkpoints)
 
-## CLI Commands
+```bash
+# Session 1
+cd ~/project
+fa setup-project .            # register + index skills → .farewell/
+fa start-project <code>       # continue: inject "Last: ..." dari memory
+# ... kerja ...
+fa save "refactored auth, added tests"   # checkpoint
+
+# Session 2 (besok)
+fa start-project <code>       # continue: "Last: refactored auth, added tests"
+# ... lanjut kerja ...
+fa save "deployed to staging"
+```
+
+## Commands
 
 | Command | Description |
 |---------|-------------|
-| `daily` | 9Router health + GPU + project status |
+| `daily` | 9Router health + GPU + token usage + project status |
 | `workmode` | Switch PLAN/BUILD |
-| `project` | List/switch active project |
-| `start-project <code>` | Activate project + footer |
-| `setup-project <path>` | Register project from path + index skills |
+| `start-project <code>` | Activate project → inject context + memory |
+| `setup-project <path>` | Register project + index skills + create `.farewell/` |
+| `save <summary>` | Save session checkpoint to memory |
 | `self-heal` | Post-edit typecheck hook |
-| `hermes` | Hermes Agent: install/config/launch/status |
 
-## Quick Start
+## Model Strategy
 
-```powershell
-py -m farewell_assistant daily        # Check 9Router + system health
-py -m farewell_assistant workmode build  # Switch to BUILD mode
-py -m farewell_assistant start-project 001  # Activate farewell-assistant
-```
+| Mode | Combo | Use Case |
+|------|-------|----------|
+| **Team ON** | `Deepseek-GO-Flash` (instructor) + `Free` (executor) | Professional: architecture, planning, security |
+| **Team OFF** | `Free` (Round Robin 5 model) | Personal: typo, CRUD, exploration |
 
-## Project Lifecycle
-
-1. `/setup-project <git|path>` → register + index skills → `.farewell/skills/`
-2. `/start-project <code>` → activate project + footer
-3. Work in OpenCode with ECC skills filtered to project stack
-4. `/daily` for health check
+Team indicator in footer: `Farewell: ON | 001-project | BUILD | Team: ON | Skills: 12`
 
 ## Dependencies
 
 - Python 3.10+
-- 9Router (Next.js standalone) at `9router/`
-- ECC skills at `ecc/skills/` (271 files)
-- Hermes Agent (optional) at `hermes-agent/`
+- [9Router](https://github.com/decolua/9router) — local AI gateway (Next.js standalone)
+- ECC skills — 271+ SKILL.md files
+- [OpenCode](https://opencode.ai) — AI coding agent

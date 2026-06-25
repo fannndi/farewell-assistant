@@ -120,7 +120,11 @@ def _get_hybrid_skills() -> set[str]:
 # ---------------------------------------------------------------------------
 
 def select_model_route(complexity: str) -> dict:
-    return {"primary": "qwen2.5-coder-1.5b", "secondary": "qwen2.5-coder-1.5b", "heavy": "qwen2.5-coder-1.5b"}
+    # NOTE: Model label only. Actual routing handled by 9Router
+    # based on combo selection in opencode.jsonc.
+    # low/medium → Free combo, high/critical → Emergency combo.
+    _ROUTE_LABEL = "9router-managed"
+    return {"primary": _ROUTE_LABEL, "secondary": _ROUTE_LABEL, "heavy": _ROUTE_LABEL, "complexity": complexity}
 
 
 # ---------------------------------------------------------------------------
@@ -371,21 +375,27 @@ def invoke_intent_router(
         chain, chain_degraded = get_skill_chain(classified["intent"], classified["domain"])
 
     # Step 3.2: Project-task validation
-    task_warning = None
+    project_warning = None
     active_project = read_project_active(config.REGISTRY_FILE)
     if active_project:
         project_info = _get_project_info(active_project, config.REGISTRY_FILE)
         if project_info:
             project_type = project_info.get("type", "unknown")
             project_stack = project_info.get("dominan", "").split("+") if project_info.get("dominan") else []
-            task_warning = validate_task_vs_project(classified["intent"], project_type, project_stack)
+            project_warning = validate_task_vs_project(classified["intent"], project_type, project_stack)
 
     # Step 3.3: Remind eksekutor to run self-heal after build/fix edits
-    self_heal_hint = None
+    self_heal_reminder = None
     post_steps = []
     if classified["intent"] in ("build", "fix"):
-        self_heal_hint = "Setelah mengedit file, jalankan: py -m farewell_assistant.cli self-heal --file <path>"
+        self_heal_reminder = "Setelah mengedit file, jalankan: py -m farewell_assistant.cli self-heal --file <path>"
         post_steps.append("self-heal")
+
+    # Merge both warnings into single task_warning field
+    if project_warning and self_heal_reminder:
+        task_warning = f"{project_warning}\n  [SELF-HEAL] {self_heal_reminder}"
+    else:
+        task_warning = project_warning or self_heal_reminder
 
     # Step 3.5: Filter chain by work mode (remove WRITE skills in PLAN mode)
     chain = filter_chain_by_mode(chain, work_mode)
@@ -434,7 +444,8 @@ def invoke_intent_router(
         "blocked": blocked,
         "chain_summary": chain_summary,
         "task_warning": task_warning,
-        "self_heal_hint": self_heal_hint,
+        "project_warning": project_warning,
+        "self_heal_reminder": self_heal_reminder,
         "post_steps": post_steps if post_steps else None,
         "degraded": degraded,
     }

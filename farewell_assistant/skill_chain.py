@@ -127,21 +127,8 @@ SKILL_CHAINS: dict[str, list[dict[str, str]]] = {
         {"name": "verification-loop",     "desc": "Verify tests still green"},
         {"name": "git-workflow",          "desc": "Commit the refactor"},
     ],
-    # FIX domain aliases
-    "fix_web": [
-        {"name": "search-first",          "desc": "Check if bug is known"},
-        {"name": "orch-fix-defect",       "desc": "Reproduce -> fix -> verify"},
-        {"name": "ai-regression-testing", "desc": "Write regression test"},
-        {"name": "verification-loop",     "desc": "Verify fix doesn't break others"},
-        {"name": "git-workflow",          "desc": "Commit the fix"},
-    ],
-    "fix_mobile": [
-        {"name": "search-first",          "desc": "Check if bug is known"},
-        {"name": "orch-fix-defect",       "desc": "Reproduce -> fix -> verify"},
-        {"name": "ai-regression-testing", "desc": "Write regression test"},
-        {"name": "verification-loop",     "desc": "Verify fix doesn't break others"},
-        {"name": "git-workflow",          "desc": "Commit the fix"},
-    ],
+    # FIX domain aliases — unified to fix_bug
+    # fix_web/fix_mobile removed — identical to fix_bug, aliased in get_skill_chain()
     # DEPLOY CHAINS (domain-specific)
     "deploy_web": [
         {"name": "production-audit",      "desc": "Pre-deploy readiness"},
@@ -190,7 +177,11 @@ _STANDARD_DOMAINS = {"web", "mobile", "infra", "data", "ai_ml", "automation", "g
 def get_skill_chain(intent: str, domain: str) -> tuple[list[dict[str, str]], str | None]:
     """Get skill chain by intent + domain, with fallback.
     Returns (chain, degraded_reason) where degraded_reason is None if exact match."""
-    key = f"{intent}_{domain}"
+    # Alias fix+web/mobile → fix_bug (unified fix chain)
+    if intent == "fix" and domain in ("web", "mobile"):
+        key = "fix_bug"
+    else:
+        key = f"{intent}_{domain}"
     chain = SKILL_CHAINS.get(key)
     if chain:
         return chain, None

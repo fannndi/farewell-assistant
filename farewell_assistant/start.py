@@ -114,6 +114,7 @@ def _ensure_9router():
             "PORT": "20128",
             "NODE_ENV": "production",
             "DATA_DIR": data_dir,
+            "INITIAL_PASSWORD": "123456",
         }
         if standalone.exists():
             node_cmd = ["node", str(standalone / "server.js")]

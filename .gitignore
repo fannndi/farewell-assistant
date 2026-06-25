@@ -51,3 +51,6 @@ Desktop.ini
 .vscode/
 .idea/
 *.code-workspace
+
+# Hermes Agent
+hermes-agent/

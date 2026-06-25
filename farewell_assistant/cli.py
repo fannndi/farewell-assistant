@@ -82,7 +82,7 @@ def main():
 
     hermes_p = subparsers.add_parser("hermes", help="Hermes Agent: install/config/sync-skills/launch/status")
     hermes_p.add_argument("action", nargs="?", default="status",
-                          choices=["install", "config", "sync-skills", "launch", "status"])
+                          choices=["install", "config", "launch", "status"])
     hermes_p.set_defaults(func=cmd_hermes)
 
     args = parser.parse_args()

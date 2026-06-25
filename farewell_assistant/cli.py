@@ -55,7 +55,7 @@ def cmd_daily(args):
 
 
 def cmd_start_project(args):
-    from .helpers import list_registered_projects, activate_project_by_code, read_json, write_json
+    from .helpers import list_registered_projects, activate_project_by_code, read_json, write_json, _c
     from . import config
 
     if args.code == "list" or not args.code:
@@ -76,34 +76,40 @@ def cmd_start_project(args):
     # Activate by code
     code = args.code.strip()
     ok = activate_project_by_code(code)
-    if ok:
-        # Fast path: sync context without LLM (skip enrichment load)
-        from .intent_router import _reset_turn_count, sync_turn_state, _get_turn_count
-        from .helpers import get_work_mode, get_llm_model
-        _reset_turn_count()
-        # Build minimal result for context sync (no LLM call)
-        reg = read_json(config.REGISTRY_FILE)
-        active = reg.get("active", "?") if reg else "?"
-        project_code = reg["projects"][active]["project_code"] if reg and reg.get("projects", {}).get(active) else ""
-        result = {
-            "success": True,
-            "intent": {"intent": "ask", "domain": "general", "stack": [], "complexity": "low", "confidence": 0.6, "source": "quick"},
-            "skill_chain": [],
-            "model_route": {"primary": "Free", "secondary": "Free", "heavy": "Free"},
-            "needs_planning": False,
-            "work_mode": get_work_mode(),
-            "profile": "on",
-            "turn": 0,
-            "blocked": [],
-            "chain_summary": "",
-            "task_warning": None,
-        }
-        sync_turn_state(result, "project switch")
-        work_mode = get_work_mode().upper()
-        print()
-        print(f"  Active: {project_code}-{active}")
-        print(f"  Footer: Farewell: ON | Project: {project_code}-{active} | {work_mode} | Turn: 0 | Chain: - | 60% | LLM:{get_llm_model()}")
-        print()
+    if not ok:
+        return
+
+    from .intent_router import _reset_turn_count, sync_turn_state
+    from .helpers import get_work_mode, get_llm_model
+    _reset_turn_count()
+
+    reg = read_json(config.REGISTRY_FILE)
+    active = reg.get("active", "?") if reg else "?"
+    project_code = reg["projects"][active]["project_code"] if reg and reg.get("projects", {}).get(active) else ""
+    work_mode = get_work_mode().upper()
+
+    # Write pipeline-result.json + context.md (for plugin footer)
+    result = {
+        "success": True,
+        "intent": {"intent": "ask", "domain": "general", "stack": [], "complexity": "low", "confidence": 0.6, "source": "quick"},
+        "skill_chain": [],
+        "model_route": {"primary": "Free", "secondary": "Free", "heavy": "Free"},
+        "needs_planning": False,
+        "work_mode": get_work_mode(),
+        "profile": "on",
+        "turn": 0,
+        "blocked": [],
+        "chain_summary": "",
+        "task_warning": None,
+    }
+    sync_turn_state(result, "project switch")
+
+    # Footer (matches plugin intent-router.js format)
+    footer = f"Farewell: ON | Project: {project_code}-{active} | {work_mode} | Turn: 0 | Chain: - | 60% | LLM:{get_llm_model()}"
+    print()
+    print(f"  {_c('[ACTIVE]', 'green')} {project_code}-{active}")
+    print(f"  {_c(footer, 'cyan')}")
+    print()
 
 
 def cmd_self_improvement(args):

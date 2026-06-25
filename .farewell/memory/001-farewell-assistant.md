@@ -12,3 +12,7 @@
 - integration test done - all green
 ## 2026-06-25
 - centralized manifests, all 5 projects registered
+## 2026-06-25
+- implemented session counter + team tracking [Team: ON]
+## 2026-06-25
+- test session counter fix [Team: ON]

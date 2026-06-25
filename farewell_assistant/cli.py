@@ -62,7 +62,24 @@ def _get_team() -> str:
     return "OFF"
 
 
-def _write_context_footer(project: str, mode: str):
+def _get_session_num() -> int:
+    import json as _json
+    f = config.FAREWELL_DIR / "session-counter.json"
+    if f.exists():
+        try: return _json.loads(f.read_text(encoding="utf-8")).get("n", 0)
+        except: pass
+    return 0
+
+
+def _inc_session() -> int:
+    import json as _json
+    f = config.FAREWELL_DIR / "session-counter.json"
+    n = _get_session_num() + 1
+    f.write_text(_json.dumps({"n": n}), encoding="utf-8")
+    return n
+
+
+def _write_context_footer(project: str, mode: str, session: int = 1):
     from .helpers import read_project_code
     from .tracker import get_today_usage
     from .memory import get_last_session
@@ -70,13 +87,15 @@ def _write_context_footer(project: str, mode: str):
     code = read_project_code(project)
     team = _get_team()
     usage = get_today_usage()
-    last = get_last_session(code, project)
+    last, last_team = get_last_session(code, project)
     skills = get_project_skills(code, project)
     sk = f" | Skills: {len(skills)}" if skills else ""
+    prev = f" (prev: {last_team})" if last_team and last_team != team else ""
     last_line = f"\nLast: {last}" if last else ""
     ctx = f"""# State
-Team: {team}
+Team: {team}{prev}
 Project: {code}-{project}
+Session: #{session}
 Mode: {mode.upper()}{sk}
 Tokens: {usage['today']} today ({usage['total']} total){last_line}
 """
@@ -88,9 +107,10 @@ def cmd_save(args):
     from .memory import save_session
     active = read_project_active()
     code = read_project_code(active)
-    save_session(code, active, args.summary)
+    team = _get_team()
+    save_session(code, active, args.summary, team)
     print(f"\n  {_c('[SAVED]', 'green')} {code}-{active}: {args.summary[:60]}...\n")
-    _write_context_footer(active, get_work_mode())
+    _write_context_footer(active, get_work_mode(), _get_session_num())
 
 
 def cmd_start_project(args):
@@ -119,11 +139,16 @@ def cmd_start_project(args):
 
             code = read_project_code(name)
             from .indexer import get_project_skills
+            from .memory import get_last_session
             team = _get_team()
             skills = get_project_skills(code, name)
+            _, prev_team = get_last_session(code, name)
+            sess = _inc_session()
             sk = f" | Skills: {len(skills)}" if skills else ""
+            prev = f" (prev: {prev_team})" if prev_team and prev_team != team else ""
             print(f"\n  {_c('[ACTIVE]', 'green')} {code}-{name}")
-            print(f"  {_c(f'Farewell: ON | {code}-{name} | {mode} | Team: {team}{sk}', 'cyan')}\n")
+            print(f"  {_c(f'Farewell: ON | {code}-{name} | {mode} | Session: #{sess} | Team: {team}{prev}{sk}', 'cyan')}\n")
+            _write_context_footer(name, mode, sess)
             return
     print(f"  Project code '{args.code}' not found.")
 

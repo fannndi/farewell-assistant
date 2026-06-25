@@ -52,11 +52,16 @@ def show_daily_report():
     print(f"  {_c(sep, 'cyan')}")
 
     usage = get_today_usage()
+    import json as _js
+    sess_count = 0
+    try: sess_count = _js.loads((config.FAREWELL_DIR / "session-counter.json").read_text(encoding="utf-8")).get("n", 0)
+    except: pass
     router_icon = _c("[RUNNING]", "green") if router_up else _c("[STOPPED]", "red")
     print(f"\n  9Router  : {router_icon} (port 20128)")
     team_icon = _c("ON", "green") if team == "ON" else _c("OFF", "yellow")
     sk = f" | Skills: {skill_count}" if skill_count else ""
     print(f"  Team     : {team_icon}{sk}")
+    if sess_count: print(f"  Sessions : {sess_count}")
     print(f"  Tokens   : {_c('today', 'cyan')}={usage['today']} (in={usage['today_input']} out={usage['today_output']}) | {_c('total', 'gray')}={usage['total']}")
     print(f"  GPU      : {_c('[OK]', 'green') if gpu.get('available') else _c('[N/A]', 'yellow')} {gpu_str}")
     print(f"  Git      : {_c('[OK]', 'green') if git_status == 'up to date' else _c('[OUTDATED]', 'yellow')} {git_status}")

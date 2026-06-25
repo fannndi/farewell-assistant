@@ -18,6 +18,7 @@
 
   "instructions": [
     "{project}/.opencode/work-mode.json",
+    "{project}/.opencode/context.md",
     "{project}/instructions/user-rules.md",
     "{project}/instructions/mode-rules.md",
     "{project}/data/context/{context_file}.md"
@@ -90,6 +91,18 @@
     "project": {
       "description": "List or switch active project",
       "template": "py -m farewell_assistant project $ARGUMENTS"
+    },
+    "start": {
+      "description": "★ Switch project + show footer",
+      "template": "py -m farewell_assistant start-project $ARGUMENTS"
+    },
+    "start-project": {
+      "description": "Switch active project + show footer",
+      "template": "py -m farewell_assistant start-project $ARGUMENTS"
+    },
+    "setup-project": {
+      "description": "Register existing project from local path",
+      "template": "py -m farewell_assistant setup-project $ARGUMENTS"
     },
     "self-improvement": {
       "description": "Git pull ECC + 9Router",

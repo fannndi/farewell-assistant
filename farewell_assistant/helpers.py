@@ -143,3 +143,47 @@ def log_session(project: str = "", work_mode: str = ""):
     except Exception as e: write_skip(f"Session log failed: {e}")
 
 
+def get_next_project_code() -> str:
+    reg = read_json(config.REGISTRY_FILE)
+    next_code = reg.get("_next_code", "001") if reg else "001"
+    val = int(next_code) if next_code.isdigit() else 0
+    code = f"{val:03d}"
+    if reg:
+        reg["_next_code"] = f"{val + 1:03d}"
+        write_json(config.REGISTRY_FILE, reg)
+    return code
+
+
+def detect_type_from_path(path: str) -> str:
+    from pathlib import Path
+    p = Path(path)
+    if not p.exists(): return "unknown"
+    files = [f.name.lower() for f in p.iterdir() if f.is_file()]
+    if "package.json" in files: return "node"
+    if "pyproject.toml" in files or "requirements.txt" in files or "setup.py" in files: return "python"
+    if "cargo.toml" in files: return "rust"
+    if "go.mod" in files: return "go"
+    if "pubspec.yaml" in files: return "flutter"
+    if "composer.json" in files: return "php"
+    return "unknown"
+
+
+def register_project(name: str, project_type: str, path: str, dominan: str = "") -> str:
+    code = get_next_project_code()
+    reg = read_json(config.REGISTRY_FILE) or {"projects": {}, "active": "", "_next_code": "001"}
+    if not project_type:
+        project_type = detect_type_from_path(path)
+    if not dominan:
+        dominan = project_type.upper()
+    lower = name.lower().replace(" ", "-")
+    reg["projects"][lower] = {
+        "project_code": code, "type": project_type,
+        "last_used": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "context_file": f"{lower}.md", "path": path,
+        "dominan": dominan, "is_local": False,
+    }
+    reg["active"] = lower
+    write_json(config.REGISTRY_FILE, reg)
+    return code
+
+

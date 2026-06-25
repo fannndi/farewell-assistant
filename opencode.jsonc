@@ -17,6 +17,7 @@
 
   "instructions": [
     "C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/work-mode.json",
+    "C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/context.md",
     "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/user-rules.md",
     "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/mode-rules.md",
     "C:/Users/FANNNDI/Documents/farewell-assistant/data/context/farewell-assistant.md"
@@ -98,8 +99,20 @@
       "description": "Git pull ECC + 9Router",
       "template": "py -m farewell_assistant self-improvement $ARGUMENTS"
     },
+    "start": {
+      "description": "★ Switch project + show footer",
+      "template": "py -m farewell_assistant start-project $ARGUMENTS"
+    },
+    "start-project": {
+      "description": "Switch active project + show footer",
+      "template": "py -m farewell_assistant start-project $ARGUMENTS"
+    },
+    "setup-project": {
+      "description": "Register existing project from local path",
+      "template": "py -m farewell_assistant setup-project $ARGUMENTS"
+    },
     "hermes": {
-      "description": "Hermes Agent: install/config/sync-skills/launch/status",
+      "description": "Hermes Agent: install/config/launch/status",
       "template": "py -m farewell_assistant hermes $ARGUMENTS"
     },
     "plan": {

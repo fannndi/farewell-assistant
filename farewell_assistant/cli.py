@@ -69,18 +69,12 @@ def _get_team() -> str:
 
 def _write_context_footer(project: str, mode: str):
     from .helpers import read_project_code
-    from datetime import datetime, timezone
     code = read_project_code(project)
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
     team = _get_team()
-    ctx = f"""# Session
-- Project: {code}-{project}
-- Mode: {mode.upper()}
-- Team: {team}
-- Started: {now}
-
-# Footer
-Farewell: ON | {code}-{project} | {mode.upper()} | Team: {team}
+    ctx = f"""# State
+Team: {team}
+Project: {code}-{project}
+Mode: {mode.upper()}
 """
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
 

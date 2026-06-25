@@ -17,8 +17,7 @@
   "instructions": [
     "{project}/.opencode/work-mode.json",
     "{project}/.opencode/context.md",
-    "{project}/instructions/user-rules.md",
-    "{project}/instructions/mode-rules.md",
+    "{project}/instructions/rules.md",
     "{project}/data/context/farewell-assistant.md"
   ],
 

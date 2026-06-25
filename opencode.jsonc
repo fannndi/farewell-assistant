@@ -1,15 +1,24 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "9router/Deepseek-GO-Flash",
+  "small_model": "9router/Free",
   "default_agent": "build",
 
   "provider": {
     "9router": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Local 9Router",
+      "env": ["NINEROUTER_API_KEY"],
       "options": {
         "baseURL": "http://localhost:20128/v1",
         "apiKey": "{env:NINEROUTER_API_KEY}"
+      },
+      "models": {
+        "Free": { "name": "Free (5 model Round Robin)" },
+        "Deepseek-API-Flash": { "name": "Deepseek-API-Flash" },
+        "Deepseek-API-Pro": { "name": "Deepseek-API-Pro" },
+        "Deepseek-GO-Flash": { "name": "Deepseek-GO-Flash (Instructor)" },
+        "Deepseek-GO-Pro": { "name": "Deepseek-GO-Pro" }
       }
     }
   },

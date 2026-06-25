@@ -98,6 +98,10 @@
       "description": "Git pull ECC + 9Router",
       "template": "py -m farewell_assistant self-improvement $ARGUMENTS"
     },
+    "hermes": {
+      "description": "Hermes Agent: install/config/sync-skills/launch/status",
+      "template": "py -m farewell_assistant hermes $ARGUMENTS"
+    },
     "plan": {
       "description": "Create implementation plan",
       "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/commands/plan.md}\n\n$ARGUMENTS",

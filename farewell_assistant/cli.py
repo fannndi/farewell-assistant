@@ -51,6 +51,11 @@ def cmd_daily(args):
     write_task_log("DAILY", "Daily report generated", "success")
 
 
+def cmd_hermes(args):
+    from .hermes import main as hermes_main
+    hermes_main(args.action)
+
+
 def main():
     parser = argparse.ArgumentParser(prog="farewell-assistant", description="Lightweight 9Router orchestrator")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -74,6 +79,11 @@ def main():
 
     daily_p = subparsers.add_parser("daily", help="Daily: 9Router health + system status")
     daily_p.set_defaults(func=cmd_daily)
+
+    hermes_p = subparsers.add_parser("hermes", help="Hermes Agent: install/config/sync-skills/launch/status")
+    hermes_p.add_argument("action", nargs="?", default="status",
+                          choices=["install", "config", "sync-skills", "launch", "status"])
+    hermes_p.set_defaults(func=cmd_hermes)
 
     args = parser.parse_args()
     if not args.command:

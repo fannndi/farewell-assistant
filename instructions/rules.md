@@ -9,7 +9,7 @@
 - NEW task: HOLD → PLAN → APPROVE → eksekusi
 - Commit: hanya jika user minta. Cek git status + diff dulu
 
-# Team Strategy
+# Team (cek state di footer context.md)
 - **ON** → professional: reasoning untuk task berat (arsitektur, planning, security, complex logic)
 - **OFF** → personal: direct execution untuk task ringan (typo, basic CRUD, explore)
 - **Balance**: AI nilai sendiri. Kalau ragu, ON.

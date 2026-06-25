@@ -54,6 +54,58 @@ def cmd_daily(args):
     run_daily()
 
 
+def cmd_start_project(args):
+    from .helpers import list_registered_projects, activate_project_by_code, read_json, write_json
+    from . import config
+
+    if args.code == "list" or not args.code:
+        projects = list_registered_projects()
+        if not projects:
+            print("  Tidak ada project terdaftar.")
+            print("  Jalankan: py -m farewell_assistant.cli project <code> untuk register.")
+            return
+        print()
+        print("  === Registered Projects ===")
+        print()
+        for p in projects:
+            marker = " <- active" if p["active"] else ""
+            print(f"  {p['code']} - {p['name']} ({p['type']}, {p['dominan']}){marker}")
+        print()
+        return
+
+    # Activate by code
+    code = args.code.strip()
+    ok = activate_project_by_code(code)
+    if ok:
+        # Fast path: sync context without LLM (skip enrichment load)
+        from .intent_router import _reset_turn_count, sync_turn_state, _get_turn_count
+        from .helpers import get_work_mode, get_llm_model
+        _reset_turn_count()
+        # Build minimal result for context sync (no LLM call)
+        reg = read_json(config.REGISTRY_FILE)
+        active = reg.get("active", "?") if reg else "?"
+        project_code = reg["projects"][active]["project_code"] if reg and reg.get("projects", {}).get(active) else ""
+        result = {
+            "success": True,
+            "intent": {"intent": "ask", "domain": "general", "stack": [], "complexity": "low", "confidence": 0.6, "source": "quick"},
+            "skill_chain": [],
+            "model_route": {"primary": "Free", "secondary": "Free", "heavy": "Free"},
+            "needs_planning": False,
+            "work_mode": get_work_mode(),
+            "profile": "on",
+            "turn": 0,
+            "blocked": [],
+            "chain_summary": "",
+            "task_warning": None,
+        }
+        sync_turn_state(result, "project switch")
+        work_mode = get_work_mode().upper()
+        print()
+        print(f"  Active: {project_code}-{active}")
+        print(f"  Footer: Farewell: ON | Project: {project_code}-{active} | {work_mode} | Turn: 0 | Chain: - | 60% | LLM:{get_llm_model()}")
+        print()
+
+
 def cmd_self_improvement(args):
     from .self_improvement import run_self_improvement
     run_self_improvement(full=getattr(args, 'full', False))
@@ -90,6 +142,10 @@ def main():
     proj_p = subparsers.add_parser("project", help="Switch active project")
     proj_p.add_argument("action", nargs="?", default="list", help="Project code or 'list'")
     proj_p.set_defaults(func=cmd_project)
+
+    sp_p = subparsers.add_parser("start-project", help="Switch project + prime pipeline (show footer)")
+    sp_p.add_argument("code", nargs="?", default="list", help="Project code (001/002/003) or 'list'")
+    sp_p.set_defaults(func=cmd_start_project)
 
     daily_p = subparsers.add_parser("daily", help="Daily report: pipeline prime + session log + system health")
     daily_p.set_defaults(func=cmd_daily)

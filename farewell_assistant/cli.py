@@ -68,13 +68,16 @@ def _get_team() -> str:
 
 
 def _write_context_footer(project: str, mode: str):
-    from .helpers import read_project_code
+    from .helpers import read_project_code, read_json
+    from .indexer import get_indexed_skills
     code = read_project_code(project)
     team = _get_team()
+    skills = get_indexed_skills(str(config.ROOT_DIR))
+    sk = f" | Skills: {len(skills)}" if skills else ""
     ctx = f"""# State
 Team: {team}
 Project: {code}-{project}
-Mode: {mode.upper()}
+Mode: {mode.upper()}{sk}
 """
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
 
@@ -104,15 +107,19 @@ def cmd_start_project(args):
             _write_context_footer(name, mode)
 
             code = read_project_code(name)
+            from .indexer import get_indexed_skills
             team = _get_team()
+            skills = get_indexed_skills(str(config.ROOT_DIR))
+            sk = f" | Skills: {len(skills)}" if skills else ""
             print(f"\n  {_c('[ACTIVE]', 'green')} {code}-{name}")
-            print(f"  {_c(f'Farewell: ON | {code}-{name} | {mode} | Team: {team}', 'cyan')}\n")
+            print(f"  {_c(f'Farewell: ON | {code}-{name} | {mode} | Team: {team}{sk}', 'cyan')}\n")
             return
     print(f"  Project code '{args.code}' not found.")
 
 
 def cmd_setup_project(args):
     from .helpers import register_project, _c
+    from .indexer import index_project
     from pathlib import Path
 
     path = Path(args.path)
@@ -122,7 +129,12 @@ def cmd_setup_project(args):
 
     name = args.name or path.name
     code = register_project(name, "", str(path))
-    print(f"\n  {_c('[REGISTERED]', 'green')} {code}-{name} ({path.name})")
+
+    # Index skills for this project
+    result = index_project(str(path), stack=args.stack, force=args.reindex)
+
+    sk = f" | Skills: {result.get('linked', 0)}" if result.get("ok") else ""
+    print(f"\n  {_c('[REGISTERED]', 'green')} {code}-{name} ({path.name}){sk}")
     print(f"  Active: {code}-{name}\n")
 
 
@@ -159,9 +171,11 @@ def main():
     sp_p.add_argument("code", nargs="?", default="list", help="Project code (001/002/003) or 'list'")
     sp_p.set_defaults(func=cmd_start_project)
 
-    setup_p = subparsers.add_parser("setup-project", help="Register existing project from path")
+    setup_p = subparsers.add_parser("setup-project", help="Register project from path + index skills")
     setup_p.add_argument("path", help="Path to project directory")
     setup_p.add_argument("--name", default="", help="Project name (default: dirname)")
+    setup_p.add_argument("--stack", nargs="*", default=None, help="Force stack (e.g. python flutter react)")
+    setup_p.add_argument("--reindex", action="store_true", help="Force re-index even if already indexed")
     setup_p.set_defaults(func=cmd_setup_project)
 
     args = parser.parse_args()

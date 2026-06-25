@@ -54,3 +54,11 @@ Desktop.ini
 
 # Hermes Agent
 hermes-agent/
+
+# Per-project skill index
+.farewell/
+
+# Node modules (old plugin deps)
+.opencode/node_modules/
+.opencode/package.json
+.opencode/package-lock.json

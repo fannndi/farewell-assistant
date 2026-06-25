@@ -1,18 +1,15 @@
 {
   "active": "farewell-assistant",
-  "_next_code": "004",
+  "_next_code": "006",
   "projects": {
     "farewell-assistant": {
-      "project_code": "001",
+      "project_code": "005",
       "type": "python",
       "last_used": "2026-06-25",
       "context_file": "farewell-assistant.md",
-      "path": "C:/Users/FANNNDI/Documents/farewell-assistant",
-      "dominan": "AUTOMATION",
-      "kategori": {
-        "main": "AUTOMATION"
-      },
-      "is_local": true
+      "path": "C:\\Users\\FANNNDI\\Documents\\farewell-assistant",
+      "dominan": "PYTHON",
+      "is_local": false
     },
     "service-hub": {
       "project_code": "002",

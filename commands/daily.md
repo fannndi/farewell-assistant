@@ -14,7 +14,7 @@ Full 7-step startup — 9Router ON, combo diakses via OpenCode UI.
 | 1/7 | **Git Pull Self** | Sync dari device lain |
 | 2/7 | **Initial Bootstrap** | Guard: hanya sekali setelah fresh clone |
 | 3/7 | **Update Check** | Git pull ECC + 9Router, rebuild jika update |
-| 4/7 | **9Router Health** | Health check → start kalau belum running |
+| 4/7 | **9Router Health** | Health check → auto-start kalau belum running |
 | 5/7 | **Load Configuration** | Parse api-key.txt, combos |
 | 6/7 | **Pipeline + Launch** | Prime intent pipeline |
 | 7/7 | **Ready + Log** | Log session ke session-log.md |

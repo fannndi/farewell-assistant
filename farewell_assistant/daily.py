@@ -146,7 +146,15 @@ def show_daily_report():
 
     # ECC + 9Router update status
     ecc_status = check_git_update(config.ECC_DIR)
-    router_status = check_git_update(config.ROUTER_DIR)
+
+    # 9Router running status (live check)
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(2)
+    router_up = sock.connect_ex(("127.0.0.1", 20128)) == 0
+    sock.close()
+    router_git = check_git_update(config.ROUTER_DIR)
+    router_status = f"running" if router_up else f"stopped"
 
     # ── Display ──
     sep = "=" * 50
@@ -173,8 +181,8 @@ def show_daily_report():
     print(f"  {sub}")
     ecc_icon = _c("[OK]", "green") if ecc_status == "up to date" else _c("[OUTDATED]", "yellow")
     print(f"    ECC       : {ecc_icon} {ecc_status} ({whitelist_count}/{total_skills} whitelisted)")
-    router_icon = _c("[OK]", "green") if router_status == "up to date" else _c("[OUTDATED]", "yellow")
-    print(f"    9Router   : {router_icon} {router_status}")
+    router_icon = _c("[OK]", "green") if router_up else _c("[STOPPED]", "red")
+    print(f"    9Router   : {router_icon} {router_status} (git: {router_git})")
 
     # Project Status
     print(f"\n  {_c('PROJECT STATUS', 'yellow')}")

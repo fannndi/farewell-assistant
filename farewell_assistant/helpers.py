@@ -114,11 +114,6 @@ def get_llm_model() -> str:
     state = read_json(config.LLM_MODE_FILE, default={"model": DEFAULT_MODEL})
     return state.get("model", "") or DEFAULT_MODEL
 
-def get_llm_mode_label() -> str:
-    """Return current LLM mode label: 'Online' or 'Offline'."""
-    from .models import get_current_llm_label
-    return get_current_llm_label()
-
 BLOCKED_TOOLS_PLAN = {"write", "edit"}
 
 def check_tool_permission(tool_name: str) -> None:
@@ -131,7 +126,7 @@ def check_tool_permission(tool_name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# LLM — delegated to models.py (dual-model manager)
+# LLM — delegated to models.py
 # ---------------------------------------------------------------------------
 
 def _get_llm():

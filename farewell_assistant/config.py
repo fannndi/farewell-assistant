@@ -24,24 +24,11 @@ COMBO_FILE = STATE_DIR / "combo.json"
 LOG_FILE = ROOT_DIR / "logging.md"
 SESSION_LOG_FILE = ROOT_DIR / "session-log.md"
 
-# Offline execution paths
-OFFLINE_DIR = STATE_DIR / "offline"
-OFFLINE_TASK_FILE = OFFLINE_DIR / "task.json"
-OFFLINE_RESULT_FILE = OFFLINE_DIR / "result.json"
-OFFLINE_STATE_FILE = OFFLINE_DIR / "state.json"
-
-# Dual-model config (online=0.8B enrichment, offline=2B execution)
-MODEL_ONLINE_NAME = "Qwen_Qwen3.5-0.8B-Q8_0.gguf"
-MODEL_ONLINE_PATH = MODELS_DIR / MODEL_ONLINE_NAME
-MODEL_ONLINE_CTX = 4096
-MODEL_ONLINE_VRAM = 1358
-
-MODEL_OFFLINE_NAME = "Qwen3.5-2B-Q4_K_M.gguf"
-MODEL_OFFLINE_PATH = MODELS_DIR / MODEL_OFFLINE_NAME
-MODEL_OFFLINE_CTX = 4096
-MODEL_OFFLINE_VRAM = 1173
-
-GGUF_N_GPU_LAYERS = 99  # default (online mode)
+# GGUF model config (llama-cpp-python)
+GGUF_MODEL_NAME = "Qwen_Qwen3.5-0.8B-Q8_0.gguf"
+GGUF_MODEL_PATH = MODELS_DIR / GGUF_MODEL_NAME
+GGUF_N_CTX = 4096
+GGUF_N_GPU_LAYERS = 99
 
 ENRICHMENT = {
     "min_words": 2,
@@ -49,28 +36,4 @@ ENRICHMENT = {
     "temperature": 0.1,
     "timeout": 25,
     "cache_ttl": 3600,
-}
-
-# Model definitions
-MODEL_DEFS = {
-    "online": {
-        "label": "Online",
-        "model_name": "qwen3.5-0.8b",
-        "gguf_file": MODEL_ONLINE_NAME,
-        "gguf_path": MODEL_ONLINE_PATH,
-        "n_ctx": MODEL_ONLINE_CTX,
-        "n_gpu_layers": 99,
-        "vram_mb": MODEL_ONLINE_VRAM,
-        "description": "0.8B — enrichment only",
-    },
-    "offline": {
-        "label": "Offline",
-        "model_name": "qwen3.5-2b",
-        "gguf_file": MODEL_OFFLINE_NAME,
-        "gguf_path": MODEL_OFFLINE_PATH,
-        "n_ctx": MODEL_OFFLINE_CTX,
-        "n_gpu_layers": 8,
-        "vram_mb": MODEL_OFFLINE_VRAM,
-        "description": "2B — 8 layer GPU + 18 layer RAM",
-    },
 }

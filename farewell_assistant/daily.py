@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import config
 from .helpers import (
-    _c, get_gpu_info, get_llm_model, get_work_mode, get_llm_mode_label,
+    _c, get_gpu_info, get_llm_model, get_work_mode,
     read_project_active, read_json, write_json, list_registered_projects,
 )
 
@@ -120,11 +120,8 @@ def show_daily_report():
     active_project = read_project_active(config.REGISTRY_FILE)
 
     # System health
-    from .models import get_active_model_info
-    from .health import check_llm
-    model_info = get_active_model_info()
-    gguf_ok = check_llm()
-    llm_label = get_llm_mode_label()
+    from .llm_setup import get_gguf_path
+    gguf_ok = get_gguf_path() is not None
     gpu = get_gpu_info("name,memory.total,memory.used,temperature.gpu")
     gpu_name = gpu.get("name", "N/A") if gpu.get("available") else "N/A"
     gpu_mem = f"{gpu.get('memory_used', 0)}/{gpu.get('memory_total', 0)}MB" if gpu.get("available") else "N/A"
@@ -165,7 +162,7 @@ def show_daily_report():
     print(f"  {sub}")
     llm_icon = _c("[OK]", "green") if gguf_ok else _c("[FAIL]", "red")
     model_display = f" ({model})" if gguf_ok else ""
-    print(f"    LLM       : {llm_icon}{model_display} [{llm_label}]")
+    print(f"    LLM       : {llm_icon}{model_display}")
     gpu_icon = _c("[OK]", "green") if gpu.get("available") else _c("[FAIL]", "red")
     print(f"    GPU       : {gpu_icon} {gpu_name} ({gpu_temp}, {gpu_mem})")
     print(f"    Mode      : {_c(mode, 'green')}")

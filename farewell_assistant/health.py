@@ -9,9 +9,7 @@ def check_gpu() -> dict:
 
 
 def check_llm() -> bool:
-    from .models import get_active_model_info
-    info = get_active_model_info()
-    return info["gguf_path"].exists()
+    return config.GGUF_MODEL_PATH.exists()
 
 
 def ping_model() -> list:

@@ -257,6 +257,7 @@ def sync_turn_state(result: dict, user_input: str = ""):
         pass
 
     # Chain step details
+    chain_len = len(result.get("skill_chain", []))
     chain_steps = ""
     if result.get("success") and result.get("skill_chain"):
         steps = []
@@ -290,6 +291,10 @@ def sync_turn_state(result: dict, user_input: str = ""):
 - **Model:** {model_display}
 - **Planning:** {planning_display}
 - **Blocked:** {blocked_display}
+
+# Footer
+
+Farewell: ON | Project: {project_code}-{active} | {work} | Turn: {turn_count} | Chain: {chain_len} | {confidence_display} | LLM:{model_display}
 
 # AI Instructions
 

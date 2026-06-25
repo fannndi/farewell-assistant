@@ -1,4 +1,4 @@
-"""Common helpers — JSON state, GPU, LLM (llama-cpp-python), project registry."""
+"""Common helpers — JSON state, GPU, project registry, colored output."""
 
 import json
 import os
@@ -6,85 +6,40 @@ import platform
 import re
 import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 from . import config
 
-# ---------------------------------------------------------------------------
-# Write helpers (cross-platform colored output)
-# ---------------------------------------------------------------------------
-
-# ANSI colors for terminals that support it (Linux/macOS, modern Windows Terminal)
 _COLOR_MAP = {
-    "green": "\033[92m",
-    "yellow": "\033[93m",
-    "red": "\033[91m",
-    "cyan": "\033[96m",
-    "gray": "\033[90m",
-    "magenta": "\033[95m",
-    "blue": "\033[94m",
-    "white": "\033[97m",
-    "reset": "\033[0m",
+    "green": "\033[92m", "yellow": "\033[93m", "red": "\033[91m",
+    "cyan": "\033[96m", "gray": "\033[90m", "magenta": "\033[95m",
+    "blue": "\033[94m", "white": "\033[97m", "reset": "\033[0m",
 }
 
-
 def _supports_color():
-    if os.environ.get("NO_COLOR"):
-        return False
+    if os.environ.get("NO_COLOR"): return False
     if platform.system() == "Windows":
-        return (
-            os.environ.get("WT_SESSION")
-            or os.environ.get("TERM_PROGRAM") == "mintty"
-            or os.environ.get("ConEmuANSI") == "ON"
-            or os.environ.get("ANSICON")
-            or os.environ.get("VSCODE_PID")
-        )
+        return (os.environ.get("WT_SESSION") or os.environ.get("TERM_PROGRAM") == "mintty"
+                or os.environ.get("ConEmuANSI") == "ON" or os.environ.get("ANSICON")
+                or os.environ.get("VSCODE_PID"))
     return hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
-
 
 _USE_COLOR = _supports_color()
 
-
 def _c(text: str, color: str) -> str:
-    if not _USE_COLOR:
-        return text
-    return f"{_COLOR_MAP.get(color, '')}{text}{_COLOR_MAP['reset']}"
+    return f"{_COLOR_MAP.get(color, '')}{text}{_COLOR_MAP['reset']}" if _USE_COLOR else text
 
-
-def write_step(step: str, message: str):
-    print(f"\n{_c(f'[{step}] {message}', 'cyan')}")
-
-
-def write_ok(message: str):
-    print(f"  {_c('[OK]', 'green')} {message}")
-
-
-def write_skip(message: str):
-    print(f"  {_c('[SKIP]', 'yellow')} {message}")
-
-
-def write_fail(message: str):
-    print(f"  {_c('[FAIL]', 'red')} {message}")
-
-
-def write_info(message: str):
-    print(f"  {_c('[..]', 'gray')} {message}")
-
-
-# ---------------------------------------------------------------------------
-# JSON state helpers
-# ---------------------------------------------------------------------------
+def write_step(step: str, message: str): print(f"\n{_c(f'[{step}] {message}', 'cyan')}")
+def write_ok(message: str): print(f"  {_c('[OK]', 'green')} {message}")
+def write_skip(message: str): print(f"  {_c('[SKIP]', 'yellow')} {message}")
+def write_fail(message: str): print(f"  {_c('[FAIL]', 'red')} {message}")
+def write_info(message: str): print(f"  {_c('[..]', 'gray')} {message}")
 
 def read_json(path: Path, default=None):
-    if not path.exists():
-        return default
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return default
-
+    if not path.exists(): return default
+    try: return json.loads(path.read_text(encoding="utf-8"))
+    except Exception: return default
 
 def write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -96,116 +51,9 @@ def write_json(path: Path, data):
         tmp.unlink(missing_ok=True)
         raise
 
-
-# ---------------------------------------------------------------------------
-# Mode helpers
-# ---------------------------------------------------------------------------
-
-DEFAULT_MODEL = "qwen3.5-0.8b"
-
-def get_llm_mode() -> str:
-    return "on"
-
 def get_work_mode() -> str:
     state = read_json(config.WORK_MODE_FILE, default={"mode": "build"})
     return state.get("mode", "build") if state else "build"
-
-def get_llm_model() -> str:
-    state = read_json(config.LLM_MODE_FILE, default={"model": DEFAULT_MODEL})
-    return state.get("model", "") or DEFAULT_MODEL
-
-BLOCKED_TOOLS_PLAN = {"write", "edit"}
-
-def check_tool_permission(tool_name: str) -> None:
-    work = get_work_mode()
-    if work == "plan" and tool_name in BLOCKED_TOOLS_PLAN:
-        raise ValueError(
-            f"Tool '{tool_name}' blocked in PLAN mode. "
-            f"Switch to BUILD: /workmode build"
-        )
-
-
-# ---------------------------------------------------------------------------
-# LLM — delegated to models.py
-# ---------------------------------------------------------------------------
-
-def _get_llm():
-    from .models import get_llm as _mget
-    return _mget()
-
-def unload_llm():
-    pass
-
-
-# ---------------------------------------------------------------------------
-# LLM call
-# ---------------------------------------------------------------------------
-
-def invoke_llm(
-    prompt: str,
-    system: str = "You are a helpful assistant.",
-    model: str = "",
-    max_tokens: int = 1024,
-    temperature: float = 0.3,
-    timeout_sec: int = 60,
-) -> dict | None:
-    from .models import invoke_llm as _minvoke
-    return _minvoke(prompt, system, "", max_tokens, temperature, timeout_sec)
-
-
-# ---------------------------------------------------------------------------
-# API key parser (shared)
-# ---------------------------------------------------------------------------
-
-class ApiKeyConfig:
-    """Parsed API key configuration."""
-    __slots__ = ("api_key", "router_password", "combo_entries", "combo_models")
-
-    def __init__(self, api_key: str | None, router_password: str, combo_entries: dict[str, dict], combo_models: dict[str, dict]):
-        self.api_key = api_key
-        self.router_password = router_password
-        self.combo_entries = combo_entries
-        self.combo_models = combo_models
-
-    def __iter__(self):
-        return iter((self.api_key, self.combo_entries, self.combo_models))
-
-
-def parse_api_key() -> ApiKeyConfig:
-    """Parse api-key.txt. Returns ApiKeyConfig with api_key, router_password, combo_entries, combo_models."""
-    api_key = None
-    router_password = ""
-    combo_entries: dict[str, dict] = {}
-    combo_models: dict[str, dict] = {}
-    try:
-        for line in config.API_KEY_FILE.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            k, v = line.split("=", 1)
-            k, v = k.strip(), v.strip()
-            if k == "NINEROUTER_API_KEY":
-                api_key = v
-            elif k == "9ROUTER_PASSWORD":
-                router_password = v
-            elif k.startswith("COMBO_"):
-                idx = k.replace("COMBO_", "")
-                combo_entries.setdefault(idx, {})["combo"] = v
-            elif k.startswith("MODELS_"):
-                idx = k.replace("MODELS_", "")
-                combo_models.setdefault(idx, {})["models"] = [m.strip() for m in v.split(",") if m.strip()]
-    except Exception as e:
-        try:
-            from .log import write_task_log
-            write_task_log("PARSE_API_KEY", f"Parse error: {e}", "fail")
-        except Exception:
-            pass
-    return ApiKeyConfig(api_key, router_password, combo_entries, combo_models)
-
-
-# ---------------------------------------------------------------------------
-# GPU helpers
-# ---------------------------------------------------------------------------
 
 def get_gpu_info(fields: str = "utilization.gpu,memory.used,memory.total") -> dict:
     try:
@@ -215,14 +63,11 @@ def get_gpu_info(fields: str = "utilization.gpu,memory.used,memory.total") -> di
         )
         if gpu_raw.returncode != 0 or not gpu_raw.stdout.strip():
             return {"available": False, "utilization": 0, "memory_used": 0, "memory_total": 0}
-
-        # Parse by field order — nvidia-smi outputs values in same order as --query-gpu
         field_list = [f.strip() for f in fields.split(",")]
         parts = [p.strip() for p in gpu_raw.stdout.strip().split(",")]
         result = {"available": True}
         for field, value in zip(field_list, parts):
-            if field == "name":
-                result["name"] = value
+            if field == "name": result["name"] = value
             elif field == "memory.total":
                 m = re.search(r"(\d+)", value)
                 result["memory_total"] = int(m.group(1)) if m else 0
@@ -235,452 +80,66 @@ def get_gpu_info(fields: str = "utilization.gpu,memory.used,memory.total") -> di
             elif field == "utilization.gpu":
                 m = re.search(r"(\d+)", value)
                 result["utilization"] = int(m.group(1)) if m else 0
-
         return result
     except Exception:
         return {"available": False, "utilization": 0, "memory_used": 0, "memory_total": 0}
 
+class ApiKeyConfig:
+    __slots__ = ("api_key", "router_password", "combo_entries", "combo_models")
+    def __init__(self, api_key, router_password, combo_entries, combo_models):
+        self.api_key = api_key; self.router_password = router_password
+        self.combo_entries = combo_entries; self.combo_models = combo_models
+    def __iter__(self):
+        return iter((self.api_key, self.combo_entries, self.combo_models))
 
-# ---------------------------------------------------------------------------
-# Token estimation (multi-language aware)
-# ---------------------------------------------------------------------------
-
-def estimate_tokens(text: str) -> int:
-    if not text:
-        return 0
-    tokens = 0.0
-    for ch in text:
-        code = ord(ch)
-        if (
-            (0x4E00 <= code <= 0x9FFF)
-            or (0x3040 <= code <= 0x309F)
-            or (0x30A0 <= code <= 0x30FF)
-            or (0xAC00 <= code <= 0xD7AF)
-            or (0x3400 <= code <= 0x4DBF)
-        ):
-            tokens += 1
-        elif code < 0x30 or (0x2000 <= code <= 0x206F):
-            tokens += 0.5
-        else:
-            tokens += 0.25
-    return max(1, int(tokens + 0.999))  # ceiling
-
-
-# ---------------------------------------------------------------------------
-# Skill whitelist — filter ecc/skills/ without deleting files
-# ---------------------------------------------------------------------------
-
-_SKILL_WHITELIST: set[str] | None = None
-
-
-def _load_skill_whitelist() -> set[str]:
-    """Load skill whitelist from data/skill-whitelist.json. Returns empty set if not found."""
-    wl = read_json(config.ROOT_DIR / "data" / "skill-whitelist.json")
-    if wl and isinstance(wl.get("kept"), list):
-        return set(wl["kept"])
-    return set()
-
-
-def is_skill_whitelisted(name: str) -> bool:
-    """Check if a skill is in the whitelist. Returns True if no whitelist exists (passthrough)."""
-    global _SKILL_WHITELIST
-    if _SKILL_WHITELIST is None:
-        _SKILL_WHITELIST = _load_skill_whitelist()
-    if not _SKILL_WHITELIST:
-        return True  # no whitelist → all skills allowed
-    return name in _SKILL_WHITELIST
-
-
-def get_whitelisted_skill_count() -> int:
-    """Return count of whitelisted skills."""
-    global _SKILL_WHITELIST
-    if _SKILL_WHITELIST is None:
-        _SKILL_WHITELIST = _load_skill_whitelist()
-    return len(_SKILL_WHITELIST)
-
-
-# ---------------------------------------------------------------------------
-# Skill count
-# ---------------------------------------------------------------------------
-
-
-def get_skill_count(work_mode: str) -> int:
-    count = 0
-    idx = read_json(config.SKILL_IDX_FILE)
-    if idx:
-        mode_data = idx.get(work_mode, {})
-        skill_groups = mode_data.get("skill_groups", {})
-        if isinstance(skill_groups, dict):
-            for group in skill_groups.values():
-                if isinstance(group, list):
-                    for s in group:
-                        if is_skill_whitelisted(s):
-                            count += 1
-    return count
-
-
-# ---------------------------------------------------------------------------
-# Session Log
-# ---------------------------------------------------------------------------
-
-def log_session(project: str = "", llm_mode: str = "", work_mode: str = ""):
-    """Append daily session entry to session-log.md."""
-    from datetime import datetime, timezone
-    config.SESSION_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    if not project:
-        project = read_project_active()
-    if not llm_mode:
-        llm_mode = get_llm_mode()
-    if not work_mode:
-        work_mode = get_work_mode()
-
-    entry = f"""## {now}
-
-- **Project:** {project}
-- **LLM Mode:** {llm_mode}
-- **Work Mode:** {work_mode.upper()}
-- **Turn:** 0
----
-"""
+def parse_api_key() -> ApiKeyConfig:
+    api_key = None; router_password = ""; combo_entries = {}; combo_models = {}
     try:
-        with open(config.SESSION_LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(entry)
-        write_ok("Session logged")
-    except Exception as e:
-        write_skip(f"Session log failed: {e}")
-
-
-# ---------------------------------------------------------------------------
-# Project Registry
-# ---------------------------------------------------------------------------
+        for line in Path("api-key.txt").read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line: continue
+            k, v = line.split("=", 1); k, v = k.strip(), v.strip()
+            if k == "NINEROUTER_API_KEY": api_key = v
+            elif k == "9ROUTER_PASSWORD": router_password = v
+            elif k.startswith("COMBO_"): combo_entries.setdefault(k.replace("COMBO_", ""), {})["combo"] = v
+            elif k.startswith("MODELS_"): combo_models.setdefault(k.replace("MODELS_", ""), {})["models"] = [m.strip() for m in v.split(",") if m.strip()]
+    except Exception: pass
+    return ApiKeyConfig(api_key, router_password, combo_entries, combo_models)
 
 def read_project_active(registry_file=None) -> str:
-    """Get active project name from registry.
-    
-    If registry_file is provided, read from that file instead of default registry.
-    """
     file_to_read = registry_file or config.REGISTRY_FILE
     reg = read_json(file_to_read)
-    if reg and reg.get("active"):
-        return reg["active"]
-    return "farewell-assistant"
-
+    return reg["active"] if reg and reg.get("active") else "farewell-assistant"
 
 def read_project_code(project_name: str, registry_file=None) -> str:
-    """Get project code by name.
-    
-    If registry_file is provided, read from that file instead of default registry.
-    """
     file_to_read = registry_file or config.REGISTRY_FILE
     reg = read_json(file_to_read)
     if reg and reg.get("projects", {}).get(project_name, {}).get("project_code"):
         return reg["projects"][project_name]["project_code"]
     return "???"
 
-
-def get_next_project_code() -> str:
-    """Auto-increment project code (001, 002, ...)."""
-    reg = read_json(config.REGISTRY_FILE)
-    next_code = reg.get("_next_code", "001") if reg else "001"
-    val = int(next_code) if next_code.isdigit() else 0
-    code = f"{val:03d}"
-    # Increment for next time
-    if reg:
-        reg["_next_code"] = f"{val + 1:03d}"
-    return code
-
-
-def register_project(name: str, project_type: str, path: str, dominan: str = ""):
-    """Register project in registry with auto code."""
-    code = get_next_project_code()
-    reg = read_json(config.REGISTRY_FILE) or {"projects": {}, "active": "", "_next_code": "001"}
-
-    # Detect type and dominan from path
-    if not project_type:
-        project_type = detect_type_from_path(path)
-    if not dominan:
-        dominan = project_type.upper()
-
-    lower = name.lower().replace(" ", "-")
-    reg["projects"][lower] = {
-        "project_code": code,
-        "type": project_type,
-        "last_used": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "context_file": f"{lower}.md",
-        "path": path,
-        "dominan": dominan,
-        "is_local": False,
-    }
-    reg["active"] = lower
-    write_json(config.REGISTRY_FILE, reg)
-    return code
-
-
-def detect_type_from_path(path: str) -> str:
-    """Simple project type detection from files in path."""
-    import glob
-    p = Path(path)
-    if not p.exists():
-        return "unknown"
-    files = [f.name.lower() for f in p.iterdir() if f.is_file()]
-    if "package.json" in files: return "node"
-    if "pyproject.toml" in files or "requirements.txt" in files or "setup.py" in files: return "python"
-    if "cargo.toml" in files: return "rust"
-    if "pom.xml" in files or "build.gradle" in files or "build.gradle.kts" in files: return "java"
-    if "go.mod" in files: return "go"
-    if "pubspec.yaml" in files: return "flutter"
-    if "composer.json" in files: return "php"
-    if "*.csproj" in glob.glob(os.path.join(path, "*.csproj")): return "dotnet"
-    return "unknown"
-
-
-def detect_stack_from_path(path: str, max_depth: int = 2) -> list[str]:
-    """Detect stack/frameworks from project files. Works in eco mode (no LLM)."""
-    p = Path(path)
-    if not p.exists():
-        return []
-    stack = []
-    # Check root files
-    try:
-        for f in p.iterdir():
-            if f.is_file():
-                name = f.name.lower()
-                if name == "pyproject.toml" or name == "requirements.txt":
-                    stack.append("python")
-                elif name == "package.json":
-                    stack.append("node")
-                elif name == "cargo.toml":
-                    stack.append("rust")
-                elif name == "go.mod":
-                    stack.append("go")
-                elif name == "pubspec.yaml":
-                    stack.append("flutter")
-                elif name == "composer.json":
-                    stack.append("php")
-                elif name == "pom.xml" or name == "build.gradle" or name == "build.gradle.kts":
-                    stack.append("java")
-                elif name == "sln" or name.endswith(".sln"):
-                    stack.append("dotnet")
-    except PermissionError:
-        pass
-    # Deep scan for framework detection (limited depth)
-    if max_depth > 0:
-        try:
-            for f in p.rglob("*"):
-                if f.is_file() and len(str(f)) < 200:
-                    name = f.name.lower()
-                    rel = str(f.relative_to(p)).lower()
-                    # Python frameworks
-                    if name == "manage.py" and "django" not in stack:
-                        stack.append("django")
-                    if name == "main.py" and "fastapi" not in stack:
-                        # Check content for FastAPI/Flask
-                        try:
-                            content = f.read_text(encoding="utf-8", errors="ignore")[:500]
-                            if "fastapi" in content.lower():
-                                stack.append("fastapi")
-                            elif "flask" in content.lower():
-                                stack.append("flask")
-                        except Exception:
-                            pass
-                    # Node frameworks
-                    if "next.config" in name:
-                        stack.append("nextjs")
-                    if "nuxt.config" in name:
-                        stack.append("nuxt")
-                    if "angular.json" in name:
-                        stack.append("angular")
-                    if "vue.config" in name or "vite.config" in name:
-                        stack.append("vue")
-                    # Mobile
-                    if "android" in rel and "app" in rel and name == "build.gradle.kts":
-                        stack.append("android")
-                    if "ios" in rel and name == "podfile":
-                        stack.append("ios")
-                    # Database
-                    if name == "prisma" and rel.endswith("schema.prisma"):
-                        stack.append("prisma")
-                    if name == "docker-compose.yml" or name == "docker-compose.yaml":
-                        stack.append("docker")
-                    if name == "kubernetes.yml" or "k8s" in rel:
-                        stack.append("kubernetes")
-        except Exception:
-            pass
-    # Deduplicate
-    seen = set()
-    result = []
-    for s in stack:
-        if s not in seen:
-            seen.add(s)
-            result.append(s)
-    return result
-
-
-def validate_task_vs_project(intent: str, project_type: str, project_stack: list[str]) -> str | None:
-    """Check if task intent matches project type. Returns warning or None."""
-    if not project_stack:
-        return None
-    type_stack_set = set(project_stack)
-    # Web/backend tasks on non-web projects
-    web_tasks = {"build", "fix"}
-    web_domains = {"node", "python", "django", "fastapi", "flask", "nextjs", "vue", "angular", "nuxt", "laravel", "php"}
-    rust_tasks = {"build", "fix"}
-    mobile_tasks = {"build", "fix"}
-    # Check for mismatch
-    if intent in web_tasks and not (type_stack_set & web_domains) and "unknown" not in type_stack_set:
-        project_types = ", ".join(sorted(type_stack_set))
-        return f"Warning: Task '{intent}' is web/backend oriented but project is {project_types}. Are you working in the right project?"
-    if intent in rust_tasks and "rust" in type_stack_set:
-        return None  # Rust project, rust task = ok
-    if intent in mobile_tasks and "flutter" in type_stack_set:
-        return None  # Flutter project, mobile task = ok
-    return None
-
-
-def clone_project(url: str, temp_dir: str | None = None) -> str | None:
-    """Clone git repo to TEMP/, return project name or None."""
-    if not temp_dir:
-        temp_dir = str(config.TEMP_DIR)
-    name = os.path.basename(url)
-    if name.endswith(".git"):
-        name = name[:-4]
-    dest = os.path.join(temp_dir, name)
-    # Skip if already exists
-    if os.path.exists(dest):
-        write_skip(f"Already exists: {dest}")
-        return name
-    write_step("Clone", f"Cloning {url}...")
-    result = subprocess.run(
-        ["git", "clone", url, dest],
-        capture_output=True, text=True, timeout=120,
-    )
-    if result.returncode != 0:
-        write_fail(f"Clone failed: {result.stderr[:200]}")
-        return None
-    write_ok(f"Cloned to {dest}")
-    return name
-
-
-
-def _create_opencode_junction(project_path: Path) -> bool:
-    """Buat junction .opencode/ di project - farewell-assistant/.opencode/."""
-    target = project_path / ".opencode"
-    source = config.ROOT_DIR / ".opencode"
-
-    if target.exists():
-        return True  # sudah ada
-
-    try:
-        if platform.system() == "Windows":
-            result = subprocess.run(
-                ["cmd", "/c", "mklink", "/J", str(target), str(source)],
-                capture_output=True, text=True, timeout=10,
-            )
-        else:
-            os.symlink(str(source), str(target), target_is_directory=True)
-            return True
-
-        return result.returncode == 0 and target.exists()
-    except Exception as e:
-        write_skip(f"Junction gagal: {e}")
-        return False
-
-
-def setup_project_from_path(path: str) -> dict:
-    """Register existing project + buat junction .opencode/."""
-    p = Path(path)
-    if not p.is_dir():
-        write_fail(f"Path tidak ditemukan: {path}")
-        return {"error": f"Path not found: {path}"}
-
-    name = p.name
-    project_type = detect_type_from_path(path)
-    code = register_project(name, project_type, path)
-
-    # Buat junction .opencode/ - farewell-assistant/.opencode/
-    write_step("Junction", "Buat .opencode/ link...")
-    junction_ok = _create_opencode_junction(p)
-    if junction_ok:
-        write_ok(f".opencode/ - farewell-assistant/.opencode/")
-    else:
-        write_skip("Junction gagal — pipeline tidak akan jalan di workspace ini")
-
-    write_ok(f"{name} terdaftar dengan code project {code}")
-    return {"name": name, "code": code}
-
-def setup_project_from_url(url: str) -> dict:
-    """Clone + detect + register. Returns {name, code, error}."""
-    name = clone_project(url)
-    if not name:
-        return {"error": "Clone failed"}
-    dest = os.path.join(str(config.TEMP_DIR), name)
-    project_type = detect_type_from_path(dest)
-    code = register_project(name, project_type, dest)
-    write_ok(f"{name} terdaftar dengan code project {code}")
-    return {"name": name, "code": code}
-
-
-def activate_project_by_code(code: str) -> bool:
-    """Activate a registered project by its code."""
-    reg = read_json(config.REGISTRY_FILE)
-    if not reg:
-        return False
-    for proj_name, proj_data in reg.get("projects", {}).items():
-        if proj_data.get("project_code") == code:
-            reg["active"] = proj_name
-            write_json(config.REGISTRY_FILE, reg)
-            write_ok(f"Active project: {code}-{proj_name}")
-            # Clear intent cache — different project may have different stack
-            try:
-                from .enrichment_pipeline import clear_intent_cache
-                clear_intent_cache()
-            except Exception:
-                pass
-            # Force pipeline refresh for new project context
-            _refresh_project_context(proj_name)
-            return True
-    write_fail(f"Project code {code} tidak ditemukan")
-    return False
-
-
-def _refresh_project_context(project_name: str):
-    """Update context.md to reflect active project."""
-    from .intent_router import sync_turn_state
-    result = {
-        "success": True,
-        "intent": {"intent": "ask", "domain": "general", "stack": [], "complexity": "low", "confidence": 0.6},
-        "skill_chain": [],
-        "model_route": {"primary": "Free", "secondary": "Free", "heavy": "Free"},
-        "needs_planning": False,
-        "work_mode": get_work_mode(),
-        "profile": get_llm_mode(),
-        "turn": 0,
-        "blocked": [],
-        "chain_summary": "",
-        "task_warning": None,
-    }
-    try:
-        sync_turn_state(result, "project switch")
-    except Exception:
-        pass
-
-
 def list_registered_projects() -> list[dict]:
-    """Return list of {code, name, type, active}."""
     reg = read_json(config.REGISTRY_FILE)
-    if not reg:
-        return []
+    if not reg: return []
     active = reg.get("active", "")
     projects = []
     for name, info in reg.get("projects", {}).items():
         projects.append({
-            "code": info.get("project_code", "???"),
-            "name": name,
-            "type": info.get("type", "?"),
-            "dominan": info.get("dominan", ""),
+            "code": info.get("project_code", "???"), "name": name,
+            "type": info.get("type", "?"), "dominan": info.get("dominan", ""),
             "active": name == active,
         })
     return sorted(projects, key=lambda p: p["code"])
+
+def log_session(project: str = "", work_mode: str = ""):
+    config.LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    if not project: project = read_project_active()
+    if not work_mode: work_mode = get_work_mode()
+    entry = f"""## {now}\n- **Project:** {project}\n- **Work Mode:** {work_mode.upper()}\n- **Turn:** 0\n---\n"""
+    try:
+        with open(config.SESSION_LOG_FILE, "a", encoding="utf-8") as f: f.write(entry)
+        write_ok("Session logged")
+    except Exception as e: write_skip(f"Session log failed: {e}")
 
 

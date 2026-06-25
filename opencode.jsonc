@@ -3,7 +3,6 @@
   "model": "9router/Free",
   "small_model": "9router/Emergency",
   "default_agent": "build",
-  "plugin": ["C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/plugins/intent-router.js"],
 
   "provider": {
     "9router": {
@@ -17,12 +16,8 @@
   },
 
   "instructions": [
-    "C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/llm-mode.json",
     "C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/work-mode.json",
-    "C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/pipeline-result.json",
-    "C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/context.md",
     "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/user-rules.md",
-    "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/preprocess.md",
     "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/mode-rules.md",
     "C:/Users/FANNNDI/Documents/farewell-assistant/data/context/farewell-assistant.md"
   ],
@@ -36,13 +31,7 @@
       "description": "Primary coding agent",
       "mode": "primary",
       "model": "9router/Free",
-      "tools": {
-        "write": true,
-        "edit": true,
-        "bash": true,
-        "read": true,
-        "changed-files": true
-      }
+      "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
     },
     "planner": {
       "description": "Planning specialist.",
@@ -91,51 +80,23 @@
   "command": {
     "workmode": {
       "description": "Switch work mode: plan / build / status",
-      "template": "py -m farewell_assistant.cli workmode $ARGUMENTS"
-    },
-    "start": {
-      "description": "★ Consolidated: git pull + bootstrap + update + health + config + autostart + launch",
-      "template": "py -m farewell_assistant.cli start $ARGUMENTS"
+      "template": "py -m farewell_assistant workmode $ARGUMENTS"
     },
     "daily": {
-      "description": "★ Daily session: full startup + session log",
-      "template": "py -m farewell_assistant.cli daily $ARGUMENTS"
-    },
-    "setup-project": {
-      "description": "Register existing project from local path with auto code",
-      "template": "py -m farewell_assistant.cli setup-project $ARGUMENTS"
-    },
-    "start-project": {
-      "description": "List projects and activate one by code",
-      "template": "py -m farewell_assistant.cli start-project $ARGUMENTS"
+      "description": "Daily: 9Router health + system status",
+      "template": "py -m farewell_assistant daily $ARGUMENTS"
     },
     "project": {
-      "description": "Switch active project by code (or list)",
-      "template": "py -m farewell_assistant.cli project $ARGUMENTS"
+      "description": "List or switch active project",
+      "template": "py -m farewell_assistant project $ARGUMENTS"
     },
-    "setup": {
-      "description": "Set LLM mode (eco/on/hot/balance/performance) — redirects to llm-setup",
-      "template": "py -m farewell_assistant.cli llm $ARGUMENTS"
+    "self-heal": {
+      "description": "Post-edit typecheck hook",
+      "template": "py -m farewell_assistant self-heal --file $ARGUMENTS"
     },
-    "autostart": {
-      "description": "Manage 9Router autostart: enable / disable / status",
-      "template": "py -m farewell_assistant.cli autostart $ARGUMENTS"
-    },
-    "enrich-check": {
-      "description": "Verify enrichment pipeline (local LLM preprocessor)",
-      "template": "py -m farewell_assistant.cli enrich-check $ARGUMENTS"
-    },
-    "detect": {
-      "description": "Detect project type from directory markers (Flutter/Node/Go/Rust/PHP/Python/.NET/...)",
-      "template": "py -m farewell_assistant.cli detect $ARGUMENTS"
-    },
-    "llm-setup": {
-      "description": "LLM config: auto/list/pull/status/remove + eco/on/hot/balance/performance",
-      "template": "py -m farewell_assistant.cli llm $ARGUMENTS"
-    },
-    "go": {
-      "description": "Universal task - goal-based execution",
-      "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/commands/go.md}\n\n$ARGUMENTS"
+    "self-improvement": {
+      "description": "Git pull ECC + 9Router",
+      "template": "py -m farewell_assistant self-improvement $ARGUMENTS"
     },
     "plan": {
       "description": "Create implementation plan",
@@ -176,14 +137,6 @@
       "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/commands/update-docs.md}\n\n$ARGUMENTS",
       "agent": "doc-updater",
       "subtask": true
-    },
-    "self-improvement": {
-      "description": "★ Git pull ECC + 9Router, analisis dampak, update changelog",
-      "template": "py -m farewell_assistant.cli self-improvement $ARGUMENTS"
-    },
-    "audit": {
-      "description": "★★ Full self-improvement audit — routing tests + red team + scorecard",
-      "template": "py -m farewell_assistant.cli self-improvement --full $ARGUMENTS"
     }
   },
 

@@ -1,82 +1,17 @@
-"""Structured task logging to logging.md + session state sync."""
+"""Structured task logging to logging.md."""
 
 from datetime import datetime, timezone
-
 from . import config
-from .helpers import read_json, write_json
-
 
 def write_task_log(stage: str, action: str, result: str = "success", files: str = ""):
-    """Append structured log entry to logging.md."""
     try:
         log_file = config.LOG_FILE
         if not log_file.exists():
             log_file.write_text("# Logging\n", encoding="utf-8")
-
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
         files_part = f" | FILES: {files}" if files else ""
         entry = f"[{ts}] STAGE: {stage} | ACTION: {action} | RESULT: {result}{files_part}\n"
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(entry)
+        with open(log_file, "a", encoding="utf-8") as f: f.write(entry)
     except Exception:
-        import sys as _sys
-        print(f"[LOGGING ERROR] write_task_log: couldn't write to {config.LOG_FILE}", file=_sys.stderr)
-
-
-def sync_session_state():
-    """Write session-state.json + initial context.md."""
-    try:
-        from .helpers import get_work_mode, get_skill_count
-
-        mode = "on"
-        work = get_work_mode()
-        now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
-
-        # Read registry for active project
-        active = "farewell-assistant"
-        kategori = "AUTOMATION"
-        reg = read_json(config.REGISTRY_FILE)
-        if reg and reg.get("active"):
-            active = reg["active"]
-            if reg.get("projects", {}).get(active, {}).get("kategori"):
-                kat_vals = set()
-                for v in reg["projects"][active]["kategori"].values():
-                    kat_vals.add(v)
-                kategori = " - ".join(sorted(kat_vals))
-
-        skill_count = get_skill_count(work)
-
-        # Write session-state.json
-        state = {
-            "session": {
-                "project": active,
-                "mode": mode,
-                "work": work.upper(),
-                "kategori": kategori,
-                "started": now,
-                "last_save": now,
-            },
-            "metrics": {
-                "tokens_input": 0,
-                "tokens_output": 0,
-                "sessions_count": 1,
-            },
-        }
-        write_json(config.STATE_DIR / "session-state.json", state)
-
-        # context.md is managed by sync_turn_state (intent_router.py)
-        # Only write initial context.md if it doesn't exist
-        context_path = config.STATE_DIR / "context.md"
-        if not context_path.exists():
-            ctx = f"""# Session State
-
-- **Project:** {active}
-- **Kategori:** {kategori}
-- **Mode:** {mode}
-- **Work:** {work.upper()}
-- **Started:** {now}
-"""
-            context_path.write_text(ctx, encoding="utf-8")
-    except Exception as e:
-        import sys as _sys
-        print(f"[LOGGING ERROR] sync_session_state: {e}", file=_sys.stderr)
+        import sys
+        print(f"[LOGGING ERROR] {config.LOG_FILE}", file=sys.stderr)

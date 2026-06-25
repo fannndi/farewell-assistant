@@ -1,22 +1,21 @@
-"""farewell-assistant — Intent-Driven AI assistant orchestrator."""
+"""farewell-assistant v2 — Lightweight 9Router orchestrator."""
+
 from .cli import main
 import sys
 
 if len(sys.argv) > 1:
     main()
 else:
-    print("farewell-assistant v1.5.0 — Intent-Driven AI assistant orchestrator")
-    print()
-    print("Usage: py -m farewell_assistant <command> [options]")
+    print("farewell-assistant v2.0.0 - Lightweight 9Router orchestrator")
     print()
     print("Commands:")
-    print("  daily             Daily report: pipeline prime + system health + session log")
-    print("  route <text>      Run intent router on text input")
+    print("  daily             Daily: 9Router health + system status")
     print("  workmode          Switch work mode (plan|build)")
-    print("  llm               LLM management (status|list|pull|download|remove)")
-    print("  project           Switch active project (list|<name>)")
+    print("  llm               Show LLM/GPU status")
+    print("  project           List or switch active project")
     print("  self-heal         Post-edit typecheck hook")
-    print("  enrich-check      Verify enrichment pipeline")
-    print("  self-improvement  Git pull ECC + 9Router, cek dampak, update changelog")
+    print()
+    print("9Router handles all models + subscriptions.")
+    print("Hermes Agent integration coming in v2.1.")
     print()
     print("Example: py -m farewell_assistant daily")

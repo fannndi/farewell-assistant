@@ -1,1 +1,1 @@
-httpx>=0.27
+# 9Router handles all models. No local LLM dependencies.

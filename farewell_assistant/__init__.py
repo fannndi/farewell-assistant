@@ -1,3 +1,3 @@
-"""farewell-assistant - Intent-Driven AI assistant orchestrator (cross-platform)."""
+"""farewell-assistant v2 — lightweight 9Router orchestrator."""
 
-__version__ = "1.5.0"
+__version__ = "2.0.0"

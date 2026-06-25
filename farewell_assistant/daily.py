@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 from . import config
 from .helpers import _c, get_gpu_info, read_project_active, list_registered_projects
+from .tracker import get_today_usage
 
 
 def show_daily_report():
@@ -52,11 +53,13 @@ def show_daily_report():
     print(f"  {_c('Daily Report', 'cyan')} - {now}")
     print(f"  {_c(sep, 'cyan')}")
 
+    usage = get_today_usage()
     router_icon = _c("[RUNNING]", "green") if router_up else _c("[STOPPED]", "red")
     print(f"\n  9Router  : {router_icon} (port 20128)")
     team_icon = _c("ON", "green") if team == "ON" else _c("OFF", "yellow")
     sk = f" | Skills: {skill_count}" if skill_count else ""
     print(f"  Team     : {team_icon}{sk}")
+    print(f"  Tokens   : {_c('today', 'cyan')}={usage['today']} (in={usage['today_input']} out={usage['today_output']}) | {_c('total', 'gray')}={usage['total']}")
     print(f"  GPU      : {_c('[OK]', 'green') if gpu.get('available') else _c('[N/A]', 'yellow')} {gpu_str}")
     print(f"  Git      : {_c('[OK]', 'green') if git_status == 'up to date' else _c('[OUTDATED]', 'yellow')} {git_status}")
     print(f"  Project  : {active_project} ({len(projects)} registered)")

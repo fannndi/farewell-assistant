@@ -14,6 +14,12 @@
 - **OFF** → personal: direct execution untuk task ringan (typo, basic CRUD, explore)
 - **Balance**: AI nilai sendiri. Kalau ragu, ON.
 
+# Model Priority (Hemat Token)
+1. **Free combo** — paling hemat. Prioritas utama.
+2. **Deepseek-GO-Flash** — fallback kalau Free lambat/error/limit.
+3. **Ping test**: sebelum pake Flash, cek dulu respon Free. Kalau Free responsif, pakai Free. Kalau timeout/error, pake Flash.
+4. **Token conscious**: kalau task sederhana (1-2 edit, typo, explore) → pilih model termurah yang available. Task berat (arsitektur, security review) → baru pake Flash.
+
 # Gates
 - Logging: catat WRITE action ke logging.md [timestamp] STAGE | ACTION | RESULT | FILES
 - Verification: sebelum commit → lint → test → typecheck

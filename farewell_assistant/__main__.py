@@ -16,8 +16,6 @@ else:
     print("  start-project     Activate project + skill index + footer")
     print("  setup-project     Register project: <path> [--stack python flutter] [--reindex]")
     print("  self-heal         Post-edit typecheck hook")
-    print("  hermes            Hermes Agent: install/config/launch/status")
-    print()
     print("9Router handles all models + subscriptions. ECC skills (271) indexed per project.")
     print()
     print("Examples:")

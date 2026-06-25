@@ -26,12 +26,10 @@ Team OFF → Free 5 model Round Robin — personal, cost efficient
   - daily.py        — 9Router health + system status
   - start.py        — 9Router start/health
   - self_heal.py    — Post-edit typecheck (TS/TSX, Dart, Python, Rust, Go, Kotlin, Shell)
-  - hermes.py       — Hermes Agent bridge (install from local clone)
 
 ## CLI
-  daily     — 9Router health + GPU + git + project status
+  daily     — 9Router health + GPU + token usage + project status
   workmode  — Switch PLAN/BUILD
   llm       — GPU status
   project   — List/switch project
   self-heal — Post-edit typecheck
-  hermes    — Hermes Agent: install/config/launch/status

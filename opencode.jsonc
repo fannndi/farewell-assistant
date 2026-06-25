@@ -109,10 +109,6 @@
       "description": "Register project from path",
       "template": "py -m farewell_assistant setup-project $ARGUMENTS"
     },
-    "hermes": {
-      "description": "Hermes Agent: install/config/launch/status",
-      "template": "py -m farewell_assistant hermes $ARGUMENTS"
-    },
     "plan": {
       "description": "Create implementation plan",
       "template": "{file:{project}/ecc/.opencode/commands/plan.md}\n\n$ARGUMENTS",

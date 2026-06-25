@@ -4,6 +4,7 @@
   "small_model": "9router/Free",
   "default_agent": "build",
 
+
   "provider": {
     "9router": {
       "npm": "@ai-sdk/openai-compatible",
@@ -121,6 +122,10 @@
     "save": {
       "description": "Save session summary to memory (checkpoint)",
       "template": "py -m farewell_assistant save $ARGUMENTS"
+    },
+    "team": {
+      "description": "Set team mode: on / off / status",
+      "template": "py -m farewell_assistant team $ARGUMENTS"
     },
     "plan": {
       "description": "Create implementation plan",

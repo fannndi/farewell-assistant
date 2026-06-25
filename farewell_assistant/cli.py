@@ -55,11 +55,31 @@ def cmd_daily(args):
 def _get_team() -> str:
     import json as _json
     try:
-        oc = _json.loads((config.ROOT_DIR / "opencode.jsonc").read_text(encoding="utf-8"))
-        m = oc.get("model", "")
-        if "GO-Flash" in m or "Deepseek" in m: return "ON"
+        f = config.FAREWELL_DIR / "team.json"
+        if f.exists():
+            return _json.loads(f.read_text(encoding="utf-8")).get("team", "OFF")
     except Exception: pass
     return "OFF"
+
+
+def cmd_self_improvement(args):
+    from .self_improvement import run_self_improvement
+    run_self_improvement(full=getattr(args, 'full', False))
+
+
+def cmd_team(args):
+    import json as _json
+    from .helpers import _c, get_work_mode, read_project_active
+    if args.status == "on":
+        (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "ON"}), encoding="utf-8")
+        _write_context_footer(read_project_active(), get_work_mode(), _get_session_num())
+        print(f"\n  {_c('[TEAM]', 'green')} ON - professional mode\n")
+    elif args.status == "off":
+        (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "OFF"}), encoding="utf-8")
+        _write_context_footer(read_project_active(), get_work_mode(), _get_session_num())
+        print(f"\n  {_c('[TEAM]', 'yellow')} OFF - personal mode\n")
+    else:
+        print(f"  Team: {_get_team()}")
 
 
 def _get_session_num() -> int:
@@ -108,8 +128,12 @@ def cmd_save(args):
     active = read_project_active()
     code = read_project_code(active)
     team = _get_team()
-    save_session(code, active, args.summary, team)
-    print(f"\n  {_c('[SAVED]', 'green')} {code}-{active}: {args.summary[:60]}...\n")
+    summary = args.summary.strip() if args.summary else ""
+    if not summary:
+        print(f"\n  {_c('[SKIP]', 'yellow')} Empty summary - nothing saved.\n")
+        return
+    save_session(code, active, summary, team)
+    print(f"\n  {_c('[SAVED]', 'green')} {code}-{active}: {summary[:60]}...\n")
     _write_context_footer(active, get_work_mode(), _get_session_num())
 
 
@@ -200,6 +224,14 @@ def main():
     save_p = subparsers.add_parser("save", help="Save session summary to memory")
     save_p.add_argument("summary", help="Session summary text")
     save_p.set_defaults(func=cmd_save)
+
+    si_p = subparsers.add_parser("self-improvement", help="Git pull ECC + 9Router")
+    si_p.add_argument("--full", action="store_true", help="Run full audit")
+    si_p.set_defaults(func=cmd_self_improvement)
+
+    team_p = subparsers.add_parser("team", help="Set team mode: on / off / status")
+    team_p.add_argument("status", nargs="?", default="status", choices=["on", "off", "status"])
+    team_p.set_defaults(func=cmd_team)
 
     sp_p = subparsers.add_parser("start-project", help="Switch active project + show footer")
     sp_p.add_argument("code", nargs="?", default="list", help="Project code (001/002/003) or 'list'")

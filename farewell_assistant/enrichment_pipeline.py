@@ -92,24 +92,64 @@ Schema:
 {"intent": "build|fix|review|deploy|research|docs|ask", "domain": "web|mobile|infra|data|ai_ml|automation|general", "stack": ["framework"], "complexity": "low|medium|high|critical", "confidence": 0.0-1.0}
 
 Domain by keyword (keyword found = forced domain):
-- flutter, dart, kotlin, swift, ios, android, react native -> mobile
+- flutter, dart, kotlin, swift, ios, android, react native, widget, screen, tap, tombol, halaman, tampilan, ui mobile, app mobile -> mobile
 - pytorch, tensorflow, llm, model training, inference, ml -> ai_ml
-- docker, kubernetes, deployment, ci/cd -> infra
-- postgresql, sql, migration, database, etl -> data
-- powershell -> automation
-- api, crud, rest, auth, jwt, frontend, backend, django, fastapi, react -> web
+- docker, kubernetes, deployment, ci/cd, nginx, terraform, ansible -> infra
+- postgresql, sql, migration, database, etl, redis, mysql -> data
+- powershell, automate, task, schedule -> automation
+- api, crud, rest, auth, jwt, frontend, backend, django, fastapi, react, nextjs, vue, angular, css, html -> web
 - default -> general
+
+Intent rules:
+- optimize/improve/enhance/tune/speed -> fix (not review!)
+- upgrade/migrate/convert/clean -> fix
+- review/audit/check/inspect -> review
+- fix/bug/error/crash/broken/debug -> fix
+- deploy/release/ship/publish -> deploy
 
 Rules:
 - stack = only tech mentioned (e.g., ["flutter"], ["python", "fastapi"])
 - complexity: low=simple, medium=feature/fix, high=architectural, critical=security/prod-down
 - confidence: 0.0-1.0 based on keyword match strength
+- If input mentions mobile keywords (widget, tap, tombol, halaman, screen), domain MUST be mobile
 
 Return ONLY the JSON."""
 
 VALID_INTENTS = {"build", "fix", "review", "deploy", "research", "docs", "ask"}
 VALID_DOMAINS = {"web", "mobile", "infra", "data", "ai_ml", "automation", "general"}
 VALID_COMPLEXITY = {"low", "medium", "high", "critical"}
+
+
+def _correct_enrichment(input_lower: str, intent: str, domain: str) -> tuple[str, str]:
+    """Post-process enrichment output to fix known LLM blind spots.
+    
+    The 0.8B LLM sometimes misclassifies intent/domain for specific keywords.
+    These rules override only when strong keyword signals are present.
+    """
+    # Intent corrections — strong build signals
+    if re.search(r"\bbikin\b|\bbuat\b|\btambah\b|\bcreate\b|\bmake\b|\bimplement\b", input_lower):
+        if intent not in ("build",):
+            intent = "build"
+    
+    # Intent corrections — optimize/improve = fix
+    if re.search(r"\boptimize\b|\bimprove\b|\benhance\b|\btune\b|\bspeed.?up\b", input_lower):
+        if intent != "fix":
+            intent = "fix"
+    
+    # Intent corrections — upgrade/migrate = fix
+    if re.search(r"\bupgrade\b|\bmigrate\b|\bconvert\b|\bclean.?up\b", input_lower):
+        if intent not in ("fix", "build"):
+            intent = "fix"
+
+    # Domain corrections
+    mobile_kw = re.search(r"\btap\b|\btombol\b|\bhalaman\b|\btampilan\b|\bwidget\b|\bscreen\b|\bgradle\b|\bagp\b", input_lower)
+    if mobile_kw and domain != "mobile":
+        # Check if it's definitely NOT mobile
+        web_kw = re.search(r"\bapi\b|\bcrud\b|\bauth\b|\bjwt\b|\bexpress\b|\bfastapi\b|\bdjango\b|\bspring\b|\brest\b|\breact\b|\bvue\b|\bangular\b|\bcss\b|\bhtml\b|\bfrontend\b|\bbackend\b|\bserver\b|\bmiddleware\b", input_lower)
+        if not web_kw:
+            domain = "mobile"
+
+    return intent, domain
 
 
 def invoke_structured_enrichment(text_input: str, context: str = "", force: bool = False) -> dict | None:
@@ -153,6 +193,10 @@ def invoke_structured_enrichment(text_input: str, context: str = "", force: bool
         stack = [re.sub(r"^<|>$", "", s) for s in stack if s]
         confidence = max(0.0, min(1.0, float(parsed.get("confidence", 0.5) or 0.5)))
 
+        # Post-process: override known LLM blind spots
+        input_lower = text_input.lower()
+        intent, domain = _correct_enrichment(input_lower, intent, domain)
+
         return {
             "intent": intent,
             "domain": domain,
@@ -188,15 +232,15 @@ def invoke_structured_enrichment(text_input: str, context: str = "", force: bool
 # ---------------------------------------------------------------------------
 
 _DOMAIN_PATTERNS: list[tuple[str, str]] = [
-    (r"react|nextjs|next\.js|vue|angular|frontend|ui|css|html|api|rest|express|fastapi|django|laravel|spring|nest|crud|auth|jwt|backend|server|middleware|token|login|register", "web"),
-    (r"flutter|dart|kotlin|android|ios|swift|compose|mobile|react.native|gpu.monitor|jni|kernel|adreno|widget|screen|tap|tombol|halaman|tampilan", "mobile"),
+    (r"flutter|dart|kotlin|android|ios|swift|compose|mobile|react.native|gpu.monitor|jni|kernel|adreno|widget|screen|tap|tombol|halaman|tampilan|ui\.mobile|app\.mobile", "mobile"),
     (r"docker|kubernetes|k8s|ci|cd|deploy|nginx|terraform|ansible|infra", "infra"),
     (r"postgres|mysql|redis|clickhouse|database|sql|etl|pipeline|data", "data"),
     (r"pytorch|tensorflow|llm|model|train|inference|ml|ai|cuda", "ai_ml"),
     (r"powershell|ps1|automate|task|schedule|registry|env", "automation"),
+    (r"react|nextjs|next\.js|vue|angular|frontend|ui|css|html|api|rest|express|fastapi|django|laravel|spring|nest|crud|auth|jwt|backend|server|middleware|token|login|register", "web"),
 ]
 
-_MOBILE_PRIORITY = re.compile(r"flutter|dart|kotlin|android|ios|swift|compose|react.native|gpu.monitor|jni|kernel|adreno")
+_MOBILE_PRIORITY = re.compile(r"flutter|dart|kotlin|android|ios|swift|compose|react.native|gpu.monitor|jni|kernel|adreno|widget|screen|tap|tombol|halaman|tampilan")
 
 _STACK_PATTERNS: list[tuple[str, str]] = [
     (r"python|fastapi|django|flask", "python"),

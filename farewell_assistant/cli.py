@@ -56,7 +56,7 @@ def cmd_daily(args):
 
 def cmd_self_improvement(args):
     from .self_improvement import run_self_improvement
-    run_self_improvement()
+    run_self_improvement(full=getattr(args, 'full', False))
 
 
 def main():
@@ -95,6 +95,7 @@ def main():
     daily_p.set_defaults(func=cmd_daily)
 
     si_p = subparsers.add_parser("self-improvement", help="Git pull ECC + 9Router, cek dampak, update changelog")
+    si_p.add_argument("--full", action="store_true", help="Run full audit (routing tests + red team + scorecard)")
     si_p.set_defaults(func=cmd_self_improvement)
 
     args = parser.parse_args()

@@ -381,9 +381,10 @@ def invoke_intent_router(
             task_warning = validate_task_vs_project(classified["intent"], project_type, project_stack)
 
     # Step 3.3: Remind eksekutor to run self-heal after build/fix edits
+    self_heal_hint = None
     post_steps = []
-    if classified["intent"] in ("build", "fix") and not task_warning:
-        task_warning = "Setelah mengedit file, jalankan: py -m farewell_assistant.cli self-heal --file <path>"
+    if classified["intent"] in ("build", "fix"):
+        self_heal_hint = "Setelah mengedit file, jalankan: py -m farewell_assistant.cli self-heal --file <path>"
         post_steps.append("self-heal")
 
     # Step 3.5: Filter chain by work mode (remove WRITE skills in PLAN mode)
@@ -433,6 +434,7 @@ def invoke_intent_router(
         "blocked": blocked,
         "chain_summary": chain_summary,
         "task_warning": task_warning,
+        "self_heal_hint": self_heal_hint,
         "post_steps": post_steps if post_steps else None,
         "degraded": degraded,
     }

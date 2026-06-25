@@ -181,6 +181,10 @@
     "self-improvement": {
       "description": "★ Git pull ECC + 9Router, analisis dampak, update changelog",
       "template": "py -m farewell_assistant.cli self-improvement $ARGUMENTS"
+    },
+    "audit": {
+      "description": "★★ Full self-improvement audit — routing tests + red team + scorecard",
+      "template": "py -m farewell_assistant.cli self-improvement --full $ARGUMENTS"
     }
   },
 

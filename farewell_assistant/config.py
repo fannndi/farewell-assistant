@@ -38,10 +38,10 @@ MODEL_ONLINE_VRAM = 1358
 
 MODEL_OFFLINE_NAME = "Qwen3.5-2B-Q4_K_M.gguf"
 MODEL_OFFLINE_PATH = MODELS_DIR / MODEL_OFFLINE_NAME
-MODEL_OFFLINE_CTX = 16384
+MODEL_OFFLINE_CTX = 4096
 MODEL_OFFLINE_VRAM = 1500
 
-GGUF_N_GPU_LAYERS = 99  # Vulkan GPU acceleration
+GGUF_N_GPU_LAYERS = 99  # default (online mode)
 
 ENRICHMENT = {
     "min_words": 2,
@@ -59,6 +59,7 @@ MODEL_DEFS = {
         "gguf_file": MODEL_ONLINE_NAME,
         "gguf_path": MODEL_ONLINE_PATH,
         "n_ctx": MODEL_ONLINE_CTX,
+        "n_gpu_layers": 99,
         "vram_mb": MODEL_ONLINE_VRAM,
         "description": "0.8B — enrichment only",
     },
@@ -68,6 +69,7 @@ MODEL_DEFS = {
         "gguf_file": MODEL_OFFLINE_NAME,
         "gguf_path": MODEL_OFFLINE_PATH,
         "n_ctx": MODEL_OFFLINE_CTX,
+        "n_gpu_layers": 14,
         "vram_mb": MODEL_OFFLINE_VRAM,
         "description": "2B — enrichment + execution",
     },

@@ -59,7 +59,7 @@ def get_llm():
             _llama = Llama(
                 model_path=str(gguf_path),
                 n_ctx=model_info["n_ctx"],
-                n_gpu_layers=config.GGUF_N_GPU_LAYERS,
+                n_gpu_layers=model_info["n_gpu_layers"],
                 verbose=False,
             )
             _current_model = model_info["model_name"]

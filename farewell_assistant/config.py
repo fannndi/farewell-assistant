@@ -39,7 +39,7 @@ MODEL_ONLINE_VRAM = 1358
 MODEL_OFFLINE_NAME = "Qwen3.5-2B-Q4_K_M.gguf"
 MODEL_OFFLINE_PATH = MODELS_DIR / MODEL_OFFLINE_NAME
 MODEL_OFFLINE_CTX = 4096
-MODEL_OFFLINE_VRAM = 1500
+MODEL_OFFLINE_VRAM = 1173
 
 GGUF_N_GPU_LAYERS = 99  # default (online mode)
 
@@ -69,8 +69,8 @@ MODEL_DEFS = {
         "gguf_file": MODEL_OFFLINE_NAME,
         "gguf_path": MODEL_OFFLINE_PATH,
         "n_ctx": MODEL_OFFLINE_CTX,
-        "n_gpu_layers": 14,
+        "n_gpu_layers": 8,
         "vram_mb": MODEL_OFFLINE_VRAM,
-        "description": "2B — enrichment + execution",
+        "description": "2B — 8 layer GPU + 18 layer RAM",
     },
 }

@@ -53,10 +53,11 @@ User → OpenCode (PLAN/BUILD tools) → 9Router /v1/chat/completions
 Models and subscriptions via 9Router combo (Free/Emergency).
 api-key.txt defines: NINEROUTER_API_KEY, COMBO_*, MODELS_*
 
-## Hermes Agent (v2.1 planned)
+## Hermes Agent (v2.0 — integrated)
 
 Components:
-  - hermes_install.sh/ps1 — official installer
-  - ~/.hermes/ — config, skills, state
-  - ECC skills via external_dirs (no conversion needed)
-  - 9Router as OpenAI-compatible provider
+  - Local clone: hermes-agent/ (NousResearch/hermes-agent)
+  - Install: fa hermes install → pip install -e dari local clone
+  - Config: ~/.hermes/config.yaml → 9Router provider + ECC external_dirs
+  - ECC skills: 271 via external_dirs (no conversion needed)
+  - Available: fa hermes config, fa hermes launch

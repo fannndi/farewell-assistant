@@ -1,6 +1,7 @@
 """CLI entrypoint — minimal dispatcher (daily/workmode/project/self-heal)."""
 
 import argparse
+from . import config
 from .workmode import switch_workmode
 
 
@@ -56,30 +57,30 @@ def cmd_hermes(args):
     hermes_main(args.action)
 
 
-def _write_context_footer(project: str, mode: str):
-    from .helpers import read_project_code, read_json
-    from . import config
-    from datetime import datetime, timezone
+def _get_team() -> str:
     import json as _json
-    code = read_project_code(project)
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
-
-    combo = "9Router"
     try:
         oc = _json.loads((config.ROOT_DIR / "opencode.jsonc").read_text(encoding="utf-8"))
         m = oc.get("model", "")
-        if m.startswith("9router/"): combo = m.split("/", 1)[1]
-    except Exception:
-        pass
+        if "GO-Flash" in m or "Deepseek" in m: return "ON"
+    except Exception: pass
+    return "OFF"
 
+
+def _write_context_footer(project: str, mode: str):
+    from .helpers import read_project_code
+    from datetime import datetime, timezone
+    code = read_project_code(project)
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
+    team = _get_team()
     ctx = f"""# Session
 - Project: {code}-{project}
 - Mode: {mode.upper()}
-- Combo: {combo}
+- Team: {team}
 - Started: {now}
 
 # Footer
-Farewell: ON | {code}-{project} | {mode.upper()} | Combo: {combo}
+Farewell: ON | {code}-{project} | {mode.upper()} | Team: {team}
 """
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
 
@@ -109,15 +110,9 @@ def cmd_start_project(args):
             _write_context_footer(name, mode)
 
             code = read_project_code(name)
-            import json as _json
-            combo = "9Router"
-            try:
-                oc = _json.loads((config.ROOT_DIR / "opencode.jsonc").read_text(encoding="utf-8"))
-                m = oc.get("model", "")
-                if m.startswith("9router/"): combo = m.split("/", 1)[1]
-            except Exception: pass
+            team = _get_team()
             print(f"\n  {_c('[ACTIVE]', 'green')} {code}-{name}")
-            print(f"  {_c(f'Farewell: ON | {code}-{name} | {mode} | Combo: {combo}', 'cyan')}\n")
+            print(f"  {_c(f'Farewell: ON | {code}-{name} | {mode} | Team: {team}', 'cyan')}\n")
             return
     print(f"  Project code '{args.code}' not found.")
 

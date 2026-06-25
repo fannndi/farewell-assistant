@@ -73,8 +73,7 @@ def cmd_config() -> bool:
     config_path.parent.mkdir(parents=True, exist_ok=True)
 
     from .helpers import parse_api_key
-    keys = parse_api_key()
-    api_key = keys.api_key or os.environ.get("NINEROUTER_API_KEY", "")
+    api_key = parse_api_key() or os.environ.get("NINEROUTER_API_KEY", "")
 
     ecc_skills = str(config.ECC_DIR / "skills")
     data_skills = str(config.PROJECT_SKILLS_DIR)

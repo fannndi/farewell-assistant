@@ -1,7 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "9router/Free",
-  "small_model": "9router/Emergency",
+  "model": "9router/Deepseek-GO-Flash",
   "default_agent": "build",
 
   "provider": {
@@ -16,64 +15,64 @@
   },
 
   "instructions": [
-    "C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/work-mode.json",
-    "C:/Users/FANNNDI/Documents/farewell-assistant/.opencode/context.md",
-    "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/user-rules.md",
-    "C:/Users/FANNNDI/Documents/farewell-assistant/instructions/mode-rules.md",
-    "C:/Users/FANNNDI/Documents/farewell-assistant/data/context/farewell-assistant.md"
+    "{project}/.opencode/work-mode.json",
+    "{project}/.opencode/context.md",
+    "{project}/instructions/user-rules.md",
+    "{project}/instructions/mode-rules.md",
+    "{project}/data/context/farewell-assistant.md"
   ],
 
   "skills": {
-    "paths": ["C:/Users/FANNNDI/Documents/farewell-assistant/ecc/skills", "C:/Users/FANNNDI/Documents/farewell-assistant/data/skills"]
+    "paths": ["{project}/ecc/skills", "{project}/data/skills"]
   },
 
   "agent": {
     "build": {
       "description": "Primary coding agent",
       "mode": "primary",
-      "model": "9router/Free",
+      "model": "9router/Deepseek-GO-Flash",
       "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
     },
     "planner": {
       "description": "Planning specialist.",
       "mode": "subagent",
-      "model": "9router/Emergency",
-      "prompt": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/prompts/agents/planner.txt}",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:{project}/ecc/.opencode/prompts/agents/planner.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "code-reviewer": {
       "description": "Code review specialist.",
       "mode": "subagent",
-      "model": "9router/Emergency",
-      "prompt": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/prompts/agents/code-reviewer.txt}",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:{project}/ecc/.opencode/prompts/agents/code-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "security-reviewer": {
       "description": "Security specialist.",
       "mode": "subagent",
-      "model": "9router/Free",
-      "prompt": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/prompts/agents/security-reviewer.txt}",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:{project}/ecc/.opencode/prompts/agents/security-reviewer.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "tdd-guide": {
       "description": "TDD specialist.",
       "mode": "subagent",
-      "model": "9router/Free",
-      "prompt": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/prompts/agents/tdd-guide.txt}",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:{project}/ecc/.opencode/prompts/agents/tdd-guide.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "build-error-resolver": {
       "description": "Build error specialist.",
       "mode": "subagent",
-      "model": "9router/Emergency",
-      "prompt": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/prompts/agents/build-error-resolver.txt}",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:{project}/ecc/.opencode/prompts/agents/build-error-resolver.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "doc-updater": {
       "description": "Documentation specialist.",
       "mode": "subagent",
-      "model": "9router/Emergency",
-      "prompt": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/prompts/agents/doc-updater.txt}",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:{project}/ecc/.opencode/prompts/agents/doc-updater.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     }
   },
@@ -100,15 +99,15 @@
       "template": "py -m farewell_assistant self-improvement $ARGUMENTS"
     },
     "start": {
-      "description": "★ Switch project + show footer",
+      "description": "Switch project + footer",
       "template": "py -m farewell_assistant start-project $ARGUMENTS"
     },
     "start-project": {
-      "description": "Switch active project + show footer",
+      "description": "Switch active project + footer",
       "template": "py -m farewell_assistant start-project $ARGUMENTS"
     },
     "setup-project": {
-      "description": "Register existing project from local path",
+      "description": "Register project from path",
       "template": "py -m farewell_assistant setup-project $ARGUMENTS"
     },
     "hermes": {
@@ -117,41 +116,41 @@
     },
     "plan": {
       "description": "Create implementation plan",
-      "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/commands/plan.md}\n\n$ARGUMENTS",
+      "template": "{file:{project}/ecc/.opencode/commands/plan.md}\n\n$ARGUMENTS",
       "agent": "planner",
       "subtask": true
     },
     "tdd": {
       "description": "TDD workflow",
-      "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/commands/tdd.md}\n\n$ARGUMENTS",
+      "template": "{file:{project}/ecc/.opencode/commands/tdd.md}\n\n$ARGUMENTS",
       "agent": "tdd-guide",
       "subtask": true
     },
     "code-review": {
       "description": "Code review",
-      "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/commands/code-review.md}\n\n$ARGUMENTS",
+      "template": "{file:{project}/ecc/.opencode/commands/code-review.md}\n\n$ARGUMENTS",
       "agent": "code-reviewer",
       "subtask": true
     },
     "security-scan": {
-      "description": "Security review (OWASP)",
-      "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/commands/security.md}\n\n$ARGUMENTS",
+      "description": "Security review",
+      "template": "{file:{project}/ecc/.opencode/commands/security.md}\n\n$ARGUMENTS",
       "agent": "security-reviewer",
       "subtask": true
     },
     "build-fix": {
       "description": "Fix build errors",
-      "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/commands/build-fix.md}\n\n$ARGUMENTS",
+      "template": "{file:{project}/ecc/.opencode/commands/build-fix.md}\n\n$ARGUMENTS",
       "agent": "build-error-resolver",
       "subtask": true
     },
     "verify": {
       "description": "Run verification loop",
-      "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/commands/verify.md}\n\n$ARGUMENTS"
+      "template": "{file:{project}/ecc/.opencode/commands/verify.md}\n\n$ARGUMENTS"
     },
     "update-docs": {
       "description": "Update documentation",
-      "template": "{file:C:/Users/FANNNDI/Documents/farewell-assistant/ecc/.opencode/commands/update-docs.md}\n\n$ARGUMENTS",
+      "template": "{file:{project}/ecc/.opencode/commands/update-docs.md}\n\n$ARGUMENTS",
       "agent": "doc-updater",
       "subtask": true
     }

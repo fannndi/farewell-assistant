@@ -84,27 +84,16 @@ def get_gpu_info(fields: str = "utilization.gpu,memory.used,memory.total") -> di
     except Exception:
         return {"available": False, "utilization": 0, "memory_used": 0, "memory_total": 0}
 
-class ApiKeyConfig:
-    __slots__ = ("api_key", "router_password", "combo_entries", "combo_models")
-    def __init__(self, api_key, router_password, combo_entries, combo_models):
-        self.api_key = api_key; self.router_password = router_password
-        self.combo_entries = combo_entries; self.combo_models = combo_models
-    def __iter__(self):
-        return iter((self.api_key, self.combo_entries, self.combo_models))
-
-def parse_api_key() -> ApiKeyConfig:
-    api_key = None; router_password = ""; combo_entries = {}; combo_models = {}
+def parse_api_key() -> str | None:
+    """Read NINEROUTER_API_KEY from api-key.txt. Combo managed by 9Router database."""
     try:
         for line in Path("api-key.txt").read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line: continue
             k, v = line.split("=", 1); k, v = k.strip(), v.strip()
-            if k == "NINEROUTER_API_KEY": api_key = v
-            elif k == "9ROUTER_PASSWORD": router_password = v
-            elif k.startswith("COMBO_"): combo_entries.setdefault(k.replace("COMBO_", ""), {})["combo"] = v
-            elif k.startswith("MODELS_"): combo_models.setdefault(k.replace("MODELS_", ""), {})["models"] = [m.strip() for m in v.split(",") if m.strip()]
+            if k == "NINEROUTER_API_KEY": return v
     except Exception: pass
-    return ApiKeyConfig(api_key, router_password, combo_entries, combo_models)
+    return None
 
 def read_project_active(registry_file=None) -> str:
     file_to_read = registry_file or config.REGISTRY_FILE

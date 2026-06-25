@@ -8,7 +8,7 @@ session-log.md
 
 # Secrets
 api-key.txt
-!api-key.example.txt
+!.api-key.example.txt
 .env
 
 # Dependencies (cloned, not committed)
@@ -19,23 +19,15 @@ ecc/
 models/
 
 # Managed projects (cloned by controller)
-data/Code/
-data/session/
-data/memory/
 TEMP/
-
-# Project registry files (managed projects)
-data/registry.json
-
-# Project context files (managed projects)
-data/context/
-
-# Project-specific configuration files (managed projects)
-data/*/registry.json
-data/*/context/*.md
 
 # Session profile logs (gitignored)
 profiles/logs/*.md
+
+# .farewell/ — track context + custom-skills, ignore machine-specific
+.farewell/registry.json
+.farewell/manifest.json
+.farewell/skills/
 
 # Bytecode
 __pycache__/
@@ -52,13 +44,7 @@ Desktop.ini
 .idea/
 *.code-workspace
 
-# Hermes Agent
-hermes-agent/
-
-# Per-project skill index
-.farewell/
-
-# Node modules (old plugin deps)
+# Old plugin deps
 .opencode/node_modules/
 .opencode/package.json
 .opencode/package-lock.json

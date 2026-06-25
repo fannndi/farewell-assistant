@@ -18,11 +18,11 @@
     "{project}/.opencode/work-mode.json",
     "{project}/.opencode/context.md",
     "{project}/instructions/rules.md",
-    "{project}/data/context/farewell-assistant.md"
+    "{project}/.farewell/context/farewell-assistant.md"
   ],
 
   "skills": {
-    "paths": ["{project}/ecc/skills", "{project}/data/skills"]
+    "paths": ["{project}/ecc/skills", "{project}/.farewell/custom-skills"]
   },
 
   "agent": {

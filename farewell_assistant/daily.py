@@ -13,6 +13,15 @@ def show_daily_report():
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     active_project = read_project_active(config.REGISTRY_FILE)
     projects = list_registered_projects()
+    import json as _json
+
+    combo = "9Router"
+    try:
+        oc = _json.loads((config.ROOT_DIR / "opencode.jsonc").read_text(encoding="utf-8"))
+        m = oc.get("model", "")
+        if m.startswith("9router/"): combo = m.split("/", 1)[1]
+    except Exception:
+        pass
 
     # 9Router health
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,6 +50,7 @@ def show_daily_report():
 
     router_icon = _c("[RUNNING]", "green") if router_up else _c("[STOPPED]", "red")
     print(f"\n  9Router  : {router_icon} (port 20128)")
+    print(f"  Combo    : {_c(combo, 'cyan')} (instructor)")
     print(f"  GPU      : {_c('[OK]', 'green') if gpu.get('available') else _c('[N/A]', 'yellow')} {gpu_str}")
     print(f"  Git      : {_c('[OK]', 'green') if git_status == 'up to date' else _c('[OUTDATED]', 'yellow')} {git_status}")
     print(f"  Project  : {active_project} ({len(projects)} registered)")

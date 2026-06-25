@@ -60,15 +60,26 @@ def _write_context_footer(project: str, mode: str):
     from .helpers import read_project_code, read_json
     from . import config
     from datetime import datetime, timezone
+    import json as _json
     code = read_project_code(project)
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
+
+    combo = "9Router"
+    try:
+        oc = _json.loads((config.ROOT_DIR / "opencode.jsonc").read_text(encoding="utf-8"))
+        m = oc.get("model", "")
+        if m.startswith("9router/"): combo = m.split("/", 1)[1]
+    except Exception:
+        pass
+
     ctx = f"""# Session
 - Project: {code}-{project}
 - Mode: {mode.upper()}
+- Combo: {combo}
 - Started: {now}
 
 # Footer
-Farewell: ON | {code}-{project} | {mode.upper()} | 9Router
+Farewell: ON | {code}-{project} | {mode.upper()} | Combo: {combo}
 """
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
 
@@ -98,8 +109,15 @@ def cmd_start_project(args):
             _write_context_footer(name, mode)
 
             code = read_project_code(name)
+            import json as _json
+            combo = "9Router"
+            try:
+                oc = _json.loads((config.ROOT_DIR / "opencode.jsonc").read_text(encoding="utf-8"))
+                m = oc.get("model", "")
+                if m.startswith("9router/"): combo = m.split("/", 1)[1]
+            except Exception: pass
             print(f"\n  {_c('[ACTIVE]', 'green')} {code}-{name}")
-            print(f"  {_c(f'Farewell: ON | {code}-{name} | {mode}', 'cyan')}\n")
+            print(f"  {_c(f'Farewell: ON | {code}-{name} | {mode} | Combo: {combo}', 'cyan')}\n")
             return
     print(f"  Project code '{args.code}' not found.")
 

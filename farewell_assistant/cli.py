@@ -63,23 +63,16 @@ def _get_team() -> str:
 
 
 def _write_context_footer(project: str, mode: str):
-    from .helpers import read_project_code, read_json, get_project_path
+    from .helpers import read_project_code
     from .tracker import get_today_usage
     from .memory import get_last_session
-    from pathlib import Path
-    import json as _json
+    from .indexer import get_project_skills
     code = read_project_code(project)
     team = _get_team()
-    p_path = get_project_path(project)
     usage = get_today_usage()
-    last = get_last_session(p_path, code, project)
-
-    manifest = Path(p_path) / ".farewell" / "manifest.json"
-    skills_count = 0
-    if manifest.exists():
-        try: skills_count = len(_json.loads(manifest.read_text(encoding="utf-8")).get("skills", []))
-        except: pass
-    sk = f" | Skills: {skills_count}" if skills_count else ""
+    last = get_last_session(code, project)
+    skills = get_project_skills(code, project)
+    sk = f" | Skills: {len(skills)}" if skills else ""
     last_line = f"\nLast: {last}" if last else ""
     ctx = f"""# State
 Team: {team}
@@ -91,13 +84,11 @@ Tokens: {usage['today']} today ({usage['total']} total){last_line}
 
 
 def cmd_save(args):
-    from .helpers import read_project_code, read_project_active, get_work_mode, get_project_path
+    from .helpers import read_project_code, read_project_active, get_work_mode, _c
     from .memory import save_session
     active = read_project_active()
     code = read_project_code(active)
-    p_path = get_project_path(active)
-    save_session(p_path, code, active, args.summary)
-    from .helpers import _c
+    save_session(code, active, args.summary)
     print(f"\n  {_c('[SAVED]', 'green')} {code}-{active}: {args.summary[:60]}...\n")
     _write_context_footer(active, get_work_mode())
 
@@ -127,9 +118,9 @@ def cmd_start_project(args):
             _write_context_footer(name, mode)
 
             code = read_project_code(name)
-            from .indexer import get_indexed_skills
+            from .indexer import get_project_skills
             team = _get_team()
-            skills = get_indexed_skills(str(config.ROOT_DIR))
+            skills = get_project_skills(code, name)
             sk = f" | Skills: {len(skills)}" if skills else ""
             print(f"\n  {_c('[ACTIVE]', 'green')} {code}-{name}")
             print(f"  {_c(f'Farewell: ON | {code}-{name} | {mode} | Team: {team}{sk}', 'cyan')}\n")
@@ -150,10 +141,9 @@ def cmd_setup_project(args):
     name = args.name or path.name
     code = register_project(name, "", str(path))
 
-    # Index skills for this project
-    result = index_project(str(path), stack=args.stack, force=args.reindex)
+    result = index_project(str(path), code, name, stack=args.stack)
 
-    sk = f" | Skills: {result.get('linked', 0)}" if result.get("ok") else ""
+    sk = f" | Skills: {result.get('total', 0)}" if result else ""
     print(f"\n  {_c('[REGISTERED]', 'green')} {code}-{name} ({path.name}){sk}")
     print(f"  Active: {code}-{name}\n")
 

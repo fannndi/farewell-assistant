@@ -23,12 +23,8 @@ def show_daily_report():
     except Exception: pass
 
     skill_count = 0
-    from .helpers import get_project_path
-    p_path = get_project_path(active_project)
-    manifest = Path(p_path) / ".farewell" / "manifest.json"
-    if manifest.exists():
-        try: skill_count = len(_json.loads(manifest.read_text(encoding="utf-8")).get("skills", []))
-        except: pass
+    from .indexer import get_active_skills
+    skill_count = len(get_active_skills())
 
     # 9Router health
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

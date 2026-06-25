@@ -4,6 +4,7 @@ import os
 import socket
 import subprocess
 import time
+from pathlib import Path
 from . import config
 from .helpers import write_ok, write_skip
 

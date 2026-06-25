@@ -1,35 +1,17 @@
 # farewell-assistant
 
-Type: Lightweight 9Router orchestrator (Python)
+Type: Python CLI orchestrator
 Stack: Python 3.10+ + OpenCode + 9Router + ECC skills (271)
-Focus: 9Router handle ALL models/subscriptions. OpenCode + ECC handle coding.
-
-## Architecture
-
-User → OpenCode (PLAN/BUILD) → 9Router /v1/chat/completions (26 models)
-                                  ↑
-                              ECC Skills (271, web+mobile priority)
-
-- 9Router: model routing, combo management, subscriptions
-- ECC: 271 SKILL.md, loaded by OpenCode on demand
-- PLAN/BUILD: tool enforcement via work-mode.json
+Desc: AI coding assistant orchestrator. Manage 9Router, ECC skills, per-project session memory. Goal: hemat token via combo strategy (Team ON/OFF).
 
 ## Combo Strategy
-Team ON → Deepseek-GO-Flash (instructor) + Free 5 model (executors) — professional
-Team OFF → Free 5 model Round Robin — personal, cost efficient
+Team ON → Deepseek-GO-Flash (instructor) + Free 5 (executors) — professional
+Team OFF → Free 5 Round Robin — personal, cost efficient
 
 ## Key Files
-  - cli.py          — Daily, workmode, project, self-heal, hermes (6 commands)
-  - config.py       — Paths
-  - helpers.py      — GPU, JSON I/O, project registry
-  - workmode.py     — PLAN/BUILD switch
-  - daily.py        — 9Router health + system status
-  - start.py        — 9Router start/health
-  - self_heal.py    — Post-edit typecheck (TS/TSX, Dart, Python, Rust, Go, Kotlin, Shell)
-
-## CLI
-  daily     — 9Router health + GPU + token usage + project status
-  workmode  — Switch PLAN/BUILD
-  llm       — GPU status
-  project   — List/switch project
-  self-heal — Post-edit typecheck
+  cli.py       — Daily, workmode, project, save, self-heal
+  helpers.py   — GPU, JSON I/O, project registry
+  indexer.py   — Stack → skill matching, centralized manifests
+  memory.py    — Session save/load per project
+  daily.py     — 9Router health + token usage
+  tracker.py   — Token usage from 9Router SQLite

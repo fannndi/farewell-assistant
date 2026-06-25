@@ -1,0 +1,34 @@
+{
+  "project": "farewell-assistant",
+  "code": "001",
+  "stack": [
+    "python",
+    "nextjs",
+    "rust"
+  ],
+  "skills": [
+    "accessibility",
+    "agent-self-evaluation",
+    "backend-patterns",
+    "coding-standards",
+    "django-patterns",
+    "django-security",
+    "django-tdd",
+    "error-handling",
+    "fastapi-patterns",
+    "frontend-patterns",
+    "git-workflow",
+    "nextjs-turbopack",
+    "python-patterns",
+    "python-testing",
+    "react-patterns",
+    "react-testing",
+    "rust-patterns",
+    "rust-testing",
+    "security-review",
+    "tdd-workflow",
+    "verification-loop"
+  ],
+  "total": 21,
+  "indexed_at": "2026-06-26T01:32:01.887166"
+}

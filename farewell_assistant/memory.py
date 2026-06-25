@@ -1,13 +1,14 @@
-"""Session memory — save/load per project. /save = checkpoint."""
+"""Session memory — save/load per project. Centralized in .farewell/memory/."""
 
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import config
 
-def save_session(project_path: str, project_code: str, project_name: str, summary: str):
-    mem_dir = Path(project_path) / ".farewell" / "memory"
-    mem_dir.mkdir(parents=True, exist_ok=True)
-    p = mem_dir / f"{project_code}-{project_name}.md"
+
+def save_session(project_code: str, project_name: str, summary: str):
+    config.MEMORY_DIR.mkdir(parents=True, exist_ok=True)
+    p = config.MEMORY_DIR / f"{project_code}-{project_name}.md"
     header = f"# {project_code}-{project_name}\n\n" if not p.exists() else ""
     date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     with open(p, "a", encoding="utf-8") as f:
@@ -16,8 +17,8 @@ def save_session(project_path: str, project_code: str, project_name: str, summar
         f.write(f"## {date}\n- {summary.strip()}\n")
 
 
-def get_last_session(project_path: str, project_code: str, project_name: str) -> str:
-    p = Path(project_path) / ".farewell" / "memory" / f"{project_code}-{project_name}.md"
+def get_last_session(project_code: str, project_name: str) -> str:
+    p = config.MEMORY_DIR / f"{project_code}-{project_name}.md"
     if not p.exists():
         return ""
     lines = p.read_text(encoding="utf-8").strip().splitlines()

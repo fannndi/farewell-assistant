@@ -1,0 +1,19 @@
+{
+  "project": "ai-kelompok1",
+  "code": "004",
+  "stack": [
+    "unknown"
+  ],
+  "skills": [
+    "accessibility",
+    "agent-self-evaluation",
+    "coding-standards",
+    "error-handling",
+    "git-workflow",
+    "security-review",
+    "tdd-workflow",
+    "verification-loop"
+  ],
+  "total": 8,
+  "indexed_at": "2026-06-26T01:31:00.227722"
+}

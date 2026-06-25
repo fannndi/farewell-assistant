@@ -1,0 +1,22 @@
+{
+  "project": "farewell-ex",
+  "code": "003",
+  "stack": [
+    "unknown",
+    "rust"
+  ],
+  "skills": [
+    "accessibility",
+    "agent-self-evaluation",
+    "coding-standards",
+    "error-handling",
+    "git-workflow",
+    "rust-patterns",
+    "rust-testing",
+    "security-review",
+    "tdd-workflow",
+    "verification-loop"
+  ],
+  "total": 10,
+  "indexed_at": "2026-06-26T01:30:59.986279"
+}

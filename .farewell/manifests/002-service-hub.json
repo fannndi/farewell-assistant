@@ -1,0 +1,22 @@
+{
+  "project": "service-hub",
+  "code": "002",
+  "stack": [
+    "node",
+    "dart"
+  ],
+  "skills": [
+    "accessibility",
+    "agent-self-evaluation",
+    "coding-standards",
+    "dart-flutter-patterns",
+    "error-handling",
+    "flutter-dart-code-review",
+    "git-workflow",
+    "security-review",
+    "tdd-workflow",
+    "verification-loop"
+  ],
+  "total": 10,
+  "indexed_at": "2026-06-26T01:30:56.245961"
+}

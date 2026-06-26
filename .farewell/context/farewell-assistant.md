@@ -5,8 +5,8 @@ Stack: Python 3.10+ + OpenCode + 9Router + ECC skills (271)
 Desc: AI coding assistant orchestrator. Manage 9Router, ECC skills, per-project session memory. Goal: hemat token via combo strategy (Team ON/OFF).
 
 ## Combo Strategy
-Team ON → Deepseek-GO-Flash (instructor) + Free 5 (executors) — professional
-Team OFF → Free 5 Round Robin — personal, cost efficient
+Team ON → Deepseek-GO-Flash (instructor → fallback ke Free 5 model) — professional
+Team OFF → Free 5 model Round Robin — personal, cost efficient
 
 ## Key Files
   cli.py       — Daily, workmode, project, save, self-heal

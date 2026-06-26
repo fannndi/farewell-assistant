@@ -16,10 +16,8 @@
       },
       "models": {
         "Free": { "name": "Free (5 model Round Robin)" },
-        "Deepseek-API-Flash": { "name": "Deepseek-API-Flash" },
-        "Deepseek-API-Pro": { "name": "Deepseek-API-Pro" },
-        "Deepseek-GO-Flash": { "name": "Deepseek-GO-Flash (Instructor)" },
-        "Deepseek-GO-Pro": { "name": "Deepseek-GO-Pro" }
+        "Deepseek-API-Flash": { "name": "Deepseek-API-Flash (ds v4 flash + Free fallback)" },
+        "Deepseek-GO-Flash": { "name": "Deepseek-GO-Flash (Instructor + free fallback)" }
       }
     }
   },

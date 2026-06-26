@@ -19,6 +19,11 @@ Parameter dari footer dan implikasinya:
 3. **Ping test**: sebelum pake Flash, cek dulu respon Free. Kalau Free responsif, pakai Free. Kalau timeout/error, pake Flash.
 4. **Token conscious**: kalau task sederhana (1-2 edit, typo, explore) → pilih model termurah yang available. Task berat (arsitektur, security review) → baru pake Flash.
 
+# State Refresh
+- Session start: run `status` to refresh state
+- Before costly ops: run `status` to check budget/context
+- Footer di context.md auto-update tiap command jalan. Tapi pastikan state fresh.
+
 # Gates
 - Logging: catat WRITE action ke logging.md [timestamp] STAGE | ACTION | RESULT | FILES
 - Verification: sebelum commit → lint → test → typecheck

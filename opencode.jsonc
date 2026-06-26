@@ -113,6 +113,10 @@
       "description": "Switch active project + footer",
       "template": "py -m farewell_assistant start-project $ARGUMENTS"
     },
+    "status": {
+      "description": "Quick state one-liner + refresh footer",
+      "template": "py -m farewell_assistant status $ARGUMENTS"
+    },
     "setup-project": {
       "description": "Register project from path",
       "template": "py -m farewell_assistant setup-project $ARGUMENTS"

@@ -152,25 +152,36 @@ def _inc_session() -> int:
     return n
 
 
-def _write_context_footer(project: str, mode: str, session: int = 1):
-    from .helpers import read_project_code
-    from .tracker import get_today_usage
+def _write_context_footer(project: str | None = None, mode: str | None = None, session: int | None = None):
+    from .helpers import read_project_code, read_project_active, get_work_mode
+    from .tracker import get_today_usage, get_cost_status
     from .memory import get_last_session
     from .indexer import get_project_skills
+    if project is None:
+        project = read_project_active()
+    if mode is None:
+        mode = get_work_mode()
+    if session is None:
+        session = _get_session_num()
     code = read_project_code(project)
     team = _get_team()
     usage = get_today_usage()
+    cs = get_cost_status()
     last, last_team = get_last_session(code, project)
     skills = get_project_skills(code, project)
     sk = f" | Skills: {len(skills)}" if skills else ""
     prev = f" (prev: {last_team})" if last_team and last_team != team else ""
     last_line = f"\nLast: {last}" if last else ""
+    budget_pct = cs['ratio'] * 100
+    budget_line = f"${cs['cumulative_cost']:.2f} / ${cs['monthly_budget']:.2f} ({budget_pct:.1f}%)"
     ctx = f"""# State
+Farewell: ON
 Team: {team}{prev}
 Project: {code}-{project}
 Session: #{session}
 Mode: {mode.upper()}{sk}
-Tokens: {usage['today']} today ({usage['total']} total){last_line}
+Tokens: {usage['today']} today ({usage['total']} total)
+Budget: {budget_line}{last_line}
 """
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
 
@@ -250,7 +261,23 @@ def cmd_setup_project(args):
     print(f"  Active: {code}-{name}\n")
 
 
+def cmd_status(args):
+    """Quick status — refresh footer, print one-liner."""
+    from .helpers import read_project_active, get_work_mode, _c, read_project_code
+    from .tracker import get_cost_status
+    active = read_project_active()
+    mode = get_work_mode()
+    sess = _get_session_num()
+    _write_context_footer(active, mode, sess)
+    team = _get_team()
+    code = read_project_code(active)
+    cs = get_cost_status()
+    c, b = cs["cumulative_cost"], cs["monthly_budget"]
+    print(f"\n  {_c(f'Farewell: ON | {code}-{active} | {mode.upper()} | #{sess} | Team: {team} | Budget: ${c:.2f}/${b:.2f}', 'cyan')}\n")
+
+
 def main():
+    _write_context_footer()
     parser = argparse.ArgumentParser(prog="farewell-assistant", description="Lightweight 9Router orchestrator")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -289,6 +316,9 @@ def main():
     budget_p = subparsers.add_parser("budget", help="Cost & context budget status/reset")
     budget_p.add_argument("action", nargs="?", default="status", choices=["status", "reset", "config"])
     budget_p.set_defaults(func=cmd_budget)
+
+    status_p = subparsers.add_parser("status", help="Quick state one-liner + refresh footer")
+    status_p.set_defaults(func=cmd_status)
 
     sp_p = subparsers.add_parser("start-project", help="Switch active project + show footer")
     sp_p.add_argument("code", nargs="?", default="list", help="Project code (001/002/003) or 'list'")

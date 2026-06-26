@@ -6,6 +6,10 @@
 logging.md
 session-log.md
 
+# Cost tracking (local state, per-user)
+.farewell/cost-budget.json
+.farewell/cost-log.csv
+
 # Secrets
 api-key.txt
 !.api-key.example.txt

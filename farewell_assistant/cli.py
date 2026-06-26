@@ -62,9 +62,9 @@ def _get_team() -> str:
     return "OFF"
 
 
-def cmd_self_improvement(args):
-    from .self_improvement import run_self_improvement
-    run_self_improvement(full=getattr(args, 'full', False))
+def cmd_upstream(args):
+    from .upstream import run_upstream
+    run_upstream(full=getattr(args, 'full', False))
 
 
 def cmd_team(args):
@@ -305,9 +305,9 @@ def main():
     save_p.add_argument("summary", help="Session summary text")
     save_p.set_defaults(func=cmd_save)
 
-    si_p = subparsers.add_parser("self-improvement", help="Git pull ECC + 9Router")
-    si_p.add_argument("--full", action="store_true", help="Run full audit")
-    si_p.set_defaults(func=cmd_self_improvement)
+    up_p = subparsers.add_parser("upstream", help="Git pull ECC + 9Router, analisa changelog, self-heal adaptif")
+    up_p.add_argument("--full", action="store_true", help="Run full audit")
+    up_p.set_defaults(func=cmd_upstream)
 
     team_p = subparsers.add_parser("team", help="Set team mode: on / off / status")
     team_p.add_argument("status", nargs="?", default="status", choices=["on", "off", "status"])

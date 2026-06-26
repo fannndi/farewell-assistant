@@ -18,7 +18,7 @@ else:
     print("  save              Save session summary to memory (checkpoint)")
     print("  team              Set team mode: on / off / status")
     print("  self-heal         Post-edit typecheck hook")
-    print("  self-improvement  Git pull ECC + 9Router")
+    print("  upstream          Git pull ECC + 9Router, analisa changelog, self-heal adaptif")
     print()
     print("9Router handles all models + subscriptions. ECC skills (271) indexed per project.")
     print()

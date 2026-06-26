@@ -40,6 +40,12 @@
       "model": "9router/Deepseek-GO-Flash",
       "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
     },
+    "plan-mode": {
+      "description": "Plan mode — read only explorer",
+      "mode": "primary",
+      "model": "9router/Deepseek-GO-Flash",
+      "tools": { "read": true, "bash": false, "write": false, "edit": false }
+    },
     "planner": {
       "description": "Planning specialist.",
       "mode": "subagent",
@@ -101,9 +107,9 @@
       "description": "Post-edit typecheck hook",
       "template": "py -m farewell_assistant self-heal --file $ARGUMENTS"
     },
-    "self-improvement": {
-      "description": "Git pull ECC + 9Router",
-      "template": "py -m farewell_assistant self-improvement $ARGUMENTS"
+    "upstream": {
+      "description": "Git pull ECC + 9Router, analisa changelog, self-heal adaptif",
+      "template": "py -m farewell_assistant upstream $ARGUMENTS"
     },
     "start": {
       "description": "Switch project + footer",

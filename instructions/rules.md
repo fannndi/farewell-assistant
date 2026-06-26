@@ -6,6 +6,12 @@ Parameter dari footer dan implikasinya:
 - **Team**: ON=reasoning untuk task berat, OFF=direct execution untuk task ringan. Kalau ragu ON
 - **Skills**: {N} — jumlah skill terindex. Skill priority mengikuti daftar di bawah
 
+# Mode Enforcement
+- **PLAN mode**: ONLY read operations via Read/Glob/Grep tools.
+  Bash commands STRICTLY forbidden — termasuk pipa/redirect/Set-Content/Out-File.
+  Gunakan `/plan` atau `/workmode build` untuk switching.
+- **BUILD mode**: Full write access via edit/write tools.
+
 # Execution
 - YAGNI: best code is code never written
 - Ultra terse: max 4 baris, kode langsung tanpa preamble

@@ -82,6 +82,59 @@ def cmd_team(args):
         print(f"  Team: {_get_team()}")
 
 
+def cmd_budget(args):
+    from .helpers import _c
+    from .cost_tracker import get_cost_budget, get_context_budget
+    if args.action == "reset":
+        print(f"\n  {_c('[WARN]', 'yellow')} Reset monthly cost budget? Type 'yes' to confirm:")
+        try:
+            confirm = input("  > ").strip().lower()
+            if confirm == "yes":
+                get_cost_budget().reset()
+                print(f"  {_c('[RESET]', 'green')} Monthly cost budget reset.\n")
+            else:
+                print(f"  {_c('[SKIP]', 'yellow')} Cancelled.\n")
+        except (EOFError, KeyboardInterrupt):
+            print(f"\n  {_c('[SKIP]', 'yellow')} Cancelled.\n")
+        return
+
+    if args.action == "config":
+        p = config.RATES_FILE
+        if p.exists():
+            print(f"\n  Rate card: {p}\n  {_c('Edit directly, then run', 'gray')} `budget status`\n")
+        else:
+            print(f"\n  {_c('[MISSING]', 'red')} Rate card not found: {p}\n")
+        return
+
+    ctx = get_context_budget()
+    cst = get_cost_budget()
+    cs = cst.status()
+    ctxs = ctx.status()
+
+    def _state_icon(s):
+        return {"ok": _c("OK", "green"), "warning": _c("WARNING", "yellow"), "stop": _c("STOP", "red")}.get(s, s)
+
+    pct = lambda v: f"{v*100:.1f}%"
+    sep = "-" * 45
+
+    print(f"\n  {_c('=== Budget Status ===', 'cyan')}")
+    print(f"  {sep}")
+    print(f"  {_c('COST BUDGET', 'cyan')} ({cs['month']})")
+    print(f"  Spent  : ${cs['cumulative_cost']:.4f} / ${cs['monthly_budget']:.2f}")
+    print(f"  Ratio  : {pct(cs['ratio'])}  {_state_icon(cs['state'])}")
+    print(f"  Reqs   : {cs['total_requests']}")
+    print(f"  Tokens : {cs['total_prompt_tokens']:,} in / {cs['total_completion_tokens']:,} out")
+    if cs.get("by_model"):
+        print(f"  {_c('By model:', 'gray')}")
+        for m, d in sorted(cs["by_model"].items()):
+            print(f"    {m:25s} {d['requests']:>4} req  ${d['cost']:.4f}")
+    print(f"  {sep}")
+    print(f"  {_c('CONTEXT BUDGET', 'cyan')} (this task)")
+    print(f"  Used   : {ctxs['total_tokens']:,} / {ctxs['context_window']:,}")
+    print(f"  Ratio  : {pct(ctxs['ratio'])}  {_state_icon(ctxs['state'])}")
+    print(f"  {_c('Reset context via', 'gray')} /save checkpoint\n")
+
+
 def _get_session_num() -> int:
     import json as _json
     f = config.FAREWELL_DIR / "session-counter.json"
@@ -232,6 +285,10 @@ def main():
     team_p = subparsers.add_parser("team", help="Set team mode: on / off / status")
     team_p.add_argument("status", nargs="?", default="status", choices=["on", "off", "status"])
     team_p.set_defaults(func=cmd_team)
+
+    budget_p = subparsers.add_parser("budget", help="Cost & context budget status/reset")
+    budget_p.add_argument("action", nargs="?", default="status", choices=["status", "reset", "config"])
+    budget_p.set_defaults(func=cmd_budget)
 
     sp_p = subparsers.add_parser("start-project", help="Switch active project + show footer")
     sp_p.add_argument("code", nargs="?", default="list", help="Project code (001/002/003) or 'list'")

@@ -1,4 +1,4 @@
-"""Token tracker — read usage from 9Router SQLite."""
+"""Token tracker — read usage from 9Router SQLite + cost budget."""
 
 import json
 import os
@@ -50,3 +50,30 @@ def get_today_usage() -> dict:
         "today_input": fmt(today_data.get("promptTokens", 0)),
         "today_output": fmt(today_data.get("completionTokens", 0)),
     }
+
+
+def get_cost_status() -> dict:
+    from .cost_tracker import get_cost_budget
+    return get_cost_budget().status()
+
+
+def sync_from_9router(limit: int = 500) -> int:
+    """Sync recent usage from 9Router SQLite into CostBudget.
+    Returns number of rows imported.
+    """
+    from .cost_tracker import get_cost_budget
+    db = _db()
+    if not db:
+        return 0
+    try:
+        cur = db.cursor()
+        cur.execute(
+            "SELECT model, promptTokens, completionTokens FROM usageHistory "
+            "ORDER BY id DESC LIMIT ?", (limit,)
+        )
+        rows = [{"model": r[0], "prompt_tokens": r[1], "completion_tokens": r[2]} for r in cur.fetchall()]
+        if rows:
+            get_cost_budget().import_from_9router(rows)
+        return len(rows)
+    finally:
+        db.close()

@@ -1,0 +1,26 @@
+{
+  "models": {
+    "deepseek-v4-flash": {
+      "input": 0.14,
+      "output": 0.28,
+      "cache_hit": 0.0028
+    },
+    "deepseek-v4-pro": {
+      "input": 0.435,
+      "output": 0.87,
+      "cache_hit": 0.003625
+    }
+  },
+  "thresholds": {
+    "context_window": 1000000,
+    "context_warning_pct": 0.75,
+    "context_stop_pct": 0.95,
+    "monthly_budget_usd": 10.0,
+    "monthly_warning_pct": 0.80,
+    "monthly_stop_pct": 1.0
+  },
+  "calibration": {
+    "status": "uncalibrated",
+    "notes": "Pricing from 9Router pricing.js baseline. Verify against platform.deepseek.com dashboard."
+  }
+}

@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from . import config
 from .helpers import _c, get_gpu_info, read_project_active, list_registered_projects
-from .tracker import get_today_usage
+from .tracker import get_today_usage, get_cost_status
 
 
 def show_daily_report():
@@ -63,6 +63,14 @@ def show_daily_report():
     print(f"  Team     : {team_icon}{sk}")
     if sess_count: print(f"  Sessions : {sess_count}")
     print(f"  Tokens   : {_c('today', 'cyan')}={usage['today']} (in={usage['today_input']} out={usage['today_output']}) | {_c('total', 'gray')}={usage['total']}")
+
+    try:
+        cs = get_cost_status()
+        pct = cs['ratio'] * 100
+        icon = _c(f"[{cs['state'].upper()}]", "red") if cs['state'] != "ok" else ""
+        print(f"  Budget   : ${cs['cumulative_cost']:.4f} / ${cs['monthly_budget']:.2f} ({pct:.1f}%) {icon}")
+    except Exception:
+        pass
     print(f"  GPU      : {_c('[OK]', 'green') if gpu.get('available') else _c('[N/A]', 'yellow')} {gpu_str}")
     print(f"  Git      : {_c('[OK]', 'green') if git_status == 'up to date' else _c('[OUTDATED]', 'yellow')} {git_status}")
     print(f"  Project  : {active_project} ({len(projects)} registered)")

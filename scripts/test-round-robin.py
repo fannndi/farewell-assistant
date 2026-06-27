@@ -1,7 +1,8 @@
 """Test Free combo Round Robin — 5 requests with different messages."""
 import http.client, json
+from _key import get_key
 
-KEY = "sk-5aeb03e2d6fefe6e-oedccr-a35926e4"
+KEY = get_key()
 
 print("=== Same message (same session -> pinned model) ===")
 for i in range(5):

@@ -1,8 +1,6 @@
 """Skill indexer — match project stack → ECC skills. Centralized in .farewell/."""
 
 import json
-from datetime import datetime
-from pathlib import Path
 
 from . import config
 
@@ -34,41 +32,6 @@ def _find_matching_skills(stack: list[str]) -> list[str]:
                 matched.update(skills)
     matched.update(COMMON_SKILLS)
     return sorted(matched)
-
-
-def index_project(project_path: str, project_code: str, project_name: str, stack: list[str] | None = None) -> dict:
-    if not stack:
-        from .helpers import detect_type_from_path
-        stack = [detect_type_from_path(project_path)]
-        # Deep scan
-        try:
-            for f in Path(project_path).rglob("*"):
-                if f.is_file():
-                    n = f.name.lower()
-                    if n == "manage.py": stack.append("django")
-                    if "next.config" in n: stack.append("nextjs")
-                    if "pubspec.yaml" in n: stack.append("dart")
-                    if "cargo.toml" in n: stack.append("rust")
-        except Exception: pass
-        stack = list(dict.fromkeys(stack))
-
-    matched = _find_matching_skills(stack)
-
-    # Manifest path: .farewell/manifests/<code>-<name>.json
-    manifests_dir = config.FAREWELL_DIR / "manifests"
-    manifests_dir.mkdir(parents=True, exist_ok=True)
-    manifest_path = manifests_dir / f"{project_code}-{project_name}.json"
-
-    manifest = {
-        "project": project_name,
-        "code": project_code,
-        "stack": stack,
-        "skills": matched,
-        "total": len(matched),
-        "indexed_at": datetime.now().isoformat(),
-    }
-    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    return manifest
 
 
 def get_project_skills(project_code: str, project_name: str) -> list[str]:

@@ -154,31 +154,6 @@ WORKFLOW_STEPS = [
     ("10. Laporkan", "Kirim laporan lengkap ke Director / Deputy Director"),
 ]
 
-MODEL_TO_ROLE: dict[str, str] = {
-    "ocg/deepseek-v4-flash": "director",
-    "ds/deepseek-v4-flash": "deputy",
-    "oc/deepseek-v4-flash-free": "team_leader",
-    "oc/mimo-v2.5-free": "senior_backend",
-    "oc/big-pickle": "junior_1",
-    "oc/north-mini-code-free": "junior_2",
-    "oc/nemotron-3-ultra-free": "junior_3",
-}
-
-ROLE_TO_ROUTER: dict[str, str] = {
-    "director": "9router/Deepseek-GO-Flash",
-    "deputy": "9router/Deepseek-GO-Flash",
-    "team_leader": "9router/Ketua-Tim",
-    "senior_backend": "9router/Pekerja",
-    "junior_1": "9router/Pekerja",
-    "junior_2": "9router/Pekerja",
-    "junior_3": "9router/Pekerja",
-}
-
-
-def get_role(key: str) -> Optional[Role]:
-    return ROLES.get(key)
-
-
 def pegawai_tetap() -> list[tuple[str, Role]]:
     return [(k, v) for k, v in ROLES.items() if v.tier == "pegawai_tetap"]
 

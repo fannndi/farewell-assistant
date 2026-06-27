@@ -1,12 +1,12 @@
 """Check 9Router token usage from SQLite."""
-import sqlite3, os, json
+import sqlite3, os, json, sys
 from datetime import datetime, timezone
 
 DB = os.path.join(os.environ.get("APPDATA", ""), "9router", "db", "data.sqlite")
 
 if not os.path.exists(DB):
     print(f"[FAIL] Database not found: {DB}")
-    exit(1)
+    sys.exit(1)
 
 conn = sqlite3.connect(DB)
 cur = conn.cursor()

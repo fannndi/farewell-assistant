@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "farewell-assistant"
-version = "1.5.0"
+version = "2.0.1"
 description = "Intent-driven AI coding assistant orchestrator"
 requires-python = ">=3.10"
-dependencies = ["llama-cpp-python>=0.3.0"]
+dependencies = []
 
 [project.scripts]
 farewell-assistant = "farewell_assistant.cli:main"

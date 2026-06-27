@@ -1,6 +1,5 @@
 """Work mode — PLAN/BUILD switch. Writes work-mode.json + syncs default_agent + model in opencode.jsonc."""
 
-import json
 import re
 from datetime import datetime, timezone
 from . import config
@@ -44,32 +43,20 @@ def set_models(model_key: str, small_key: str, tier: str = "divisi"):
         return
     try:
         content = OC_FILE.read_text(encoding="utf-8")
-        # Step 1: Set all AGENT models (indented lines) to worker
+
+        # Step 1: Set all AGENT models (indented lines) to model_key
         content = re.sub(
-            r'(\s{4,}"model"\s*:\s*)"9router/[^"]*"',
-            lambda m: f'{m.group(1)}"9router/Pekerja"',
+            r'(\s{4,}"model"\s*:\s*)"[^"]*"',
+            lambda m: f'{m.group(1)}"{model_key}"',
             content,
         )
 
         # Step 2: Set ROOT model (first occurrence, minimal indent)
-        if tier == "divisi":
-            content = re.sub(
-                r'^(\s*"model"\s*:\s*)"[^"]*"',
-                lambda m: f'{m.group(1)}"{model_key}"',
-                content, count=1, flags=re.MULTILINE,
-            )
-        elif tier == "tim":
-            content = re.sub(
-                r'^(\s*"model"\s*:\s*)"[^"]*"',
-                lambda m: f'{m.group(1)}"9router/Ketua-Tim"',
-                content, count=1, flags=re.MULTILINE,
-            )
-        else:  # bawahan
-            content = re.sub(
-                r'^(\s*"model"\s*:\s*)"[^"]*"',
-                lambda m: f'{m.group(1)}"9router/Pekerja"',
-                content, count=1, flags=re.MULTILINE,
-            )
+        content = re.sub(
+            r'^(\s*"model"\s*:\s*)"[^"]*"',
+            lambda m: f'{m.group(1)}"{model_key}"',
+            content, count=1, flags=re.MULTILINE,
+        )
 
         content = re.sub(
             r'^(\s*"small_model"\s*:\s*)"[^"]*"',

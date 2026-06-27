@@ -4,7 +4,6 @@ import json
 import os
 import platform
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 from . import config
@@ -53,13 +52,6 @@ def get_work_mode() -> str:
     state = read_json(config.WORK_MODE_FILE, default={"mode": "build"})
     return state.get("mode", "build") if state else "build"
 
-def get_project_path(project_name: str, registry_file=None) -> str:
-    file_to_read = registry_file or config.REGISTRY_FILE
-    reg = read_json(file_to_read)
-    if reg and reg.get("projects", {}).get(project_name, {}).get("path"):
-        return reg["projects"][project_name]["path"]
-    return str(config.ROOT_DIR)
-
 def read_project_active(registry_file=None) -> str:
     file_to_read = registry_file or config.REGISTRY_FILE
     reg = read_json(file_to_read)
@@ -85,37 +77,3 @@ def list_registered_projects() -> list[dict]:
         })
     return sorted(projects, key=lambda p: p["code"])
 
-def get_next_project_code() -> str:
-    reg = read_json(config.REGISTRY_FILE) or {}
-    codes = [int(p.get("project_code", 0)) for p in reg.get("projects", {}).values()]
-    next_val = max(codes) + 1 if codes else 1
-    return f"{next_val:03d}"
-
-def register_project(name: str, project_type: str, path: str, dominan: str = "") -> str:
-    reg = read_json(config.REGISTRY_FILE) or {"projects": {}, "active": "", "_next_code": "001"}
-    lower = name.lower().replace(" ", "-")
-    existing = reg.get("projects", {}).get(lower, {})
-    code = existing.get("project_code") or get_next_project_code()
-    if not project_type:
-        from pathlib import Path
-        p = Path(path)
-        if not p.exists(): return "unknown"
-        files = [f.name.lower() for f in p.iterdir() if f.is_file()]
-        if "package.json" in files: project_type = "node"
-        elif any(f in files for f in ["pyproject.toml", "requirements.txt", "setup.py"]): project_type = "python"
-        elif "cargo.toml" in files: project_type = "rust"
-        elif "go.mod" in files: project_type = "go"
-        elif "pubspec.yaml" in files: project_type = "flutter"
-        elif "composer.json" in files: project_type = "php"
-        else: project_type = "unknown"
-    if not dominan:
-        dominan = project_type.upper()
-    reg["projects"][lower] = {
-        "project_code": code, "type": project_type,
-        "last_used": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "context_file": f"{lower}.md", "path": path,
-        "dominan": dominan, "is_local": False,
-    }
-    reg["active"] = lower
-    write_json(config.REGISTRY_FILE, reg)
-    return code

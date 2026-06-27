@@ -2,18 +2,13 @@
 
 import json
 import os
+import shutil
 import socket
-import sqlite3
 import subprocess
 import urllib.request
 from pathlib import Path
 from . import config
 from .helpers import _c, write_ok, write_skip, write_info, write_fail, write_step
-
-
-def _db() -> Path | None:
-    p = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
-    return p if p.exists() else None
 
 
 # ── Phase 1/4: Start 9Router ─────────────────────────────────────────────
@@ -35,8 +30,11 @@ def _ensure_9router() -> bool:
     dst = standalone / "public" / "_next" / "static"
     if src.exists() and dst.parent.parent.exists():
         dst.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["robocopy", str(src), str(dst), "/E", "/NJH", "/NJS", "/NDL", "/NP"],
-                      capture_output=True, text=True, timeout=30)
+        for item in src.iterdir():
+            if item.is_dir():
+                shutil.copytree(item, dst / item.name, dirs_exist_ok=True)
+            else:
+                shutil.copy2(item, dst / item.name)
 
     try:
         import time
@@ -165,14 +163,6 @@ def _check_github_release() -> dict:
         return {"tag": data.get("tag_name", ""), "published": data.get("published_at", "")}
     except:
         return {"error": "GitHub unreachable"}
-
-
-def _get_combos_combos_for_report() -> dict:
-    combos = _load_combos()
-    report = []
-    for c in combos:
-        report.append({"name": c["key"], "kind": c["kind"] or "-", "models": c["models"]})
-    return {"combos": report, "total": len(report)}
 
 
 # ── Report ────────────────────────────────────────────────────────────────

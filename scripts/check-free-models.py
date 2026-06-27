@@ -1,6 +1,7 @@
 import http.client, json
+from _key import get_key
 
-KEY = "sk-5aeb03e2d6fefe6e-oedccr-a35926e4"
+KEY = get_key()
 
 conn = http.client.HTTPConnection("localhost", 20128, timeout=5)
 conn.request("GET", "/v1/models", headers={"Authorization": f"Bearer {KEY}"})

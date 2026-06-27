@@ -110,7 +110,7 @@ def cmd_org(args):
 
 
 def cmd_cool(args):
-    from .awesome_indexer import load_all_entries, get_recommended_projects_for_stack, get_project_info
+    from .awesome_indexer import load_all_entries, get_recommended_projects_for_stack
     from .helpers import _c, read_project_active, read_project_code
     plugs, themes, ags, projs, res = load_all_entries()
 

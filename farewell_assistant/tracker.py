@@ -14,12 +14,14 @@ def get_totals() -> dict:
         conn = sqlite3.connect(str(db))
         cur = conn.execute("SELECT name, kind, models FROM combos")
         combos = []
+        total_models = 0
         for row in cur.fetchall():
-            if row[0].lower() == "nvidia": continue
             models = json.loads(row[2]) if row[2] else []
-            if models: combos.append(row[0])
+            cnt = len(models)
+            if cnt:
+                combos.append(row[0])
+                total_models += cnt
         conn.close()
-        total_models = sum(...)
         return {"total_combos": len(combos), "total_models": total_models}
     except Exception as e:
         return {"error": str(e)}

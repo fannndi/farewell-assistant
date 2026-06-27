@@ -1,8 +1,6 @@
 """Awesome Opencode indexers and project stack matching."""
 
-import json
 import yaml
-from datetime import datetime
 from pathlib import Path
 
 from . import config
@@ -38,11 +36,6 @@ def load_all_entries() -> tuple[list, list, list, list, list]:
     return plugins, themes, agents, projects, resources
 
 
-def get_projects_by_type(project_type: str) -> list:
-    _, _, _, projects, _ = load_all_entries()
-    return [p for p in projects if p.get("type", "") == project_type]
-
-
 def get_recommended_projects_for_stack(stack: list[str]) -> list:
     _, _, _, projects, _ = load_all_entries()
     lower_stack = [s.lower() for s in stack]
@@ -63,38 +56,3 @@ def get_recommended_projects_for_stack(stack: list[str]) -> list:
     return sorted(scored, key=lambda x: x["_score"], reverse=True)[:20]
 
 
-def get_global_skills() -> list:
-    plugins, _, agents, _, _ = load_all_entries()
-    global_entries = [e for e in plugins if e.get("scope", []) == ["global"]]
-    global_entries += [a for a in agents if a.get("scope", []) == ["global"]]
-    
-    skills = []
-    for e in global_entries:
-        if "command" in e.get("installation", ""):
-            skills.append(e.get("name", ""))
-    
-    return skills
-
-
-def get_project_recommendations(project_code: str, project_name: str, stack: list[str]) -> dict:
-    _, _, _, projects, _ = load_all_entries()
-    recommended = get_recommended_projects_for_stack(stack)
-    
-    result = {
-        "project_code": project_code,
-        "project_name": project_name,
-        "stack": stack,
-        "recommendations": recommended,
-        "total": len(recommended),
-        "indexed_at": datetime.now().isoformat()
-    }
-    
-    return result
-
-
-def get_project_info(project_code: str, project_name: str = "") -> dict:
-    _, _, _, projects, _ = load_all_entries()
-    for p in projects:
-        if p.get("name") == project_name or p.get("code", "") == project_code:
-            return p
-    return {}

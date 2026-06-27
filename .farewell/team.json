@@ -1,1 +1,30 @@
-{"team": "OFF"}
+{
+  "team": "BAWAHAN",
+  "org": {
+    "version": "1.0",
+    "hierarchy": [
+      "boss", "director", "deputy", "team_leader",
+      "senior_backend", "junior_1", "junior_2", "junior_3"
+    ],
+    "decision_priority": [
+      "boss", "director", "deputy", "team_leader",
+      "senior_backend", "junior_1", "junior_2", "junior_3"
+    ],
+    "models": {
+      "boss": "",
+      "director": "ocg/deepseek-v4-flash",
+      "deputy": "ds/deepseek-v4-flash",
+      "team_leader": "oc/deepseek-v4-flash-free",
+      "senior_backend": "oc/mimo-v2.5-free",
+      "junior_1": "oc/big-pickle",
+      "junior_2": "oc/north-mini-code-free",
+      "junior_3": "oc/nemotron-3-ultra-free"
+    },
+    "focus": {
+      "senior_backend": ["Backend", "API", "Database", "Auth", "Security", "Business Logic", "Performance", "Cache", "Backend Architecture"],
+      "junior_1": ["Bug Finding", "Edge Cases", "Functional Validation"],
+      "junior_2": ["Code Style", "Refactoring", "Naming", "Duplicate Code", "Maintainability"],
+      "junior_3": ["Architecture", "Scalability", "Optimization", "Long-term Maintainability"]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "combos": {
-    "Free": {
+    "FREE": {
       "models": [
         "oc/deepseek-v4-flash-free",
         "oc/mimo-v2.5-free",
@@ -10,21 +10,21 @@
       ],
       "kind": "round-robin"
     },
-    "Deepseek-API-Flash": {
+    "DEEPSEEK-API-FLASH": {
       "models": [
         "ds/deepseek-v4-flash",
         "Free"
       ],
       "kind": "fallback"
     },
-    "Deepseek-GO-Flash": {
+    "DEEPSEEK-GO-FLASH": {
       "models": [
         "ocg/deepseek-v4-flash",
         "Free"
       ],
       "kind": "fallback"
     },
-    "Ollama": {
+    "OLLAMA": {
       "models": [
         "ollama/gpt-oss:120b",
         "ollama/minimax-m2.5",
@@ -32,6 +32,21 @@
         "Free"
       ],
       "kind": "fallback"
+    },
+    "KETUA_TIM": {
+      "models": [
+        "oc/deepseek-v4-flash-free"
+      ],
+      "kind": "single"
+    },
+    "PEKERJA": {
+      "models": [
+        "oc/mimo-v2.5-free",
+        "oc/big-pickle",
+        "oc/north-mini-code-free",
+        "oc/nemotron-3-ultra-free"
+      ],
+      "kind": "round-robin"
     }
   }
 }

@@ -82,6 +82,33 @@ def cmd_project(args):
         print(f"  Project code '{args.action}' not found.")
 
 
+def cmd_org(args):
+    from .helpers import _c
+    from .org import render_org_chart, render_roles, render_workflow, render_priority
+    if args.action == "chart":
+        print(f"\n  {_c('Organization Chart', 'cyan')}")
+        print(f"\n{render_org_chart()}\n")
+    elif args.action == "roles":
+        print(f"\n  {_c('Roles & Authorities', 'cyan')}{render_roles()}\n")
+    elif args.action == "workflow":
+        print(f"\n  {_c('Workflow', 'cyan')}\n")
+        print(f"{render_workflow()}\n")
+    elif args.action == "priority":
+        print(f"\n  {_c('Decision Priority', 'cyan')}\n")
+        print(f"{render_priority()}\n")
+    else:
+        print(f"\n  {_c('Organization Chart', 'cyan')}")
+        print(f"\n{render_org_chart()}\n")
+        print(f"  {_c('Contribution Split', 'yellow')}")
+        from .org import pegawai_tetap, junior_reviewers
+        pt = len(pegawai_tetap())
+        jr = len(junior_reviewers())
+        print(f"  Pegawai Tetap ({pt}): 90% — kontributor utama")
+        print(f"  Junior Reviewer ({jr}): 10% — validator\n")
+        print(f"  {_c('Decision Priority', 'yellow')}")
+        print(f"{render_priority()}\n")
+
+
 def cmd_cool(args):
     from .awesome_indexer import load_all_entries, get_recommended_projects_for_stack, get_project_info
     from .helpers import _c, read_project_active, read_project_code
@@ -247,6 +274,10 @@ def main():
     proj_p = subparsers.add_parser("project", help="List or switch active project")
     proj_p.add_argument("action", nargs="?", default="list", help="Project code or 'list'")
     proj_p.set_defaults(func=cmd_project)
+
+    org_p = subparsers.add_parser("org", help="Show org hierarchy, roles, workflow, decision priority")
+    org_p.add_argument("action", nargs="?", default="all", choices=["chart", "roles", "workflow", "priority", "all"])
+    org_p.set_defaults(func=cmd_org)
 
     cool_p = subparsers.add_parser("cool", help="awesome-opencode: list / search / info / recommend / stats")
     cool_p.add_argument("action", nargs="?", default="stats", choices=["list", "search", "info", "recommend", "stats"])

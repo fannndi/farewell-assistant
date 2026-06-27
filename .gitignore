@@ -33,7 +33,6 @@ profiles/logs/*.md
 .farewell/registry.json
 .farewell/manifest.json
 .farewell/skills/
-.farewell/9router-models.json
 .farewell/memory/
 
 # Bytecode

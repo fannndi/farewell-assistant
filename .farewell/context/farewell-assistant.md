@@ -38,7 +38,7 @@ Decision priority: Boss → Director → Deputy → Team Leader → Senior BE �
   daily.py          — 9Router health + token usage + awesome-opencode upstream sync
   memory.py         — Session save/load per project
   tracker.py        — Token usage from 9Router SQLite
-  9Router models: .farewell/9router-models.json
+  Combo models: load live from 9Router API (http://localhost:20128/api/combos)
 
 ## Commands
   /org              — Show org chart, roles, workflow, decision priority

@@ -17,9 +17,9 @@ def _get_team() -> str:
     try:
         f = config.FAREWELL_DIR / "team.json"
         if f.exists():
-            return _json.loads(f.read_text(encoding="utf-8")).get("team", "OFF")
+            return _json.loads(f.read_text(encoding="utf-8")).get("team", "TIM")
     except Exception: pass
-    return "OFF"
+    return "TIM"
 
 
 def cmd_team(args):
@@ -27,18 +27,24 @@ def cmd_team(args):
     status = args.status
     if status in ("on", "divisi"):
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "ON"}), encoding="utf-8")
-        set_models("9router/Deepseek-GO-Flash", "9router/Free")
+        set_models("9router/Deepseek-GO-Flash", "9router/Free", "divisi")
         _write_context_footer()
         print(f"\n  {_c('[DIVISI]', 'green')} Ketua Divisi leading: ocg/deepseek-v4-flash\n")
     elif status in ("off", "tim"):
-        (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "OFF"}), encoding="utf-8")
-        set_models("9router/Free", "9router/Free")
+        (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "TIM"}), encoding="utf-8")
+        set_models("9router/Ketua-Tim", "9router/Pekerja", "tim")
         _write_context_footer()
         print(f"\n  {_c('[TEAM]', 'yellow')} Ketua Tim leading: oc/deepseek-v4-flash-free + workers\n")
+    elif status == "bawahan":
+        (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "BAWAHAN"}), encoding="utf-8")
+        set_models("9router/Pekerja", "9router/Pekerja", "bawahan")
+        _write_context_footer()
+        print(f"\n  {_c('[KARYAWAN]', 'cyan')} Workers langsung tanpa leader\n")
     else:
         team = _get_team()
-        model = "ocg/deepseek-v4-flash" if team == "ON" else "oc/deepseek-v4-flash-free"
-        tier = "Divisi" if team == "ON" else "Tim"
+        if team == "ON": model = "ocg/deepseek-v4-flash"; tier = "Divisi"
+        elif team == "TIM": model = "oc/deepseek-v4-flash-free"; tier = "Tim"
+        else: model = "workers"; tier = "Bawahan"
         print(f"  Team: {team} ({tier}: {model})")
 
 
@@ -163,7 +169,9 @@ def cmd_status(args):
     mode = get_work_mode()
     code = read_project_code(active)
     team = _get_team()
-    tier = "Divisi" if team == "ON" else "Tim"
+    if team == "ON": tier = "Divisi"
+    elif team == "TIM": tier = "Tim"
+    else: tier = "Bawahan"
     skills = get_project_skills(code, active)
     sk = f" | Skills: {len(skills)}" if skills else ""
     plugs, themes, ags, projs, res = load_all_entries()
@@ -181,7 +189,9 @@ def _write_context_footer(project: str | None = None, mode: str | None = None):
         mode = get_work_mode()
     code = read_project_code(project)
     team = _get_team()
-    tier = "Divisi" if team == "ON" else "Tim"
+    if team == "ON": tier = "Divisi"
+    elif team == "TIM": tier = "Tim"
+    else: tier = "Bawahan"
     skills = get_project_skills(code, project)
     sk = f" | Skills: {len(skills)}" if skills else ""
 
@@ -224,8 +234,8 @@ def main():
     wm_p.add_argument("action", nargs="?", default="status", choices=["plan", "build", "status"])
     wm_p.set_defaults(func=cmd_workmode)
 
-    team_p = subparsers.add_parser("team", help="Switch Divisi (on) / Tim (off) / status")
-    team_p.add_argument("status", nargs="?", default="status", choices=["on", "off", "status", "divisi", "tim"])
+    team_p = subparsers.add_parser("team", help="Switch Divisi / Tim / Bawahan / status")
+    team_p.add_argument("status", nargs="?", default="status", choices=["on", "off", "divisi", "tim", "bawahan", "status"])
     team_p.set_defaults(func=cmd_team)
 
     status_p = subparsers.add_parser("status", help="Show current state")

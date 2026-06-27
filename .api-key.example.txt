@@ -1,0 +1,17 @@
+# 9Router API key (required)
+NINEROUTER_API_KEY=sk-your-key-here
+
+# Nvidia API keys (optional, for direct Nvidia access)
+NVIDIA_API_KEY_FLASH=nvapi-your-flash-key-here
+NVIDIA_API_KEY_PRO=nvapi-your-pro-key-here
+
+# Combo definitions: COMBO_{NAME}={kind}:{model1},{model2},...
+# kind: round-robin | fallback | single
+COMBO_FREE=round-robin:oc/deepseek-v4-flash-free,oc/mimo-v2.5-free,oc/big-pickle,oc/north-mini-code-free,oc/nemotron-3-ultra-free
+COMBO_DEEPSEEK-API-FLASH=fallback:ds/deepseek-v4-flash,Free
+COMBO_DEEPSEEK-GO-FLASH=fallback:ocg/deepseek-v4-flash,Free
+COMBO_OLLAMA=fallback:ollama/gpt-oss:120b,ollama/minimax-m2.5,ollama/minimax-m3,Free
+
+# Team hierarchy combos
+COMBO_KETUA_TIM=single:oc/deepseek-v4-flash-free
+COMBO_PEKERJA=round-robin:oc/mimo-v2.5-free,oc/big-pickle,oc/north-mini-code-free,oc/nemotron-3-ultra-free

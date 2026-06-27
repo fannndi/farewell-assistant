@@ -38,24 +38,44 @@ def _switch_default_agent(target: str) -> bool:
         return False
 
 
-def set_models(model_key: str, small_key: str):
-    """JSONC-safe model swap — updates root + all agent-level model references."""
+def set_models(model_key: str, small_key: str, tier: str = "divisi"):
+    """JSONC-safe model swap — updates root + agent-level models per team tier."""
     if not OC_FILE.exists():
         return
     try:
         content = OC_FILE.read_text(encoding="utf-8")
-        # Swap at root level
-        content = _patch_jsonc_value("model", model_key, content)
-        content = _patch_jsonc_value("small_model", small_key, content)
-        # Swap at every agent level (all have "model": "...")
-        # Use a broader approach: find all "model": "9router/..." references
+        # Step 1: Set all AGENT models (indented lines) to worker
         content = re.sub(
-            r'("model"\s*:\s*)"9router/[^"]*"',
-            lambda m: f'{m.group(1)}"{model_key}"',
+            r'(\s{4,}"model"\s*:\s*)"9router/[^"]*"',
+            lambda m: f'{m.group(1)}"9router/Pekerja"',
             content,
         )
-        # But restore small_model if it was also caught by the broad pattern
-        content = _patch_jsonc_value("small_model", small_key, content)
+
+        # Step 2: Set ROOT model (first occurrence, minimal indent)
+        if tier == "divisi":
+            content = re.sub(
+                r'^(\s*"model"\s*:\s*)"[^"]*"',
+                lambda m: f'{m.group(1)}"{model_key}"',
+                content, count=1, flags=re.MULTILINE,
+            )
+        elif tier == "tim":
+            content = re.sub(
+                r'^(\s*"model"\s*:\s*)"[^"]*"',
+                lambda m: f'{m.group(1)}"9router/Ketua-Tim"',
+                content, count=1, flags=re.MULTILINE,
+            )
+        else:  # bawahan
+            content = re.sub(
+                r'^(\s*"model"\s*:\s*)"[^"]*"',
+                lambda m: f'{m.group(1)}"9router/Pekerja"',
+                content, count=1, flags=re.MULTILINE,
+            )
+
+        content = re.sub(
+            r'^(\s*"small_model"\s*:\s*)"[^"]*"',
+            lambda m: f'{m.group(1)}"{small_key}"',
+            content, count=1, flags=re.MULTILINE,
+        )
         tmp = OC_FILE.with_suffix(".jsonc.tmp")
         tmp.write_text(content, encoding="utf-8")
         tmp.replace(OC_FILE)

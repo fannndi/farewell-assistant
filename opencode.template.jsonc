@@ -159,6 +159,49 @@
       "model": "9router/Deepseek-GO-Flash",
       "prompt": "{file:ecc/.opencode/prompts/agents/refactor-cleaner.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
+    },
+
+    "ketua-tim": {
+      "description": "Ketua Tim — audit teknis, koordinasi, eksekusi langsung",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
+      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+    },
+    "backend-reviewer": {
+      "description": "Backend audit — pegawai tetap, oc/mimo-v2.5-free",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "frontend-reviewer": {
+      "description": "Frontend audit — pegawai tetap, oc/mimo-v2.5-free",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/typescript-reviewer.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "worker-1": {
+      "description": "Magang — dependensi, konfigurasi, tugas ringan",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "worker-2": {
+      "description": "Magang — testing, lint, tugas ringan",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "worker-3": {
+      "description": "Magang — dokumentasi, tugas ringan",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
     }
   },
 

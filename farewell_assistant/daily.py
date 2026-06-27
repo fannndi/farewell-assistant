@@ -92,19 +92,23 @@ def git_pull(repo_dir: Path, remote: str = "origin", branch: str = "main") -> di
 
 # ── Phase 3/4: Sync opencode.jsonc ───────────────────────────────────────
 
-def _load_db_combos() -> list[dict]:
-    db = _db()
-    if not db: return []
-    conn = sqlite3.connect(str(db))
-    cur = conn.execute("SELECT name, kind, models FROM combos")
+def _load_combos() -> list[dict]:
+    """Read combos from api-key.txt instead of 9Router SQLite."""
+    key_file = config.ROOT_DIR / "api-key.txt"
+    if not key_file.exists(): return []
     combos = []
-    for row in cur.fetchall():
-        if row[0].lower() == "nvidia": continue
-        models = json.loads(row[2]) if row[2] else []
-        if models:
-            kind = row[1] if row[1] and row[1] != "None" else "round-robin"
-            combos.append({"key": row[0], "kind": kind, "models": models})
-    conn.close()
+    for line in key_file.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line.startswith("COMBO_"): continue
+        if "=" not in line: continue
+        key, val = line.split("=", 1)
+        key = key[6:]  # strip "COMBO_" prefix
+        if key.lower() == "nvidia": continue
+        if ":" not in val: continue
+        kind, models_str = val.split(":", 1)
+        models = [m.strip() for m in models_str.split(",") if m.strip()]
+        if models and kind:
+            combos.append({"key": key, "kind": kind, "models": models})
     return combos
 
 
@@ -116,7 +120,7 @@ def _nvidia_models() -> dict:
 
 
 def _write_models_inventory(combos):
-    """Write 9Router model IDs to .farewell/9router-models.json for AI model visibility."""
+    """Write combo model IDs to .farewell/9router-models.json for AI model visibility."""
     inv = {"combos": {}}
     for c in combos:
         inv["combos"][c["key"]] = {"models": c["models"], "kind": c.get("kind", "round-robin")}
@@ -133,7 +137,7 @@ def _sync_opencode():
     if not template.exists():
         return
 
-    combos = _load_db_combos()
+    combos = _load_combos()
     model_entries = []
     for i, c in enumerate(combos):
         comma = "," if i < len(combos) - 1 else ""
@@ -189,23 +193,12 @@ def _check_github_release() -> dict:
         return {"error": "GitHub unreachable"}
 
 
-def _get_combos() -> dict:
-    db = _db()
-    if not db:
-        return {"error": "DB not found"}
-    try:
-        conn = sqlite3.connect(str(db))
-        cur = conn.execute("SELECT name, kind, models FROM combos")
-        combos = []
-        for row in cur.fetchall():
-            if row[0].lower() == "nvidia": continue
-            models = json.loads(row[2]) if row[2] else []
-            if models:
-                combos.append({"name": row[0], "kind": row[1] or "-", "models": models})
-        conn.close()
-        return {"combos": combos, "total": len(combos)}
-    except Exception as e:
-        return {"error": str(e)}
+def _get_combos_combos_for_report() -> dict:
+    combos = _load_combos()
+    report = []
+    for c in combos:
+        report.append({"name": c["key"], "kind": c["kind"] or "-", "models": c["models"]})
+    return {"combos": report, "total": len(report)}
 
 
 def _check_nvidia() -> dict:
@@ -340,8 +333,8 @@ def run_daily():
     plugs, themes, ags, projs, res = load_all_entries()
     write_info("awesome: {0} plugins, {1} themes, {2} agents, {3} projects".format(len(plugs), len(themes), len(ags), len(projs)))
 
-    # Write 9Router model inventory for AI visibility
-    combos_for_inventory = _load_db_combos()
+    # Write combo model inventory for AI visibility
+    combos_for_inventory = _load_combos()
     _write_models_inventory(combos_for_inventory)
 
     # Phase 4: Readiness check
@@ -349,7 +342,8 @@ def run_daily():
     health = _check_9router()
     ecc = _check_ecc()
     github = _check_github_release()
-    combos = _get_combos()
+    combos = _load_combos()
+    combos_report = [{"name": c["key"], "kind": c["kind"] or "-", "models": c["models"]} for c in combos]
     nvidia = _check_nvidia()
 
-    _print_report(health, ecc, github, combos, nvidia, ecc_upstream, router_upstream)
+    _print_report(health, ecc, github, {"combos": combos_report, "total": len(combos_report)}, nvidia, ecc_upstream, router_upstream)

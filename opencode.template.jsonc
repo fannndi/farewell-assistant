@@ -197,7 +197,7 @@
       "template": "py -m farewell_assistant workmode $ARGUMENTS"
     },
     "team": {
-      "description": "Switch Divisi (on) / Tim (off) / status",
+      "description": "Switch team mode: divisi / tim / bawahan",
       "template": "py -m farewell_assistant team $ARGUMENTS"
     },
     "status": {

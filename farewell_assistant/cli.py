@@ -26,12 +26,12 @@ def cmd_team(args):
     from .helpers import _c
     from .daily import _sync_opencode
     status = args.status
-    if status in ("on", "divisi"):
+    if status == "divisi":
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "ON"}), encoding="utf-8")
         _sync_opencode()
         _write_context_footer()
         print(f"\n  {_c('[DIVISI]', 'green')} LEADER = {_c('LEADER_1', 'cyan')} | SPECIAL = {_c('SPECIAL', 'cyan')} | WORKER = {_c('WORKER_1', 'cyan')}\n")
-    elif status in ("off", "tim"):
+    elif status == "tim":
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "TIM"}), encoding="utf-8")
         _sync_opencode()
         _write_context_footer()
@@ -262,8 +262,8 @@ def main():
     wm_p.add_argument("action", nargs="?", default="status", choices=["plan", "build", "status"])
     wm_p.set_defaults(func=cmd_workmode)
 
-    team_p = subparsers.add_parser("team", help="Switch Divisi / Tim / Bawahan / status")
-    team_p.add_argument("status", nargs="?", default="status", choices=["on", "off", "divisi", "tim", "bawahan", "status"])
+    team_p = subparsers.add_parser("team", help="Switch team mode: divisi / tim / bawahan")
+    team_p.add_argument("status", nargs="?", default="status", choices=["divisi", "tim", "bawahan", "status"])
     team_p.set_defaults(func=cmd_team)
 
     status_p = subparsers.add_parser("status", help="Show current state")

@@ -105,6 +105,27 @@ def _load_config() -> dict:
     return models
 
 
+def _load_combo_names() -> set[str]:
+    """Read combo names from 9Router SQLite for alias resolution."""
+    import sqlite3
+    db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+    if not db.exists():
+        return set()
+    try:
+        conn = sqlite3.connect(str(db))
+        cur = conn.execute("SELECT name FROM combos")
+        names = {row[0] for row in cur}
+        conn.close()
+        return names
+    except Exception:
+        return set()
+
+
+def _alias(key: str, value: str, combo_names: set[str]) -> str:
+    """If a combo with the key name exists, use combo name (alias). Otherwise use direct model name."""
+    return key if key in combo_names else value
+
+
 def _load_skill_paths() -> list[str]:
     """Read filtered skill paths from active-skills.json, fallback to full ecc/skills."""
     mf = config.STATE_DIR / "active-skills.json"
@@ -118,7 +139,7 @@ def _load_skill_paths() -> list[str]:
 
 
 def _sync_opencode():
-    """Read template, substitute models from api-key.txt + skill paths, write opencode.jsonc."""
+    """Read template, substitute models from api-key.txt + combo aliases + skill paths, write opencode.jsonc."""
     from .cli import _get_team
 
     template = config.ROOT_DIR / "opencode.template.jsonc"
@@ -127,13 +148,14 @@ def _sync_opencode():
         return
 
     cfg = _load_config()
+    combo_names = _load_combo_names()
     team_state = _get_team()
 
-    # Resolve leader/special/worker/helper based on team mode
-    leader_1 = cfg.get("LEADER_1", "ocg/deepseek-v4-flash")
-    special = cfg.get("SPECIAL", "oc/deepseek-v4-flash-free")
-    worker_1 = cfg.get("WORKER_1", "oc/mimo-v2.5-free")
-    worker_2 = cfg.get("WORKER_2", "oc/big-pickle")
+    # Resolve leader/special/worker/helper based on team mode (using aliases)
+    leader_1 = _alias("LEADER_1", cfg.get("LEADER_1", "ocg/deepseek-v4-flash"), combo_names)
+    special = _alias("SPECIAL", cfg.get("SPECIAL", "oc/deepseek-v4-flash-free"), combo_names)
+    worker_1 = _alias("WORKER_1", cfg.get("WORKER_1", "oc/mimo-v2.5-free"), combo_names)
+    worker_2 = _alias("WORKER_2", cfg.get("WORKER_2", "oc/big-pickle"), combo_names)
 
     if team_state == "ON":  # Divisi — LEADER_1 leads, SPECIAL plans
         leader = leader_1
@@ -151,9 +173,15 @@ def _sync_opencode():
         wrk = worker_1
         hlp = worker_2
 
-    # Build provider models from all unique model names
-    all_models = {v for k, v in cfg.items() if k != "NINEROUTER_API_KEY" and v}
-    model_entries = sorted(f'        "{m}": {{ "name": "{m}" }}' for m in all_models)
+    # Build provider models: combo names + direct model names
+    provider_models = sorted(combo_names)
+    for k, v in sorted(cfg.items()):
+        if k != "NINEROUTER_API_KEY" and v and k not in combo_names:
+            provider_models.append(v)
+    model_entries = []
+    for i, m in enumerate(provider_models):
+        comma = "," if i < len(provider_models) - 1 else ""
+        model_entries.append(f'        "{m}": {{ "name": "{m}" }}{comma}')
     models_json = "{\n" + "\n".join(model_entries) + "\n      }"
 
     skill_paths = _load_skill_paths()

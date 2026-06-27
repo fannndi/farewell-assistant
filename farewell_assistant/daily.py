@@ -11,6 +11,19 @@ from . import config
 from .helpers import _c, write_ok, write_skip, write_info, write_fail
 
 
+def _get_api_key() -> str | None:
+    db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+    if not db.exists():
+        return None
+    try:
+        conn = sqlite3.connect(str(db))
+        row = conn.execute("SELECT key FROM apiKeys LIMIT 1").fetchone()
+        conn.close()
+        return row[0] if row else None
+    except:
+        return None
+
+
 def _check_9router() -> dict:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(2)
@@ -46,19 +59,20 @@ def _check_github_release() -> dict:
         req = urllib.request.Request(url, headers={"User-Agent": "farewell-assistant"})
         r = urllib.request.urlopen(req, timeout=10)
         data = json.loads(r.read())
-        published = data.get("published_at", "")
-        return {"tag": data.get("tag_name", ""), "name": data.get("name", ""), "published": published}
+        return {"tag": data.get("tag_name", ""), "name": data.get("name", ""), "published": data.get("published_at", "")}
     except Exception as e:
         return {"error": str(e)}
 
 
-def _ping_model(model: str) -> tuple:
+def _ping_model(model: str, api_key: str) -> tuple:
+    if not api_key:
+        return (False, "No API key")
     try:
         payload = json.dumps({"model": model, "messages": [{"role": "user", "content": "p"}], "max_tokens": 1}).encode()
         req = urllib.request.Request("http://localhost:20128/v1/chat/completions", data=payload,
-                                     headers={"Content-Type": "application/json"}, method="POST")
+                                     headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}, method="POST")
         r = urllib.request.urlopen(req, timeout=8)
-        return (True, "OK") if r.status == 200 else (False, f"HTTP {r.status}")
+        return (True, None) if r.status == 200 else (False, f"HTTP {r.status}")
     except urllib.error.HTTPError as e:
         return (False, f"HTTP {e.code}")
     except Exception as e:
@@ -69,6 +83,9 @@ def _check_combo_models() -> dict:
     db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
     if not db.exists():
         return {"error": "DB not found"}
+    api_key = _get_api_key()
+    if not api_key:
+        return {"error": "No API key"}
     try:
         conn = sqlite3.connect(str(db))
         cur = conn.execute("SELECT name, kind, models FROM combos")
@@ -84,7 +101,7 @@ def _check_combo_models() -> dict:
             return {"total": 0, "ok": 0, "details": {}, "combos": combos}
         results = {}
         for m in sorted(all_models):
-            ok, reason = _ping_model(m)
+            ok, reason = _ping_model(m, api_key)
             results[m] = {"ok": ok, "reason": reason}
         ok_count = sum(1 for r in results.values() if r["ok"])
         return {"total": len(all_models), "ok": ok_count, "details": results, "combos": combos}
@@ -101,7 +118,7 @@ def _print_report(health, ecc, github, combo):
         write_fail("9Router NOT running")
 
     if ecc.get("commits_behind", 0) > 0:
-        write_info(f"ECC: {ecc['commits_behind']} commit(s) behind — run /upstream")
+        write_info(f"ECC: {ecc['commits_behind']} commit(s) behind \u2014 run /upstream")
     else:
         write_ok("ECC: up to date")
 
@@ -112,9 +129,9 @@ def _print_report(health, ecc, github, combo):
         local_ver = json.loads(local.read_text()).get("version") if local.exists() else None
         tag = github.get("tag", "").lstrip("v")
         if local_ver and tag != local_ver:
-            write_info(f"GitHub: v{tag} ({github['published'][:10]}) — UPDATE AVAILABLE! (local v{local_ver})")
+            write_info(f"GitHub: v{tag} ({github['published'][:10]}) \u2014 UPDATE AVAILABLE! (local v{local_ver})")
         else:
-            write_ok(f"GitHub: {github.get('tag', '?')} — up to date")
+            write_ok(f"GitHub: {github.get('tag', '?')} \u2014 up to date")
 
     if "error" in combo:
         write_fail(f"Combos: {combo['error']}")
@@ -124,7 +141,7 @@ def _print_report(health, ecc, github, combo):
         write_ok(f"Combos: {len(combo['combos'])} combos, {combo['ok']}/{combo['total']} models responsive")
     else:
         failed = [m for m, r in combo["details"].items() if not r["ok"]]
-        write_fail(f"Combos: {combo['ok']}/{combo['total']} models responsive — {', '.join(failed[:5])}")
+        write_fail(f"Combos: {combo['ok']}/{combo['total']} models responsive \u2014 {', '.join(failed[:5])}")
 
     print(f"  {_c('='*45, 'cyan')}\n")
 

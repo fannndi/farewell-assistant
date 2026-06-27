@@ -1,4 +1,4 @@
-"""CLI entrypoint — minimal dispatcher (workmode/team/status/start/project/upstream)."""
+"""CLI entrypoint — minimal dispatcher (workmode/team/status/start/project/upstream/daily)."""
 
 import argparse
 from . import config
@@ -38,6 +38,11 @@ def cmd_team(args):
 def cmd_upstream(args):
     from .upstream import run_upstream
     run_upstream()
+
+
+def cmd_daily(args):
+    from .daily import run_daily
+    run_daily()
 
 
 def cmd_project(args):
@@ -105,7 +110,7 @@ def main():
     parser = argparse.ArgumentParser(prog="farewell-assistant", description="Lightweight 9Router orchestrator")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    wm_p = subparsers.add_parser("workmode", help="Switch or show work mode (plan/build)")
+    wm_p = subparsers.add_parser("workmode", help="Switch work mode (plan/build)")
     wm_p.add_argument("action", nargs="?", default="status", choices=["plan", "build", "status"])
     wm_p.set_defaults(func=cmd_workmode)
 
@@ -123,8 +128,11 @@ def main():
     proj_p.add_argument("action", nargs="?", default="list", help="Project code or 'list'")
     proj_p.set_defaults(func=cmd_project)
 
-    up_p = subparsers.add_parser("upstream", help="Git pull ECC + 9Router, analyze changelog")
+    up_p = subparsers.add_parser("upstream", help="Git pull ECC + 9Router")
     up_p.set_defaults(func=cmd_upstream)
+
+    daily_p = subparsers.add_parser("daily", help="Daily readiness: 9Router health + ECC/GitHub updates + combo model ping")
+    daily_p.set_defaults(func=cmd_daily)
 
     args = parser.parse_args()
     if not args.command:

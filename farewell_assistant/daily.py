@@ -116,55 +116,24 @@ def _nvidia_models() -> dict:
 
 
 def _sync_opencode():
+    """Read template, substitute combo models, write to opencode.jsonc."""
+    template = config.ROOT_DIR / "opencode.template.jsonc"
+    output = config.ROOT_DIR / "opencode.jsonc"
+    if not template.exists():
+        return
+
     combos = _load_db_combos()
-    lines = []
-    lines.append('    "9router": {')
-    lines.append('      "npm": "@ai-sdk/openai-compatible",')
-    lines.append('      "name": "Local 9Router",')
-    lines.append('      "env": ["NINEROUTER_API_KEY"],')
-    lines.append('      "options": {')
-    lines.append('        "baseURL": "http://localhost:20128/v1",')
-    lines.append('        "apiKey": "{env:NINEROUTER_API_KEY}"')
-    lines.append('      },')
-    lines.append('      "models": {')
+    model_entries = []
     for i, c in enumerate(combos):
         comma = "," if i < len(combos) - 1 else ""
-        lines.append(f'        "{c["key"]}": {{ "name": "{c["name"]}" }}{comma}')
-    lines.append('      }')
-    lines.append('    },')
-    lines.append('    "nvidia": {')
-    lines.append('      "npm": "@ai-sdk/openai-compatible",')
-    lines.append('      "name": "Nvidia Direct",')
-    lines.append('      "env": ["NVIDIA_API_KEY_FLASH", "NVIDIA_API_KEY_PRO"],')
-    lines.append('      "options": {')
-    lines.append('        "baseURL": "https://integrate.api.nvidia.com/v1",')
-    lines.append('        "apiKey": "{env:NVIDIA_API_KEY_FLASH}"')
-    lines.append('      },')
-    lines.append('      "models": {')
-    lines.append('        "deepseek-ai/deepseek-v4-flash": { "name": "Nvidia Flash (40 RPM)", "apiKey": "{env:NVIDIA_API_KEY_FLASH}" },')
-    lines.append('        "deepseek-ai/deepseek-v4-pro": { "name": "Nvidia Pro (40 RPM)", "apiKey": "{env:NVIDIA_API_KEY_PRO}" }')
-    lines.append('      }')
-    lines.append('    }')
-    new_provider = "\n".join(lines)
+        model_entries.append(f'        "{c["key"]}": {{ "name": "{c["name"]}" }}{comma}')
+    models_json = "{\n" + "\n".join(model_entries) + "\n      }"
 
-    path = config.ROOT_DIR / "opencode.jsonc"
-    content = path.read_text(encoding="utf-8")
-    start = content.find('"provider"')
-    if start == -1: return
-    brace_start = content.find('{', start)
-    if brace_start == -1: return
-    depth = 0; brace_end = -1
-    for i in range(brace_start, len(content)):
-        if content[i] == '{': depth += 1
-        elif content[i] == '}':
-            depth -= 1
-            if depth == 0: brace_end = i; break
-    if brace_end == -1: return
-    new_section = f'"provider": {{\n{new_provider}\n  }}'
-    new_content = content[:start] + new_section + content[brace_end + 1:]
-    tmp = path.with_suffix(".jsonc.tmp")
-    tmp.write_text(new_content, encoding="utf-8")
-    tmp.replace(path)
+    content = template.read_text(encoding="utf-8")
+    content = content.replace("${COMBO_MODELS}", models_json)
+    tmp = output.with_suffix(".jsonc.tmp")
+    tmp.write_text(content, encoding="utf-8")
+    tmp.replace(output)
 
 
 # ── Phase 4/4: Readiness check ───────────────────────────────────────────

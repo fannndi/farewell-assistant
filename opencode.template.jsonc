@@ -4,7 +4,6 @@
   "small_model": "9router/Free",
   "default_agent": "build",
 
-
   "provider": {
     "9router": {
       "npm": "@ai-sdk/openai-compatible",
@@ -14,12 +13,7 @@
         "baseURL": "http://localhost:20128/v1",
         "apiKey": "{env:NINEROUTER_API_KEY}"
       },
-      "models": {
-        "Free": { "name": "Free (5 models, round-robin)" },
-        "Deepseek-API-Flash": { "name": "Deepseek-API-Flash (2 models, round-robin)" },
-        "Deepseek-GO-Flash": { "name": "Deepseek-GO-Flash (2 models, round-robin)" },
-        "Ollama": { "name": "Ollama (4 models, round-robin)" }
-      }
+      "models": ${COMBO_MODELS}
     },
     "nvidia": {
       "npm": "@ai-sdk/openai-compatible",
@@ -125,12 +119,9 @@
       "description": "List or switch active project",
       "template": "py -m farewell_assistant project $ARGUMENTS"
     }
-  }
   },
 
   "permission": {
     "mcp_*": "ask"
   }
 }
-
-

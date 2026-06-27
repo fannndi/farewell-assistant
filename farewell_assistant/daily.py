@@ -168,13 +168,11 @@ def _sync_opencode():
         wrk = "WORKER_1"
         hlp = "WORKER_2"
 
-    # Build provider models: only combo names (key names + extra combos from 9Router)
-    provider_models = set(cfg.keys()) - {"NINEROUTER_API_KEY"}  # all key names
-    provider_models.update(combo_names)  # add extra combos from 9Router (e.g. Free_Chat)
+    # Build provider models: only combos that exist in 9Router
     model_entries = []
-    sorted_models = sorted(provider_models)
-    for i, m in enumerate(sorted_models):
-        comma = "," if i < len(sorted_models) - 1 else ""
+    sorted_combos = sorted(combo_names)
+    for i, m in enumerate(sorted_combos):
+        comma = "," if i < len(sorted_combos) - 1 else ""
         model_entries.append(f'        "{m}": {{ "name": "{m}" }}{comma}')
     models_json = "{\n" + "\n".join(model_entries) + "\n      }"
 

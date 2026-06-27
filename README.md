@@ -85,18 +85,31 @@ Decision priority: Boss → Director → Deputy → Team Leader → Senior BE �
 
 ## Workflow Example
 
-Berikut alur lengkap dari user memberi task hingga eksekusi oleh tim AI:
+### DIVISI mode — Director leads (model premium)
 
 ```
 USER (Boss)
   │  "Bikin fitur login untuk service-hub"
   ▼
 DIRECTOR AI (ocg/deepseek-v4-flash)
-  │  Memahami objective → menentukan scope → buat Work Order
-  │  Output: "WO-003: Implementasi auth (register/login/JWT) di service-hub"
+  │  Memahami objective → scope → Work Order
+  │  Output: "WO-003: Implementasi auth (register/login/JWT)"
+  ▼
+TEAM LEADER + SENIOR BE + JUNIORS
+  │  Eksekusi sesuai WO
+  ▼
+LAPOR → DIRECTOR → USER
+```
+
+### TIM mode — Personal/hemat token (skip Director)
+
+```
+USER (Boss)
+  │  "Bikin fitur login untuk service-hub"
+  │  (langsung, tanpa Director — hemat token)
   ▼
 TEAM LEADER (oc/deepseek-v4-flash-free)
-  │  Menerima WO → bagi tugas:
+  │  Pahami task → bagi tugas:
   │  ├─ Senior BE  → backend auth (API, DB, JWT)
   │  ├─ Junior I   → validasi bug/edge cases
   │  ├─ Junior II  → review code style
@@ -109,20 +122,42 @@ SENIOR BE (oc/mimo-v2.5-free)
   │  3. Implementasi JWT + middleware
   │  4. Tulis unit test
   ▼
-GABUNG HASIL
-  │  Team Leader kumpulkan semua output
-  │  Resolve konflik rekomendasi antar reviewer
-  │  Prioritaskan berdasarkan dampak
+JUNIOR REVIEWERS
+  │  Validasi: bug, style, architecture
   ▼
-LAPOR ke DIRECTOR
-  │  "WO-003 selesai. 3 file: auth.ts, db.py, test_auth.py"
-  │  Teknologi: bcrypt, jsonwebtoken, express-validator
+GABUNG HASIL
+  │  Team Leader kumpulkan output
+  │  Resolve konflik rekomendasi
+  ▼
+LAPOR ke USER
+  │  "Selesai. 3 file: auth.ts, db.py, test_auth.py"
   │  Coverage: 92%
   ▼
 USER (Boss)
-  │  Review hasil → approve / minta revisi
+  │  Review → approve / minta revisi
   ✔  SELESAI
 ```
+
+### BAWAHAN mode — Worker langsung
+
+```
+USER (Boss)
+  │  "Bikin fitur login"
+  ▼
+WORKER (SENIOR combo)
+  │  Eksekusi langsung
+  ▼
+USER (Boss)
+  ✔  SELESAI
+```
+
+### Ringkasan
+
+| Mode | Alur | Token |
+|------|------|-------|
+| DIVISI | User → Director → Team → User | Boros (premium) |
+| TIM | User → Team → User | Hemat (free) |
+| BAWAHAN | User → Worker → User | Paling hemat |
 
 ### Alur perintah
 

@@ -18,6 +18,7 @@ api-key.txt
 # Dependencies (cloned, not committed)
 /ecc/
 /9router/
+/awesome-opencode/
 
 # Model files (large GGUF binaries, not tracked)
 models/

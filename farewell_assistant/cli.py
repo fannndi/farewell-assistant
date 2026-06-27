@@ -24,28 +24,36 @@ def _get_team() -> str:
 
 def cmd_team(args):
     from .helpers import _c
+    from .daily import _load_combos, _resolve_combo
     status = args.status
+    combos = _load_combos()
     if status in ("on", "divisi"):
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "ON"}), encoding="utf-8")
-        set_models("9router/Deepseek-GO-Flash", "9router/Free", "divisi")
+        model = _resolve_combo(combos, ["DIRECTOR", "DEEPSEEK-GO-FLASH", "LEADER"]) or "DIRECTOR"
+        small = _resolve_combo(combos, ["DEPUTY", "DEEPSEEK-API-FLASH", "FREE"], model) or model
+        set_models(model, small, "divisi")
         _write_context_footer()
-        print(f"\n  {_c('[DIVISI]', 'green')} Ketua Divisi leading: ocg/deepseek-v4-flash\n")
+        print(f"\n  {_c('[DIVISI]', 'green')} Ketua Divisi leading: {model}\n")
     elif status in ("off", "tim"):
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "TIM"}), encoding="utf-8")
-        set_models("9router/Ketua-Tim", "9router/Pekerja", "tim")
+        model = _resolve_combo(combos, ["TEAM_LEADER", "LEADER", "KETUA_TIM"]) or "TEAM_LEADER"
+        small = _resolve_combo(combos, ["PEKERJA", "WORKER", "FREE"], model) or model
+        set_models(model, small, "tim")
         _write_context_footer()
-        print(f"\n  {_c('[TEAM]', 'yellow')} Ketua Tim leading: oc/deepseek-v4-flash-free + workers\n")
+        print(f"\n  {_c('[TEAM]', 'yellow')} Ketua Tim leading: {model}\n")
     elif status == "bawahan":
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "BAWAHAN"}), encoding="utf-8")
-        set_models("9router/Pekerja", "9router/Pekerja", "bawahan")
+        model = _resolve_combo(combos, ["PEKERJA", "WORKER", "FREE"]) or "PEKERJA"
+        small = model
+        set_models(model, small, "bawahan")
         _write_context_footer()
-        print(f"\n  {_c('[KARYAWAN]', 'cyan')} Workers langsung tanpa leader\n")
+        print(f"\n  {_c('[KARYAWAN]', 'cyan')} Workers mode: {model}\n")
     else:
         team = _get_team()
-        if team == "ON": model = "ocg/deepseek-v4-flash"; tier = "Divisi"
-        elif team == "TIM": model = "oc/deepseek-v4-flash-free"; tier = "Tim"
-        else: model = "workers"; tier = "Bawahan"
-        print(f"  Team: {team} ({tier}: {model})")
+        if team == "ON": tier = "Divisi"; m = _resolve_combo(combos, ["DIRECTOR", "LEADER"]) or "DIRECTOR"
+        elif team == "TIM": tier = "Tim"; m = _resolve_combo(combos, ["TEAM_LEADER", "LEADER"]) or "TEAM_LEADER"
+        else: tier = "Bawahan"; m = _resolve_combo(combos, ["PEKERJA", "WORKER", "FREE"]) or "PEKERJA"
+        print(f"  Team: {team} ({tier}: {m})")
 
 
 def cmd_daily(args):

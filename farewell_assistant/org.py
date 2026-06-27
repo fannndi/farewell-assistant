@@ -15,10 +15,10 @@ class Role:
     contribution: str = ""
 
 
-BOSS = Role(
-    title="Boss (User)",
+USER = Role(
+    title="User",
     model_label="-",
-    status="Otoritas Penuh",
+    status="Pengguna",
     tier="boss",
     authority=[
         "Menentukan objective",
@@ -26,7 +26,7 @@ BOSS = Role(
         "Menyetujui hasil",
         "Meminta revisi",
     ],
-    contribution="0% - tidak ikut pekerjaan teknis",
+    contribution="Pengguna adalah pengambil keputusan tertinggi, tidak ikut pekerjaan teknis langsung."
 )
 
 DIRECTOR = Role(
@@ -35,13 +35,62 @@ DIRECTOR = Role(
     status="Director Divisi -- Pegawai Tetap",
     tier="pegawai_tetap",
     authority=[
-        "Memahami objective Boss",
+        "Memahami objective User",
         "Menentukan strategi & scope project",
         "Membuat Work Order",
         "Menentukan prioritas sprint",
         "Final review & executive decision",
     ],
     contribution="Tidak mengerjakan audit teknis langsung (kecuali diminta)",
+)
+
+DEPUTY = Role(
+    title="Deputy Director AI",
+    model_label="ds/deepseek-v4-flash",
+    status="Wakil Director -- Pegawai Tetap",
+    tier="pegawai_tetap",
+    authority=[
+        "Membantu Director",
+        "Memvalidasi keputusan",
+        "Second opinion",
+        "Menjaga konsistensi strategi",
+        "Menggantikan Director dalam emergency",
+    ],
+    contribution="Full authority jika Director tidak tersedia",
+)
+
+TEAM_LEADER = Role(
+    title="Team Leader AI",
+    model_label="oc/deepseek-v4-flash-free",
+    status="Ketua Tim Engineering -- Pegawai Tetap",
+    tier="pegawai_tetap",
+    focus=["Frontend Audit", "Integrasi Sistem", "Audit Umum"],
+    authority=[
+        "Menerima Work Order",
+        "Membagi pekerjaan",
+        "Mengaudit frontend & integrasi sistem",
+        "Bekerja bersama Senior Backend Engineer",
+        "Menggabungkan seluruh hasil audit",
+        "Menyelesaikan konflik rekomendasi",
+        "Membuat laporan lengkap untuk Director",
+    ],
+    contribution="90% -- kontributor utama",
+)
+
+SENIOR_BACKEND = Role(
+    title="Senior Backend Engineer",
+    model_label="oc/mimo-v2.5-free",
+    status="Pegawai Tetap",
+    tier="pegawai_tetap",
+    focus=["Backend", "API", "Database", "Auth", "Security"],
+    authority=[
+        "Bertanggung jawab penuh terhadap Backend, API, Database",
+        "Authentication & Authorization",
+        "Business Logic & Security",
+        "Performance & Cache",
+        "Backend Architecture",
+    ],
+    contribution="90% -- partner utama Team Leader",
 )
 
 DEPUTY = Role(
@@ -124,7 +173,7 @@ JUNIOR_3 = Role(
 )
 
 ROLES: dict[str, Role] = {
-    "boss": BOSS,
+    "boss": USER,
     "director": DIRECTOR,
     "deputy": DEPUTY,
     "team_leader": TEAM_LEADER,

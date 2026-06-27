@@ -91,19 +91,47 @@ def git_pull(repo_dir: Path, remote: str = "origin", branch: str = "main") -> di
 # ── Phase 3/4: Sync opencode.jsonc ───────────────────────────────────────
 
 def _load_combos() -> list[dict]:
-    """Fetch combos from 9Router API only."""
+    """Fetch combos from 9Router SQLite directly."""
+    import sqlite3
+    db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+    if not db.exists():
+        return []
     try:
-        r = urllib.request.urlopen("http://localhost:20128/api/combos", timeout=3)
-        data = json.loads(r.read())
-        if isinstance(data, list):
-            return [{"key": c["name"], "kind": c.get("kind", "round-robin"), "models": json.loads(c["models"]) if isinstance(c.get("models"), str) else c.get("models", [])} for c in data]
+        conn = sqlite3.connect(str(db))
+        cur = conn.execute("SELECT name, kind, models FROM combos ORDER BY name")
+        combos = []
+        for row in cur.fetchall():
+            models = json.loads(row[2]) if row[2] else []
+            combos.append({"key": row[0], "kind": row[1] or "round-robin", "models": models})
+        conn.close()
+        return combos
     except Exception:
-        pass
-    return []
+        return []
+
+
+def _resolve_combo(combos: list[dict], preferred: list[str], fallback: str | None = None) -> str:
+    """Find combo by preferred names (case-insensitive), fallback to first or given fallback."""
+    for name in preferred:
+        for c in combos:
+            if c["key"].upper() == name.upper():
+                return c["key"]
+    return fallback if fallback else (combos[0]["key"] if combos else "")
+
+
+def _load_skill_paths() -> list[str]:
+    """Read filtered skill paths from active-skills.json, fallback to full ecc/skills."""
+    mf = config.STATE_DIR / "active-skills.json"
+    if mf.exists():
+        try:
+            data = json.loads(mf.read_text(encoding="utf-8"))
+            return data.get("paths", ["ecc/skills", ".farewell/custom-skills"])
+        except Exception:
+            pass
+    return ["ecc/skills", ".farewell/custom-skills"]
 
 
 def _sync_opencode():
-    """Read template, substitute combo models, write to opencode.jsonc."""
+    """Read template, substitute combo models + model names + skill paths, write to opencode.jsonc."""
     template = config.ROOT_DIR / "opencode.template.jsonc"
     output = config.ROOT_DIR / "opencode.jsonc"
     if not template.exists():
@@ -116,8 +144,25 @@ def _sync_opencode():
         model_entries.append(f'        "{c["key"]}": {{ "name": "{c["key"]}" }}{comma}')
     models_json = "{\n" + "\n".join(model_entries) + "\n      }"
 
+    # Resolve root model and small model: prefer dedicated role combos, fallback to first available
+    root_model = _resolve_combo(combos, ["DIRECTOR", "LEADER", "TEAM_LEADER"])
+    small_model = _resolve_combo(combos, ["DEPUTY", "SENIOR", "WORKER"], root_model)
+
+    # Fallback defaults if no combos exist yet
+    if not root_model:
+        root_model = "DIRECTOR"
+    if not small_model:
+        small_model = root_model
+
+    # Resolve skill paths from active-skills.json
+    skill_paths = _load_skill_paths()
+    skill_paths_json = json.dumps(skill_paths)
+
     content = template.read_text(encoding="utf-8")
     content = content.replace("${COMBO_MODELS}", models_json)
+    content = content.replace("${ROUTER_MODEL}", root_model)
+    content = content.replace("${ROUTER_SMALL_MODEL}", small_model)
+    content = content.replace("${SKILL_PATHS}", skill_paths_json)
     tmp = output.with_suffix(".jsonc.tmp")
     tmp.write_text(content, encoding="utf-8")
     tmp.replace(output)

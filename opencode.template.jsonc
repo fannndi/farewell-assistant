@@ -1,7 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "9router/Deepseek-GO-Flash",
-  "small_model": "9router/Free",
+  "model": "9router/${ROUTER_MODEL}",
+  "small_model": "9router/${ROUTER_SMALL_MODEL}",
   "default_agent": "build",
 
   "provider": {
@@ -26,124 +26,124 @@
   ],
 
   "skills": {
-    "paths": ["ecc/skills", ".farewell/custom-skills"]
+    "paths": ${SKILL_PATHS}
   },
 
   "agent": {
     "build": {
       "description": "Primary coding agent",
       "mode": "primary",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
     },
     "team": {
       "description": "Team orchestrator — delegate to sub-agents, coordinates full stack work",
       "mode": "primary",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
     },
     "planner": {
       "description": "Planning specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "architect": {
       "description": "Architecture and system design specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/architect.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "code-reviewer": {
       "description": "Code review specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/code-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "security-reviewer": {
       "description": "Security specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/security-reviewer.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "tdd-guide": {
       "description": "TDD specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/tdd-guide.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "build-error-resolver": {
       "description": "Build error specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/build-error-resolver.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "doc-updater": {
       "description": "Documentation specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/doc-updater.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "python-reviewer": {
       "description": "Python code review specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "typescript-reviewer": {
       "description": "TypeScript/JavaScript code review specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "kotlin-reviewer": {
       "description": "Kotlin/Android code review specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/kotlin-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "database-reviewer": {
       "description": "SQL/schema query review specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/database-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "kotlin-build-resolver": {
       "description": "Kotlin/Gradle build error specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/kotlin-build-resolver.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "java-reviewer": {
       "description": "Java/Spring Boot code review specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/java-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "docs-lookup": {
       "description": "Documentation lookup via Context7.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/docs-lookup.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "refactor-cleaner": {
       "description": "Dead code and refactoring specialist.",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/refactor-cleaner.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
@@ -151,42 +151,42 @@
     "ketua-tim": {
       "description": "Ketua Tim — audit teknis, koordinasi, eksekusi langsung",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
     },
     "backend-reviewer": {
       "description": "Backend audit — pegawai tetap, oc/mimo-v2.5-free",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "frontend-reviewer": {
       "description": "Frontend audit — pegawai tetap, oc/mimo-v2.5-free",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/typescript-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "worker-1": {
       "description": "Magang — dependensi, konfigurasi, tugas ringan",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "worker-2": {
       "description": "Magang — testing, lint, tugas ringan",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "worker-3": {
       "description": "Magang — dokumentasi, tugas ringan",
       "mode": "subagent",
-      "model": "9router/Deepseek-GO-Flash",
+      "model": "9router/${ROUTER_MODEL}",
       "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     }

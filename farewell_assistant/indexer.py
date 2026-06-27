@@ -42,13 +42,6 @@ def get_project_skills(project_code: str, project_name: str) -> list[str]:
     return []
 
 
-def get_active_skills() -> list[str]:
-    from .helpers import read_project_active, read_project_code
-    active = read_project_active()
-    code = read_project_code(active)
-    return get_project_skills(code, active)
-
-
 def write_active_skills_manifest(project_code: str, project_name: str):
     skills = get_project_skills(project_code, project_name)
     if not skills:

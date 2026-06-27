@@ -122,8 +122,8 @@ def _load_combo_names() -> set[str]:
 
 
 def _alias(key: str, value: str, combo_names: set[str]) -> str:
-    """Always use key name as model (combo alias). Value is fallback if key doesn't exist anywhere."""
-    return key  # Always route through combo name
+    """Use combo name if it exists, otherwise use the direct model value."""
+    return key if key in combo_names else value
 
 
 def _load_skill_paths() -> list[str]:
@@ -151,28 +151,39 @@ def _sync_opencode():
     combo_names = _load_combo_names()
     team_state = _get_team()
 
-    # Always use key names as model aliases (all routing through 9Router combos)
-    if team_state == "ON":  # Divisi — LEADER_1 leads, SPECIAL plans
-        leader = "LEADER_1"
-        spc = "SPECIAL"
-        wrk = "WORKER_1"
-        hlp = "WORKER_2"
-    elif team_state == "TIM":  # Tim — SPECIAL leads AND plans
-        leader = "SPECIAL"
-        spc = "SPECIAL"
-        wrk = "WORKER_1"
-        hlp = "WORKER_2"
-    else:  # BAWAHAN — workers only
-        leader = "WORKER_1"
-        spc = "WORKER_1"
-        wrk = "WORKER_1"
-        hlp = "WORKER_2"
+    # Resolve leader/special/worker/helper: alias if combo exists, else direct model
+    leader_1 = cfg.get("LEADER_1", "ocg/deepseek-v4-flash")
+    special = cfg.get("SPECIAL", "oc/deepseek-v4-flash-free")
+    worker_1 = cfg.get("WORKER_1", "oc/mimo-v2.5-free")
+    worker_2 = cfg.get("WORKER_2", "oc/big-pickle")
 
-    # Build provider models: only combos that exist in 9Router
+    if team_state == "ON":  # Divisi — LEADER_1 leads, SPECIAL plans
+        leader = _alias("LEADER_1", leader_1, combo_names)
+        spc = _alias("SPECIAL", special, combo_names)
+        wrk = _alias("WORKER_1", worker_1, combo_names)
+        hlp = _alias("WORKER_2", worker_2, combo_names)
+    elif team_state == "TIM":  # Tim — SPECIAL leads AND plans
+        leader = _alias("SPECIAL", special, combo_names)
+        spc = _alias("SPECIAL", special, combo_names)
+        wrk = _alias("WORKER_1", worker_1, combo_names)
+        hlp = _alias("WORKER_2", worker_2, combo_names)
+    else:  # BAWAHAN — workers only
+        wrk_val = _alias("WORKER_1", worker_1, combo_names)
+        leader = wrk_val
+        spc = wrk_val
+        wrk = wrk_val
+        hlp = _alias("WORKER_2", worker_2, combo_names)
+
+    # Build provider models: combo names + direct model names (from cfg)
+    provider_models = set(combo_names)
+    for k, v in cfg.items():
+        if k != "NINEROUTER_API_KEY" and v:
+            if k not in combo_names:
+                provider_models.add(v)  # direct model
     model_entries = []
-    sorted_combos = sorted(combo_names)
-    for i, m in enumerate(sorted_combos):
-        comma = "," if i < len(sorted_combos) - 1 else ""
+    sorted_models = sorted(provider_models)
+    for i, m in enumerate(sorted_models):
+        comma = "," if i < len(sorted_models) - 1 else ""
         model_entries.append(f'        "{m}": {{ "name": "{m}" }}{comma}')
     models_json = "{\n" + "\n".join(model_entries) + "\n      }"
 

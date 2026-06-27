@@ -6,6 +6,8 @@ from .workmode import switch_workmode, set_models
 from .indexer import write_active_skills_manifest
 from .memory import get_recent_context, save_session
 
+_CONTEXT_COUNTER = 0
+
 
 def cmd_workmode(args):
     switch_workmode(args.action)
@@ -22,18 +24,22 @@ def _get_team() -> str:
 
 def cmd_team(args):
     from .helpers import _c
-    if args.status == "on":
+    status = args.status
+    if status in ("on", "divisi"):
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "ON"}), encoding="utf-8")
-        set_models("9router/Deepseek-GO-Flash", "9router/Deepseek-API-Flash")
+        set_models("9router/Deepseek-GO-Flash", "9router/Free")
         _write_context_footer()
-        print(f"\n  {_c('[TEAM]', 'green')} ON - professional mode (model: Deepseek-GO-Flash)\n")
-    elif args.status == "off":
+        print(f"\n  {_c('[DIVISI]', 'green')} Ketua Divisi leading: ocg/deepseek-v4-flash\n")
+    elif status in ("off", "tim"):
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "OFF"}), encoding="utf-8")
         set_models("9router/Free", "9router/Free")
         _write_context_footer()
-        print(f"\n  {_c('[TEAM]', 'yellow')} OFF - personal mode (model: Free combo)\n")
+        print(f"\n  {_c('[TEAM]', 'yellow')} Ketua Tim leading: oc/deepseek-v4-flash-free + workers\n")
     else:
-        print(f"  Team: {_get_team()}")
+        team = _get_team()
+        model = "ocg/deepseek-v4-flash" if team == "ON" else "oc/deepseek-v4-flash-free"
+        tier = "Divisi" if team == "ON" else "Tim"
+        print(f"  Team: {team} ({tier}: {model})")
 
 
 def cmd_daily(args):
@@ -157,11 +163,12 @@ def cmd_status(args):
     mode = get_work_mode()
     code = read_project_code(active)
     team = _get_team()
+    tier = "Divisi" if team == "ON" else "Tim"
     skills = get_project_skills(code, active)
     sk = f" | Skills: {len(skills)}" if skills else ""
     plugs, themes, ags, projs, res = load_all_entries()
     ao = f" | awesome: {len(plugs)}p/{len(ags)}a/{len(projs)}pr"
-    print(f"\n  {_c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk} | Team: {team}{ao}', 'cyan')}\n")
+    print(f"\n  {_c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk} | {tier}{ao}', 'cyan')}\n")
 
 
 def _write_context_footer(project: str | None = None, mode: str | None = None):
@@ -174,6 +181,7 @@ def _write_context_footer(project: str | None = None, mode: str | None = None):
         mode = get_work_mode()
     code = read_project_code(project)
     team = _get_team()
+    tier = "Divisi" if team == "ON" else "Tim"
     skills = get_project_skills(code, project)
     sk = f" | Skills: {len(skills)}" if skills else ""
 
@@ -192,14 +200,19 @@ def _write_context_footer(project: str | None = None, mode: str | None = None):
     else:
         recs_block = ""
 
+    global _CONTEXT_COUNTER
+    _CONTEXT_COUNTER += 1
     ctx = f"""# State
 Farewell: ON
-Team: {team}
+Tier: {tier}
 Project: {code}-{project}
 Mode: {mode.upper()}{sk}
 {mem_ctx}{recs_block}
 """
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
+
+    if _CONTEXT_COUNTER % 5 == 0 and mode != "plan":
+        save_session(code, project, f"Mode: {mode.upper()} | Skills: {len(skills)}", list(skills[:5]), 0)
 
 
 def main():
@@ -211,8 +224,8 @@ def main():
     wm_p.add_argument("action", nargs="?", default="status", choices=["plan", "build", "status"])
     wm_p.set_defaults(func=cmd_workmode)
 
-    team_p = subparsers.add_parser("team", help="Set team mode: on / off / status")
-    team_p.add_argument("status", nargs="?", default="status", choices=["on", "off", "status"])
+    team_p = subparsers.add_parser("team", help="Switch Divisi (on) / Tim (off) / status")
+    team_p.add_argument("status", nargs="?", default="status", choices=["on", "off", "status", "divisi", "tim"])
     team_p.set_defaults(func=cmd_team)
 
     status_p = subparsers.add_parser("status", help="Show current state")

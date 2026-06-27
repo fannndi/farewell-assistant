@@ -115,6 +115,17 @@ def _nvidia_models() -> dict:
     }
 
 
+def _write_models_inventory(combos):
+    """Write 9Router model IDs to .farewell/9router-models.json for AI model visibility."""
+    inv = {"combos": {}}
+    for c in combos:
+        inv["combos"][c["key"]] = {"models": c["models"], "kind": c.get("kind", "round-robin")}
+    p = config.FAREWELL_DIR / "9router-models.json"
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(inv, indent=2), encoding="utf-8")
+    tmp.replace(p)
+
+
 def _sync_opencode():
     """Read template, substitute combo models, write to opencode.jsonc."""
     template = config.ROOT_DIR / "opencode.template.jsonc"
@@ -198,10 +209,6 @@ def _get_combos() -> dict:
 
 
 def _check_nvidia() -> dict:
-    try:
-        from .nvidia import NVIDIA_API_KEY_FLASH, NVIDIA_MODELS, _load_api_key
-    except:
-        pass
     results = {}
     for model in ["deepseek-ai/deepseek-v4-flash", "deepseek-ai/deepseek-v4-pro"]:
         ok = False; reason = ""
@@ -332,6 +339,10 @@ def run_daily():
     from .awesome_indexer import load_all_entries
     plugs, themes, ags, projs, res = load_all_entries()
     write_info("awesome: {0} plugins, {1} themes, {2} agents, {3} projects".format(len(plugs), len(themes), len(ags), len(projs)))
+
+    # Write 9Router model inventory for AI visibility
+    combos_for_inventory = _load_db_combos()
+    _write_models_inventory(combos_for_inventory)
 
     # Phase 4: Readiness check
     write_step("4/4", "Readiness check")

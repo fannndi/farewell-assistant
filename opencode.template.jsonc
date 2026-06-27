@@ -49,11 +49,11 @@
       "model": "9router/Deepseek-GO-Flash",
       "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
     },
-    "plan-mode": {
-      "description": "Plan mode — read only explorer",
+    "team": {
+      "description": "Team orchestrator — delegate to sub-agents, coordinates full stack work",
       "mode": "primary",
       "model": "9router/Deepseek-GO-Flash",
-      "tools": { "read": true, "bash": false, "write": false, "edit": false }
+      "tools": { "write": true, "edit": true, "bash": true, "read": true, "changed-files": true }
     },
     "planner": {
       "description": "Planning specialist.",
@@ -115,7 +115,7 @@
       "description": "TypeScript/JavaScript code review specialist.",
       "mode": "subagent",
       "model": "9router/Deepseek-GO-Flash",
-      "prompt": "{file:ecc/.opencode/prompts/agents/typescript-reviewer.txt}",
+      "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "kotlin-reviewer": {
@@ -131,6 +131,34 @@
       "model": "9router/Deepseek-GO-Flash",
       "prompt": "{file:ecc/.opencode/prompts/agents/database-reviewer.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "kotlin-build-resolver": {
+      "description": "Kotlin/Gradle build error specialist.",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/kotlin-build-resolver.txt}",
+      "tools": { "read": true, "write": true, "edit": true, "bash": true }
+    },
+    "java-reviewer": {
+      "description": "Java/Spring Boot code review specialist.",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/java-reviewer.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "docs-lookup": {
+      "description": "Documentation lookup via Context7.",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/docs-lookup.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "refactor-cleaner": {
+      "description": "Dead code and refactoring specialist.",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/refactor-cleaner.txt}",
+      "tools": { "read": true, "write": true, "edit": true, "bash": true }
     }
   },
 
@@ -140,7 +168,7 @@
       "template": "py -m farewell_assistant workmode $ARGUMENTS"
     },
     "team": {
-      "description": "Set team mode: on / off / status",
+      "description": "Switch Divisi (on) / Tim (off) / status",
       "template": "py -m farewell_assistant team $ARGUMENTS"
     },
     "status": {

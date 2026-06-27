@@ -75,7 +75,7 @@ def switch_workmode(action: str):
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
     write_json(config.WORK_MODE_FILE, {"mode": action, "updated_at": now})
 
-    target = "plan-mode" if action == "plan" else "build"
+    target = "team" if action == "plan" else "build"
     synced = _switch_default_agent(target)
 
     if synced:

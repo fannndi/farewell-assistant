@@ -1,10 +1,10 @@
-# Footer (cek state di .opencode/context.md)
+# Footer (cek state di .opencode/CONTEXT.md)
 
 # Mode Enforcement
-- **PLAN mode**: ONLY read operations via Read/Glob/Grep tools.
+- **PLAN mode**: Agent jadi read-only (tools terbatas). Hanya Read/Glob/Grep/GrepTool.
   Bash commands STRICTLY forbidden.
-  Gunakan `/workmode build` untuk switching.
-- **BUILD mode**: Full write access via edit/write tools.
+  Gunakan `/workmode build` untuk switching ke full tools.
+- **BUILD mode**: Full write access via edit/write tools. Agent = orchestrator (team).
 
 # Execution
 - YAGNI: best code is code never written
@@ -13,10 +13,12 @@
 - NEW task: HOLD --> PLAN --> APPROVE --> eksekusi
 - Commit: hanya jika user minta
 
-# Model Priority (Hemat Token)
-1. **Free combo** -- paling hemat. Prioritas utama.
-- Team ON = gunakan premium model via 9Router
-- Team OFF = gunakan free model
+# Team Hierarchy
+Semua dalam eksekusi via **Team mode**:
+- **Divisi** (team=ON): `ocg/deepseek-v4-flash` sebagai leader
+- **Tim** (team=OFF): `oc/deepseek-v4-flash-free` sebagai leader
+- Sub-agents selalu pake Free combo (4 worker models, round-robin)
+- Leader orchestrator — delegasi ke sub-agents specialist
 
 # Skill Priority
 Skill dari ECC. Load via indexer per project.

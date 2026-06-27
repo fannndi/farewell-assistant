@@ -11,30 +11,37 @@ NVIDIA_MODELS = {
 }
 
 
-def _load_api_key() -> str | None:
-    """Read NVIDIA_API_KEY from api-key.txt."""
+_KEY_MAP = {
+    "deepseek-ai/deepseek-v4-flash": "NVIDIA_API_KEY_FLASH",
+    "deepseek-ai/deepseek-v4-pro": "NVIDIA_API_KEY_PRO",
+}
+
+
+def _load_api_key(model: str = "") -> str | None:
+    """Read Nvidia API key from api-key.txt based on model."""
+    var_name = _KEY_MAP.get(model, "NVIDIA_API_KEY_FLASH")
     try:
         for line in Path("api-key.txt").read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if not line or line.startswith("#") or "=" not in line:
                 continue
             k, v = line.split("=", 1)
-            if k.strip() == "NVIDIA_API_KEY":
+            if k.strip() == var_name:
                 return v.strip()
     except Exception:
         pass
     return None
 
 
-def check_health() -> dict:
+def check_health(model: str = "deepseek-ai/deepseek-v4-flash") -> dict:
     """Check Nvidia API key validity and RPM status."""
     import urllib.request
-    api_key = _load_api_key()
+    api_key = _load_api_key(model)
     if not api_key:
-        return {"ok": False, "reason": "No NVIDIA_API_KEY in api-key.txt"}
+        return {"ok": False, "reason": "No API key for " + model}
     try:
         payload = json.dumps({
-            "model": "deepseek-ai/deepseek-v4-flash",
+            "model": model,
             "messages": [{"role": "user", "content": "p"}],
             "max_tokens": 1
         }).encode()
@@ -59,9 +66,9 @@ def check_health() -> dict:
 def chat_completion(model: str, messages: list[dict], max_tokens: int = 4096) -> dict:
     """Direct Nvidia API call."""
     import urllib.request
-    api_key = _load_api_key()
+    api_key = _load_api_key(model)
     if not api_key:
-        return {"ok": False, "error": "No NVIDIA_API_KEY"}
+        return {"ok": False, "error": "No API key for " + model}
     try:
         payload = json.dumps({
             "model": model,
@@ -89,7 +96,7 @@ def ping_all() -> dict:
         reason = ""
         try:
             import urllib.request
-            api_key = _load_api_key()
+            api_key = _load_api_key(model)
             if not api_key:
                 reason = "No API key"
             else:
@@ -109,13 +116,14 @@ def ping_all() -> dict:
         except urllib.error.HTTPError as e:
             if e.code == 429:
                 ok = True
-                reason = "RPM ok"
+                reason = "RPM limited"
             else:
                 reason = f"HTTP {e.code}"
         except Exception as e:
-            reason = str(e)
-            if "timed out" in reason.lower() or "timeout" in reason.lower():
+            if "timed out" in str(e).lower() or "timeout" in str(e).lower():
                 ok = True
                 reason = "RPM limited (timeout)"
+            else:
+                reason = str(e)
         results[model] = {"ok": ok, "reason": reason}
     return results

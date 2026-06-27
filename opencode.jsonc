@@ -24,14 +24,14 @@
     "nvidia": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Nvidia Direct",
-      "env": ["NVIDIA_API_KEY"],
+      "env": ["NVIDIA_API_KEY_FLASH", "NVIDIA_API_KEY_PRO"],
       "options": {
         "baseURL": "https://integrate.api.nvidia.com/v1",
-        "apiKey": "{env:NVIDIA_API_KEY}"
+        "apiKey": "{env:NVIDIA_API_KEY_FLASH}"
       },
       "models": {
-        "deepseek-ai/deepseek-v4-flash": { "name": "Nvidia Flash (40 RPM)" },
-        "deepseek-ai/deepseek-v4-pro": { "name": "Nvidia Pro (40 RPM)" }
+        "deepseek-ai/deepseek-v4-flash": { "name": "Nvidia Flash (40 RPM)", "apiKey": "{env:NVIDIA_API_KEY_FLASH}" },
+        "deepseek-ai/deepseek-v4-pro": { "name": "Nvidia Pro (40 RPM)", "apiKey": "{env:NVIDIA_API_KEY_PRO}" }
       }
     }
   },

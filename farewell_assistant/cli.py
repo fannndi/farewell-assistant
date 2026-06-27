@@ -1,4 +1,4 @@
-"""CLI entrypoint — minimal dispatcher (workmode/team/status/start/project/upstream/daily)."""
+"""CLI entrypoint — minimal dispatcher (workmode/team/status/project/daily)."""
 
 import argparse
 from . import config
@@ -35,19 +35,9 @@ def cmd_team(args):
         print(f"  Team: {_get_team()}")
 
 
-def cmd_upstream(args):
-    from .upstream import run_upstream
-    run_upstream()
-
-
 def cmd_daily(args):
     from .daily import run_daily
     run_daily()
-
-
-def cmd_sync(args):
-    from .sync_opencode import sync_opencode
-    sync_opencode()
 
 
 def cmd_project(args):
@@ -83,11 +73,6 @@ def cmd_status(args):
     skills = get_project_skills(code, active)
     sk = f" | Skills: {len(skills)}" if skills else ""
     print(f"\n  {_c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk} | Team: {team}', 'cyan')}\n")
-
-
-def cmd_start(args):
-    from .start import ensure_9router
-    ensure_9router()
 
 
 def _write_context_footer(project: str | None = None, mode: str | None = None):
@@ -126,21 +111,12 @@ def main():
     status_p = subparsers.add_parser("status", help="Show current state")
     status_p.set_defaults(func=cmd_status)
 
-    start_p = subparsers.add_parser("start", help="Start 9Router if not running")
-    start_p.set_defaults(func=cmd_start)
+    daily_p = subparsers.add_parser("daily", help="Daily all-in-one: start 9Router + upstream + sync + readiness check")
+    daily_p.set_defaults(func=cmd_daily)
 
     proj_p = subparsers.add_parser("project", help="List or switch active project")
     proj_p.add_argument("action", nargs="?", default="list", help="Project code or 'list'")
     proj_p.set_defaults(func=cmd_project)
-
-    up_p = subparsers.add_parser("upstream", help="Git pull ECC + 9Router")
-    up_p.set_defaults(func=cmd_upstream)
-
-    daily_p = subparsers.add_parser("daily", help="Daily readiness: 9Router health + ECC/GitHub updates + combo model ping")
-    daily_p.set_defaults(func=cmd_daily)
-
-    sync_p = subparsers.add_parser("sync", help="Sync 9Router combos + Nvidia to opencode.jsonc")
-    sync_p.set_defaults(func=cmd_sync)
 
     args = parser.parse_args()
     if not args.command:

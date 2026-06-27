@@ -109,86 +109,23 @@
       "description": "Switch work mode: plan / build / status",
       "template": "py -m farewell_assistant workmode $ARGUMENTS"
     },
+    "team": {
+      "description": "Set team mode: on / off / status",
+      "template": "py -m farewell_assistant team $ARGUMENTS"
+    },
+    "status": {
+      "description": "Show current state",
+      "template": "py -m farewell_assistant status $ARGUMENTS"
+    },
     "daily": {
-      "description": "Daily: 9Router health + system status",
+      "description": "All-in-one: start 9Router + upstream + sync + readiness check",
       "template": "py -m farewell_assistant daily $ARGUMENTS"
     },
     "project": {
       "description": "List or switch active project",
       "template": "py -m farewell_assistant project $ARGUMENTS"
-    },
-    "self-heal": {
-      "description": "Post-edit typecheck hook",
-      "template": "py -m farewell_assistant self-heal --file $ARGUMENTS"
-    },
-    "upstream": {
-      "description": "Git pull ECC + 9Router, analisa changelog, self-heal adaptif",
-      "template": "py -m farewell_assistant upstream $ARGUMENTS"
-    },
-    "start": {
-      "description": "Switch project + footer",
-      "template": "py -m farewell_assistant start-project $ARGUMENTS"
-    },
-    "start-project": {
-      "description": "Switch active project + footer",
-      "template": "py -m farewell_assistant start-project $ARGUMENTS"
-    },
-    "status": {
-      "description": "Quick state one-liner + refresh footer",
-      "template": "py -m farewell_assistant status $ARGUMENTS"
-    },
-    "setup-project": {
-      "description": "Register project from path",
-      "template": "py -m farewell_assistant setup-project $ARGUMENTS"
-    },
-    "save": {
-      "description": "Save session summary to memory (checkpoint)",
-      "template": "py -m farewell_assistant save $ARGUMENTS"
-    },
-    "team": {
-      "description": "Set team mode: on / off / status",
-      "template": "py -m farewell_assistant team $ARGUMENTS"
-    },
-    "plan": {
-      "description": "Create implementation plan",
-      "template": "{file:ecc/.opencode/commands/plan.md}\n\n$ARGUMENTS",
-      "agent": "planner",
-      "subtask": true
-    },
-    "tdd": {
-      "description": "TDD workflow",
-      "template": "{file:ecc/.opencode/commands/tdd.md}\n\n$ARGUMENTS",
-      "agent": "tdd-guide",
-      "subtask": true
-    },
-    "code-review": {
-      "description": "Code review",
-      "template": "{file:ecc/.opencode/commands/code-review.md}\n\n$ARGUMENTS",
-      "agent": "code-reviewer",
-      "subtask": true
-    },
-    "security-scan": {
-      "description": "Security review",
-      "template": "{file:ecc/.opencode/commands/security.md}\n\n$ARGUMENTS",
-      "agent": "security-reviewer",
-      "subtask": true
-    },
-    "build-fix": {
-      "description": "Fix build errors",
-      "template": "{file:ecc/.opencode/commands/build-fix.md}\n\n$ARGUMENTS",
-      "agent": "build-error-resolver",
-      "subtask": true
-    },
-    "verify": {
-      "description": "Run verification loop",
-      "template": "{file:ecc/.opencode/commands/verify.md}\n\n$ARGUMENTS"
-    },
-    "update-docs": {
-      "description": "Update documentation",
-      "template": "{file:ecc/.opencode/commands/update-docs.md}\n\n$ARGUMENTS",
-      "agent": "doc-updater",
-      "subtask": true
     }
+  }
   },
 
   "permission": {

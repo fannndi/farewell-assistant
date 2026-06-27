@@ -1,9 +1,8 @@
-"""Daily readiness check — 9Router health, ECC + GitHub updates, combo model ping."""
+"""Daily readiness check — 9Router health, ECC + GitHub updates, combo status from DB."""
 
 import json
 import os
 import socket
-import sqlite3
 import subprocess
 import urllib.request
 from pathlib import Path
@@ -11,17 +10,9 @@ from . import config
 from .helpers import _c, write_ok, write_skip, write_info, write_fail
 
 
-def _get_api_key() -> str | None:
-    db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
-    if not db.exists():
-        return None
-    try:
-        conn = sqlite3.connect(str(db))
-        row = conn.execute("SELECT key FROM apiKeys LIMIT 1").fetchone()
-        conn.close()
-        return row[0] if row else None
-    except:
-        return None
+def _db() -> Path | None:
+    p = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+    return p if p.exists() else None
 
 
 def _check_9router() -> dict:
@@ -30,7 +21,7 @@ def _check_9router() -> dict:
     result = sock.connect_ex(("127.0.0.1", 20128))
     sock.close()
     if result != 0:
-        return {"running": False, "version": None}
+        return {"running": False}
     try:
         r = urllib.request.urlopen("http://localhost:20128/api/version", timeout=3)
         data = json.loads(r.read())
@@ -59,66 +50,40 @@ def _check_github_release() -> dict:
         req = urllib.request.Request(url, headers={"User-Agent": "farewell-assistant"})
         r = urllib.request.urlopen(req, timeout=10)
         data = json.loads(r.read())
-        return {"tag": data.get("tag_name", ""), "name": data.get("name", ""), "published": data.get("published_at", "")}
-    except Exception as e:
-        return {"error": str(e)}
+        return {"tag": data.get("tag_name", ""), "published": data.get("published_at", "")}
+    except:
+        return {"error": "GitHub unreachable"}
 
 
-def _ping_model(model: str, api_key: str) -> tuple:
-    if not api_key:
-        return (False, "No API key")
-    try:
-        payload = json.dumps({"model": model, "messages": [{"role": "user", "content": "p"}], "max_tokens": 1}).encode()
-        req = urllib.request.Request("http://localhost:20128/v1/chat/completions", data=payload,
-                                     headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}, method="POST")
-        r = urllib.request.urlopen(req, timeout=8)
-        return (True, None) if r.status == 200 else (False, f"HTTP {r.status}")
-    except urllib.error.HTTPError as e:
-        return (False, f"HTTP {e.code}")
-    except Exception as e:
-        return (False, str(e))
-
-
-def _check_combo_models() -> dict:
-    db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
-    if not db.exists():
+def _get_combos() -> dict:
+    db = _db()
+    if not db:
         return {"error": "DB not found"}
-    api_key = _get_api_key()
-    if not api_key:
-        return {"error": "No API key"}
     try:
+        import sqlite3
         conn = sqlite3.connect(str(db))
         cur = conn.execute("SELECT name, kind, models FROM combos")
-        all_models = set()
         combos = []
         for row in cur.fetchall():
             models = json.loads(row[2]) if row[2] else []
             if models:
-                combos.append({"name": row[0], "kind": row[1], "models": models})
-                all_models.update(models)
+                combos.append({"name": row[0], "kind": row[1] or "-", "models": models})
         conn.close()
-        if not all_models:
-            return {"total": 0, "ok": 0, "details": {}, "combos": combos}
-        results = {}
-        for m in sorted(all_models):
-            ok, reason = _ping_model(m, api_key)
-            results[m] = {"ok": ok, "reason": reason}
-        ok_count = sum(1 for r in results.values() if r["ok"])
-        return {"total": len(all_models), "ok": ok_count, "details": results, "combos": combos}
+        return {"combos": combos, "total": len(combos)}
     except Exception as e:
         return {"error": str(e)}
 
 
-def _print_report(health, ecc, github, combo):
-    print(f"\n  {_c('='*45, 'cyan')}\n  {_c('Daily Readiness Check', 'cyan')}\n  {_c('='*45, 'cyan')}")
+def _print_report(health, ecc, github, combos):
+    print(f"\n  {_c('='*40, 'cyan')}\n  {_c('Daily Readiness', 'cyan')}\n  {_c('='*40, 'cyan')}")
 
     if health["running"]:
-        write_ok(f"9Router running v{health['version'] or '?'} (port 20128)")
+        write_ok(f"9Router v{health['version'] or '?'} (port 20128)")
     else:
         write_fail("9Router NOT running")
 
     if ecc.get("commits_behind", 0) > 0:
-        write_info(f"ECC: {ecc['commits_behind']} commit(s) behind \u2014 run /upstream")
+        write_info(f"ECC: {ecc['commits_behind']} behind -- /upstream")
     else:
         write_ok("ECC: up to date")
 
@@ -129,26 +94,28 @@ def _print_report(health, ecc, github, combo):
         local_ver = json.loads(local.read_text()).get("version") if local.exists() else None
         tag = github.get("tag", "").lstrip("v")
         if local_ver and tag != local_ver:
-            write_info(f"GitHub: v{tag} ({github['published'][:10]}) \u2014 UPDATE AVAILABLE! (local v{local_ver})")
+            write_info(f"GitHub: v{tag} ({github['published'][:10]}) -- update available!")
         else:
-            write_ok(f"GitHub: {github.get('tag', '?')} \u2014 up to date")
+            write_ok(f"GitHub: {github.get('tag', '?')}")
 
-    if "error" in combo:
-        write_fail(f"Combos: {combo['error']}")
-    elif combo.get("total", 0) == 0:
-        write_info("Combos: no combos found")
-    elif combo["ok"] == combo["total"]:
-        write_ok(f"Combos: {len(combo['combos'])} combos, {combo['ok']}/{combo['total']} models responsive")
+    if "error" in combos:
+        write_info(f"Combos: {combos['error']}")
     else:
-        failed = [m for m, r in combo["details"].items() if not r["ok"]]
-        write_fail(f"Combos: {combo['ok']}/{combo['total']} models responsive \u2014 {', '.join(failed[:5])}")
+        total_models = sum(len(c["models"]) for c in combos["combos"])
+        for c in combos["combos"]:
+            models_str = ", ".join(c["models"][:4])
+            if len(c["models"]) > 4:
+                models_str += f" +{len(c['models'])-4}"
+            write_info(f"  {c['name']:20s} ({c['kind']:8s}) -> {models_str}")
+        write_ok(f"{combos['total']} combos, {total_models} models")
 
-    print(f"  {_c('='*45, 'cyan')}\n")
+    print(f"  {_c('='*40, 'cyan')}\n")
 
 
 def run_daily():
     health = _check_9router()
     ecc = _check_ecc()
     github = _check_github_release()
-    combo = _check_combo_models()
-    _print_report(health, ecc, github, combo)
+    combos = _get_combos()
+    _print_report(health, ecc, github, combos)
+

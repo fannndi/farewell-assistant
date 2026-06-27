@@ -1,1 +1,0 @@
-# 9Router handles all models. No local LLM dependencies.

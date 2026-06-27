@@ -1,28 +1,6 @@
-"""farewell-assistant v2 — Lightweight 9Router orchestrator."""
+"""Farewell-assistant CLI entry."""
 
 from .cli import main
-import sys
 
-if len(sys.argv) > 1:
+if __name__ == "__main__":
     main()
-else:
-    print("farewell-assistant v2.0.0 - Lightweight 9Router orchestrator")
-    print()
-    print("Commands:")
-    print("  daily             Daily: 9Router health + system status")
-    print("  workmode          Switch work mode (plan|build)")
-    print("  llm               Show LLM/GPU status")
-    print("  project           List or switch active project")
-    print("  start-project     Activate project + skill index + footer")
-    print("  setup-project     Register project: <path> [--stack python flutter] [--reindex]")
-    print("  save              Save session summary to memory (checkpoint)")
-    print("  team              Set team mode: on / off / status")
-    print("  self-heal         Post-edit typecheck hook")
-    print("  upstream          Git pull ECC + 9Router, analisa changelog, self-heal adaptif")
-    print()
-    print("9Router handles all models + subscriptions. ECC skills (271) indexed per project.")
-    print()
-    print("Examples:")
-    print("  py -m farewell_assistant setup-project ..\my-app --stack python react")
-    print("  py -m farewell_assistant start-project 001")
-    print("  py -m farewell_assistant save 'refactored indexer, fixed token tracker'")

@@ -1,45 +1,22 @@
-# Footer (cek state di context.md — binding setiap turn)
-Parameter dari footer dan implikasinya:
-- **Project**: {code}-{name} — semua context/memory/skill untuk project ini
-- **Mode**: BUILD=full write, PLAN=read-only. Tool permission mengikuti mode
-- **Session**: #{N} — N = sesi ke berapa. Memory dari sesi sebelumnya tersedia
-- **Team**: ON=reasoning untuk task berat, OFF=direct execution untuk task ringan. Kalau ragu ON
-- **Skills**: {N} — jumlah skill terindex. Skill priority mengikuti daftar di bawah
+# Footer (cek state di .opencode/context.md)
 
 # Mode Enforcement
 - **PLAN mode**: ONLY read operations via Read/Glob/Grep tools.
-  Bash commands STRICTLY forbidden — termasuk pipa/redirect/Set-Content/Out-File.
-  Gunakan `/plan` atau `/workmode build` untuk switching.
+  Bash commands STRICTLY forbidden.
+  Gunakan `/workmode build` untuk switching.
 - **BUILD mode**: Full write access via edit/write tools.
 
 # Execution
 - YAGNI: best code is code never written
 - Ultra terse: max 4 baris, kode langsung tanpa preamble
 - Bug fix: langsung eksekusi tanpa hold
-- NEW task: HOLD → PLAN → APPROVE → eksekusi
-- Commit: hanya jika user minta. Cek git status + diff dulu
+- NEW task: HOLD --> PLAN --> APPROVE --> eksekusi
+- Commit: hanya jika user minta
 
 # Model Priority (Hemat Token)
-1. **Free combo** — paling hemat. Prioritas utama.
-2. **Deepseek-GO-Flash** — fallback kalau Free lambat/error/limit.
-3. **Ping test**: sebelum pake Flash, cek dulu respon Free. Kalau Free responsif, pakai Free. Kalau timeout/error, pake Flash.
-4. **Token conscious**: kalau task sederhana (1-2 edit, typo, explore) → pilih model termurah yang available. Task berat (arsitektur, security review) → baru pake Flash.
-
-# State Refresh
-- Session start: run `status` to refresh state
-- Before costly ops: run `status` to check budget/context
-- Footer di context.md auto-update tiap command jalan. Tapi pastikan state fresh.
-
-# Gates
-- Logging: catat WRITE action ke logging.md [timestamp] STAGE | ACTION | RESULT | FILES
-- Verification: sebelum commit → lint → test → typecheck
-- Security: endpoint/auth/input wajib review
-- TDD: fitur baru wajib tulis test dulu
+1. **Free combo** -- paling hemat. Prioritas utama.
+- Team ON = gunakan premium model via 9Router
+- Team OFF = gunakan free model
 
 # Skill Priority
-Prioritas web: react, nextjs, vue, angular, django, fastapi, express, nestjs, css, html
-Prioritas mobile: flutter, dart, kotlin, swift, compose, react-native, android
-Skill lain tetap tersedia. Prioritaskan yang di atas untuk project terkait.
-
-# Admin
-/owner, /initial, /llm-setup → goal-oriented, no planning hold
+Skill dari ECC. Load via indexer per project.

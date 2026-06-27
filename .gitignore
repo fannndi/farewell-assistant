@@ -16,8 +16,8 @@ api-key.txt
 .env
 
 # Dependencies (cloned, not committed)
-ecc/
-9router/
+/ecc/
+/9router/
 
 # Model files (large GGUF binaries, not tracked)
 models/

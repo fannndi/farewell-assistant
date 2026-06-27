@@ -93,7 +93,6 @@ def run_upstream(full: bool = False) -> dict:
     ecc_analysis = None
     router_analysis = None
 
-    # ── Phase 1/3: Git Pull ECC ──
     write_step("1/3", "Git Pull ECC")
     ecc = git_pull(config.ECC_DIR, "origin", "main")
     if ecc.get("updated"):
@@ -105,7 +104,6 @@ def run_upstream(full: bool = False) -> dict:
     else:
         write_fail(f"ECC: {ecc.get('reason', 'unknown error')}")
 
-    # ── Phase 2/3: Git Pull 9Router ──
     write_step("2/3", "Git Pull 9Router")
     router = git_pull(config.ROUTER_DIR, "origin", "master")
     if router.get("updated"):
@@ -117,10 +115,8 @@ def run_upstream(full: bool = False) -> dict:
     else:
         write_fail(f"9Router: {router.get('reason', 'unknown error')}")
 
-    # ── Phase 3/3: Changelog Analysis & Self-Heal ──
     write_step("3/3", "Changelog Analysis & Self-Heal")
 
-    # ECC analysis
     if ecc.get("updated"):
         files = _get_changed_files(config.ECC_DIR, ecc["before"], ecc["after"])
         from .helpers import read_project_active, read_project_code
@@ -136,7 +132,6 @@ def run_upstream(full: bool = False) -> dict:
     else:
         write_info("ECC: no changes")
 
-    # 9Router analysis
     if router.get("updated"):
         files = _get_changed_files(config.ROUTER_DIR, router["before"], router["after"])
         router_analysis = _categorize_router_changes(files)
@@ -149,7 +144,6 @@ def run_upstream(full: bool = False) -> dict:
     else:
         write_info("9Router: no changes")
 
-    # Adaptive heal
     if ecc_analysis and ecc_analysis["needs_reindex"]:
         from .helpers import read_project_active, read_project_code, get_project_path
         from .indexer import index_project
@@ -159,10 +153,10 @@ def run_upstream(full: bool = False) -> dict:
         result = index_project(str(path), code, active)
         heal_actions.append(f"Re-indexed project skills ({result.get('total', 0)} matched)")
 
-    if router_analysis and router_analysis["needs_verify"]:
+    if router.get("updated"):
         from .start import ensure_9router
         if ensure_9router():
-            heal_actions.append("9Router health check passed (port 20128)")
+            heal_actions.append("9Router restarted (port 20128)")
         else:
             heal_actions.append("9Router health check FAILED — needs manual intervention")
 

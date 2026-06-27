@@ -1,4 +1,4 @@
-"""Daily readiness check — 9Router health, ECC + GitHub updates, combo status from DB."""
+"""Daily readiness check — 9Router health, ECC + GitHub updates, combo status."""
 
 import json
 import os
@@ -65,6 +65,9 @@ def _get_combos() -> dict:
         cur = conn.execute("SELECT name, kind, models FROM combos")
         combos = []
         for row in cur.fetchall():
+            name = row[0]
+            if name.lower() == "nvidia":
+                continue
             models = json.loads(row[2]) if row[2] else []
             if models:
                 combos.append({"name": row[0], "kind": row[1] or "-", "models": models})
@@ -94,20 +97,20 @@ def _print_report(health, ecc, github, combos):
         local_ver = json.loads(local.read_text()).get("version") if local.exists() else None
         tag = github.get("tag", "").lstrip("v")
         if local_ver and tag != local_ver:
-            write_info(f"GitHub: v{tag} ({github['published'][:10]}) -- update available!")
+            write_info("GitHub: v{0} ({1}) -- update available!".format(tag, github["published"][:10]))
         else:
-            write_ok(f"GitHub: {github.get('tag', '?')}")
+            write_ok("GitHub: {0}".format(github.get("tag", "?")))
 
     if "error" in combos:
-        write_info(f"Combos: {combos['error']}")
+        write_info("Combos: {0}".format(combos["error"]))
     else:
         total_models = sum(len(c["models"]) for c in combos["combos"])
         for c in combos["combos"]:
             models_str = ", ".join(c["models"][:4])
             if len(c["models"]) > 4:
-                models_str += f" +{len(c['models'])-4}"
-            write_info(f"  {c['name']:20s} ({c['kind']:8s}) -> {models_str}")
-        write_ok(f"{combos['total']} combos, {total_models} models")
+                models_str += " +{0}".format(len(c["models"])-4)
+            write_info("  {0:<20} ({1:<8}) <- {2}".format(c["name"], c["kind"] or "-", models_str))
+        write_ok("{0} combos, {1} models".format(combos["total"], total_models))
 
     print(f"  {_c('='*40, 'cyan')}\n")
 
@@ -118,4 +121,3 @@ def run_daily():
     github = _check_github_release()
     combos = _get_combos()
     _print_report(health, ecc, github, combos)
-

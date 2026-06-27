@@ -122,8 +122,8 @@ def _load_combo_names() -> set[str]:
 
 
 def _alias(key: str, value: str, combo_names: set[str]) -> str:
-    """If a combo with the key name exists, use combo name (alias). Otherwise use direct model name."""
-    return key if key in combo_names else value
+    """Always use key name as model (combo alias). Value is fallback if key doesn't exist anywhere."""
+    return key  # Always route through combo name
 
 
 def _load_skill_paths() -> list[str]:
@@ -151,36 +151,30 @@ def _sync_opencode():
     combo_names = _load_combo_names()
     team_state = _get_team()
 
-    # Resolve leader/special/worker/helper based on team mode (using aliases)
-    leader_1 = _alias("LEADER_1", cfg.get("LEADER_1", "ocg/deepseek-v4-flash"), combo_names)
-    special = _alias("SPECIAL", cfg.get("SPECIAL", "oc/deepseek-v4-flash-free"), combo_names)
-    worker_1 = _alias("WORKER_1", cfg.get("WORKER_1", "oc/mimo-v2.5-free"), combo_names)
-    worker_2 = _alias("WORKER_2", cfg.get("WORKER_2", "oc/big-pickle"), combo_names)
-
+    # Always use key names as model aliases (all routing through 9Router combos)
     if team_state == "ON":  # Divisi — LEADER_1 leads, SPECIAL plans
-        leader = leader_1
-        spc = special
-        wrk = worker_1
-        hlp = worker_2
+        leader = "LEADER_1"
+        spc = "SPECIAL"
+        wrk = "WORKER_1"
+        hlp = "WORKER_2"
     elif team_state == "TIM":  # Tim — SPECIAL leads AND plans
-        leader = special
-        spc = special
-        wrk = worker_1
-        hlp = worker_2
+        leader = "SPECIAL"
+        spc = "SPECIAL"
+        wrk = "WORKER_1"
+        hlp = "WORKER_2"
     else:  # BAWAHAN — workers only
-        leader = worker_1
-        spc = worker_1
-        wrk = worker_1
-        hlp = worker_2
+        leader = "WORKER_1"
+        spc = "WORKER_1"
+        wrk = "WORKER_1"
+        hlp = "WORKER_2"
 
-    # Build provider models: combo names + direct model names
-    provider_models = sorted(combo_names)
-    for k, v in sorted(cfg.items()):
-        if k != "NINEROUTER_API_KEY" and v and k not in combo_names:
-            provider_models.append(v)
+    # Build provider models: only combo names (key names + extra combos from 9Router)
+    provider_models = set(cfg.keys()) - {"NINEROUTER_API_KEY"}  # all key names
+    provider_models.update(combo_names)  # add extra combos from 9Router (e.g. Free_Chat)
     model_entries = []
-    for i, m in enumerate(provider_models):
-        comma = "," if i < len(provider_models) - 1 else ""
+    sorted_models = sorted(provider_models)
+    for i, m in enumerate(sorted_models):
+        comma = "," if i < len(sorted_models) - 1 else ""
         model_entries.append(f'        "{m}": {{ "name": "{m}" }}{comma}')
     models_json = "{\n" + "\n".join(model_entries) + "\n      }"
 
@@ -239,6 +233,25 @@ def _check_github_release() -> dict:
         return {"tag": data.get("tag_name", ""), "published": data.get("published_at", "")}
     except:
         return {"error": "GitHub unreachable"}
+
+
+def _load_combos() -> list[dict]:
+    """Read all combos from 9Router SQLite. Returns [{key, kind, models}...]."""
+    import sqlite3, json
+    db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
+    if not db.exists():
+        return []
+    try:
+        conn = sqlite3.connect(str(db))
+        cur = conn.execute("SELECT name, kind, models FROM combos")
+        combos = []
+        for row in cur:
+            models = json.loads(row[2]) if row[2] else []
+            combos.append({"key": row[0], "kind": row[1], "models": models})
+        conn.close()
+        return combos
+    except Exception:
+        return []
 
 
 # ── Report ────────────────────────────────────────────────────────────────
@@ -338,6 +351,6 @@ def run_daily():
     ecc = _check_ecc()
     github = _check_github_release()
     combos = _load_combos()
-    combos_report = [{"name": c["key"], "kind": c["kind"] or "-", "models": c["models"]} for c in combos]
+    combos_report = [{"name": c["key"], "kind": c["kind"] or "-", "models": c["models"]} for c in combos if "error" not in c]
 
     _print_report(health, ecc, github, {"combos": combos_report, "total": len(combos_report)}, ecc_upstream, router_upstream)

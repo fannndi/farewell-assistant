@@ -592,6 +592,85 @@ Nvidia sudah dihapus sepenuhnya dari farewell-assistant. Tapi kalau masih terdaf
 
 ---
 
+---
+
+## awesome-opencode Integration
+
+Farewell-assistant terintegrasi penuh dengan [awesome-opencode](https://github.com/anomalyco/awesome-opencode) — registry plugin, theme, agent, dan project untuk Opencode.
+
+### Data Source
+
+Semua data dari repo `awesome-opencode/` (YAML files):
+
+```
+awesome-opencode/data/
+├── plugins/    *.yaml  — Plugin OpenCode
+├── themes/     *.yaml  — Tema tampilan
+├── agents/     *.yaml  — Agent AI siap pakai
+├── projects/   *.yaml  — Project referensi
+└── resources/  *.yaml  — Resource belajar
+```
+
+### Commands
+
+```bash
+# Lihat semua entri
+py -m farewell_assistant cool list
+
+# Cari plugin/agent/project
+py -m farewell_assistant cool search auth
+py -m farewell_assistant cool search database
+
+# Lihat detail
+py -m farewell_assistant cool info <name>
+
+# Rekomendasi project berdasarkan stack aktif
+py -m farewell_assistant cool recommend
+
+# Statistik
+py -m farewell_assistant cool stats
+```
+
+### Auto-Recommendation
+
+Saat `/daily` atau `/status`, farewell-assistant otomatis:
+
+1. Baca project aktif (misal: `002-service-hub`)
+2. Dapatkan stack dari manifest (misal: `["nodejs", "nestjs", "prisma"]`)
+3. Cocokkan dengan awesome-opencode projects
+4. Tampilkan 3 rekomendasi teratas di `.opencode/context.md`
+
+Hasilnya muncul di footer setiap sesi:
+
+```
+# Awesome Recommendations
+  - Universal LLM API Proxy: Universal multi-model proxy and library
+  - opencode-agent for Cowork: Cowork plugin for Claude Code
+```
+
+### Daily Sync
+
+```bash
+py -m farewell_assistant daily
+```
+
+Setiap `/daily`, awesome-opencode di git pull (upstream sync) biar selalu up-to-date dengan registry terbaru.
+
+### Stack Matching
+
+Farewell-assistant punya `STACK_SKILLS` mapping di `indexer.py`:
+
+| Stack | Skills yang cocok |
+|-------|-------------------|
+| python | python-patterns, fastapi-patterns, django-patterns, ... |
+| nodejs | nestjs-patterns, prisma-patterns, backend-patterns, ... |
+| react | react-patterns, react-testing, frontend-patterns, ... |
+| docker | docker-patterns, deployment-patterns |
+
+Ditambah `get_recommended_projects_for_stack()` di `awesome_indexer.py` yang mencocokkan stack project → rekomendasi dari awesome-opencode.
+
+---
+
 ## License
 
 MIT

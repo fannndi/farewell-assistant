@@ -130,8 +130,20 @@ def _load_skill_paths() -> list[str]:
     return ["ecc/skills", ".farewell/custom-skills"]
 
 
+def _get_team_mode() -> str:
+    """Read team mode from team.json."""
+    import json as _json
+    f = config.FAREWELL_DIR / "team.json"
+    if f.exists():
+        try:
+            return _json.loads(f.read_text(encoding="utf-8")).get("team", "TIM")
+        except Exception:
+            pass
+    return "TIM"
+
+
 def _sync_opencode():
-    """Read template, substitute combo models + model names + skill paths, write to opencode.jsonc."""
+    """Read template, substitute combo models + role-based model names + skill paths, write to opencode.jsonc."""
     template = config.ROOT_DIR / "opencode.template.jsonc"
     output = config.ROOT_DIR / "opencode.jsonc"
     if not template.exists():
@@ -144,17 +156,25 @@ def _sync_opencode():
         model_entries.append(f'        "{c["key"]}": {{ "name": "{c["key"]}" }}{comma}')
     models_json = "{\n" + "\n".join(model_entries) + "\n      }"
 
-    # Resolve root model and small model: prefer dedicated role combos, fallback to first available
-    root_model = _resolve_combo(combos, ["DIRECTOR", "LEADER", "TEAM_LEADER"])
-    small_model = _resolve_combo(combos, ["DEPUTY", "SENIOR", "WORKER"], root_model)
+    # Resolve models based on current team mode
+    team_state = _get_team_mode()
 
-    # Fallback defaults if no combos exist yet
-    if not root_model:
-        root_model = "DIRECTOR"
-    if not small_model:
+    if team_state == "ON":  # Divisi — director leads all
+        root_model = _resolve_combo(combos, ["DIRECTOR", "LEADER"]) or "DIRECTOR"
+        small_model = _resolve_combo(combos, ["DEPUTY", "SENIOR"], root_model) or root_model
+        senior_model = root_model
+        junior_model = root_model
+    elif team_state == "TIM":  # Tim — team leader + senior + juniors
+        root_model = _resolve_combo(combos, ["TEAM_LEADER", "LEADER"]) or "TEAM_LEADER"
+        small_model = _resolve_combo(combos, ["SENIOR", "DEPUTY"], root_model) or root_model
+        senior_model = _resolve_combo(combos, ["SENIOR", "TEAM_LEADER"], root_model) or root_model
+        junior_model = _resolve_combo(combos, ["JUNIOR_1", "JUNIOR_2", "JUNIOR_3", "SENIOR"], root_model) or root_model
+    else:  # BAWAHAN — workers only
+        root_model = _resolve_combo(combos, ["SENIOR", "TEAM_LEADER", "PEKERJA"]) or "SENIOR"
         small_model = root_model
+        senior_model = root_model
+        junior_model = root_model
 
-    # Resolve skill paths from active-skills.json
     skill_paths = _load_skill_paths()
     skill_paths_json = json.dumps(skill_paths)
 
@@ -162,6 +182,8 @@ def _sync_opencode():
     content = content.replace("${COMBO_MODELS}", models_json)
     content = content.replace("${ROUTER_MODEL}", root_model)
     content = content.replace("${ROUTER_SMALL_MODEL}", small_model)
+    content = content.replace("${SENIOR_MODEL}", senior_model)
+    content = content.replace("${JUNIOR_MODEL}", junior_model)
     content = content.replace("${SKILL_PATHS}", skill_paths_json)
     tmp = output.with_suffix(".jsonc.tmp")
     tmp.write_text(content, encoding="utf-8")

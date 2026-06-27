@@ -29,21 +29,21 @@ def cmd_team(args):
     combos = _load_combos()
     if status in ("on", "divisi"):
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "ON"}), encoding="utf-8")
-        model = _resolve_combo(combos, ["DIRECTOR", "DEEPSEEK-GO-FLASH", "LEADER"]) or "DIRECTOR"
-        small = _resolve_combo(combos, ["DEPUTY", "DEEPSEEK-API-FLASH", "FREE"], model) or model
+        model = _resolve_combo(combos, ["DIRECTOR", "LEADER"]) or "DIRECTOR"
+        small = _resolve_combo(combos, ["DEPUTY", "SENIOR"], model) or model
         set_models(model, small, "divisi")
         _write_context_footer()
         print(f"\n  {_c('[DIVISI]', 'green')} Ketua Divisi leading: {model}\n")
     elif status in ("off", "tim"):
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "TIM"}), encoding="utf-8")
-        model = _resolve_combo(combos, ["TEAM_LEADER", "LEADER", "KETUA_TIM"]) or "TEAM_LEADER"
-        small = _resolve_combo(combos, ["PEKERJA", "WORKER", "FREE"], model) or model
+        model = _resolve_combo(combos, ["TEAM_LEADER", "LEADER"]) or "TEAM_LEADER"
+        small = _resolve_combo(combos, ["SENIOR", "DEPUTY"], model) or model
         set_models(model, small, "tim")
         _write_context_footer()
         print(f"\n  {_c('[TEAM]', 'yellow')} Ketua Tim leading: {model}\n")
     elif status == "bawahan":
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "BAWAHAN"}), encoding="utf-8")
-        model = _resolve_combo(combos, ["PEKERJA", "WORKER", "FREE"]) or "PEKERJA"
+        model = _resolve_combo(combos, ["SENIOR", "TEAM_LEADER", "PEKERJA"]) or "SENIOR"
         small = model
         set_models(model, small, "bawahan")
         _write_context_footer()
@@ -52,7 +52,7 @@ def cmd_team(args):
         team = _get_team()
         if team == "ON": tier = "Divisi"; m = _resolve_combo(combos, ["DIRECTOR", "LEADER"]) or "DIRECTOR"
         elif team == "TIM": tier = "Tim"; m = _resolve_combo(combos, ["TEAM_LEADER", "LEADER"]) or "TEAM_LEADER"
-        else: tier = "Bawahan"; m = _resolve_combo(combos, ["PEKERJA", "WORKER", "FREE"]) or "PEKERJA"
+        else: tier = "Bawahan"; m = _resolve_combo(combos, ["SENIOR", "TEAM_LEADER"]) or "SENIOR"
         print(f"  Team: {team} ({tier}: {m})")
 
 

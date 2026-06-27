@@ -34,7 +34,8 @@
     ".opencode/work-mode.json",
     ".opencode/context.md",
     "instructions/rules.md",
-    ".farewell/context/farewell-assistant.md"
+    ".farewell/context/farewell-assistant.md",
+    "ecc/AGENTS.md"
   ],
 
   "skills": {
@@ -59,6 +60,13 @@
       "mode": "subagent",
       "model": "9router/Deepseek-GO-Flash",
       "prompt": "{file:ecc/.opencode/prompts/agents/planner.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "architect": {
+      "description": "Architecture and system design specialist.",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/architect.txt}",
       "tools": { "read": true, "bash": true, "write": false, "edit": false }
     },
     "code-reviewer": {
@@ -95,6 +103,34 @@
       "model": "9router/Deepseek-GO-Flash",
       "prompt": "{file:ecc/.opencode/prompts/agents/doc-updater.txt}",
       "tools": { "read": true, "write": true, "edit": true, "bash": true }
+    },
+    "python-reviewer": {
+      "description": "Python code review specialist.",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/python-reviewer.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "typescript-reviewer": {
+      "description": "TypeScript/JavaScript code review specialist.",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/typescript-reviewer.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "kotlin-reviewer": {
+      "description": "Kotlin/Android code review specialist.",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/kotlin-reviewer.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
+    },
+    "database-reviewer": {
+      "description": "SQL/schema query review specialist.",
+      "mode": "subagent",
+      "model": "9router/Deepseek-GO-Flash",
+      "prompt": "{file:ecc/.opencode/prompts/agents/database-reviewer.txt}",
+      "tools": { "read": true, "bash": true, "write": false, "edit": false }
     }
   },
 
@@ -118,6 +154,10 @@
     "project": {
       "description": "List or switch active project",
       "template": "py -m farewell_assistant project $ARGUMENTS"
+    },
+    "cool": {
+      "description": "awesome-opencode: list/search/info/recommend/stats for plugins, themes, agents, projects",
+      "template": "py -m farewell_assistant cool $ARGUMENTS"
     }
   },
 

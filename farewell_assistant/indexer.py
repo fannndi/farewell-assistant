@@ -84,3 +84,18 @@ def get_active_skills() -> list[str]:
     active = read_project_active()
     code = read_project_code(active)
     return get_project_skills(code, active)
+
+
+def write_active_skills_manifest(project_code: str, project_name: str):
+    skills = get_project_skills(project_code, project_name)
+    if not skills:
+        skills = _find_matching_skills([project_code.split("-")[0] if "-" in project_code else project_code]) + COMMON_SKILLS
+        skills = sorted(set(skills))
+    paths = [f"ecc/skills/{s}/SKILL.md" for s in skills if (config.ECC_DIR / "skills" / s / "SKILL.md").exists()]
+    paths += [".farewell/custom-skills"]
+    manifest = {"paths": paths, "project": f"{project_code}-{project_name}", "total": len(paths)}
+    mf = config.STATE_DIR / "active-skills.json"
+    mf.parent.mkdir(parents=True, exist_ok=True)
+    tmp = mf.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    tmp.replace(mf)

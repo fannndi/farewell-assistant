@@ -293,8 +293,8 @@ def run_daily():
     if not started:
         write_fail("9Router failed to start")
 
-    # Phase 2: Upstream (ECC + 9Router)
-    write_step("2/4", "Upstream ECC + 9Router")
+    # Phase 2: Upstream (ECC + 9Router + awesome-opencode)
+    write_step("2/4", "Upstream ECC + 9Router + awesome-opencode")
     ecc_upstream = git_pull(config.ECC_DIR, "origin", "main")
     if ecc_upstream.get("updated"):
         write_ok("ECC: {0}".format(ecc_upstream["summary"]))
@@ -304,6 +304,16 @@ def run_daily():
         write_info("ECC: up to date")
     else:
         write_info("ECC: {0}".format(ecc_upstream.get("reason", "error")))
+
+    awesome_upstream = git_pull(config.AWESOME_DIR, "origin", "main")
+    if awesome_upstream.get("updated"):
+        write_ok("awesome-opencode: {0}".format(awesome_upstream["summary"]))
+        for c in awesome_upstream.get("new_commits", [])[:5]:
+            write_info("  {0}".format(c))
+    elif awesome_upstream.get("reason") == "up to date":
+        write_info("awesome-opencode: up to date")
+    else:
+        write_info("awesome-opencode: {0}".format(awesome_upstream.get("reason", "error")))
 
     router_upstream = git_pull(config.ROUTER_DIR, "origin", "master")
     if router_upstream.get("updated"):
@@ -316,9 +326,12 @@ def run_daily():
         write_info("9Router: {0}".format(router_upstream.get("reason", "error")))
 
     # Phase 3: Sync opencode.jsonc
-    write_step("3/4", "Sync opencode.jsonc")
+    write_step("3/4", "Sync opencode.jsonc + awesome-index")
     _sync_opencode()
     write_ok("opencode.jsonc synced")
+    from .awesome_indexer import load_all_entries
+    plugs, themes, ags, projs, res = load_all_entries()
+    write_info("awesome: {0} plugins, {1} themes, {2} agents, {3} projects".format(len(plugs), len(themes), len(ags), len(projs)))
 
     # Phase 4: Readiness check
     write_step("4/4", "Readiness check")

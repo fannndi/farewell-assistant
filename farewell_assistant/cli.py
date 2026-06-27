@@ -1,8 +1,10 @@
-"""CLI entrypoint — minimal dispatcher (workmode/team/status/project/daily)."""
+"""CLI entrypoint — minimal dispatcher (workmode/team/status/project/daily/cool)."""
 
-import argparse
+import argparse, json as _json
 from . import config
-from .workmode import switch_workmode
+from .workmode import switch_workmode, set_models
+from .indexer import write_active_skills_manifest
+from .memory import get_recent_context, save_session
 
 
 def cmd_workmode(args):
@@ -10,7 +12,6 @@ def cmd_workmode(args):
 
 
 def _get_team() -> str:
-    import json as _json
     try:
         f = config.FAREWELL_DIR / "team.json"
         if f.exists():
@@ -20,17 +21,17 @@ def _get_team() -> str:
 
 
 def cmd_team(args):
-    import json as _json
-    from .helpers import _c, get_work_mode, read_project_active
-    from .indexer import get_project_skills
+    from .helpers import _c
     if args.status == "on":
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "ON"}), encoding="utf-8")
+        set_models("9router/Deepseek-GO-Flash", "9router/Deepseek-API-Flash")
         _write_context_footer()
-        print(f"\n  {_c('[TEAM]', 'green')} ON - professional mode\n")
+        print(f"\n  {_c('[TEAM]', 'green')} ON - professional mode (model: Deepseek-GO-Flash)\n")
     elif args.status == "off":
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "OFF"}), encoding="utf-8")
+        set_models("9router/Free", "9router/Free")
         _write_context_footer()
-        print(f"\n  {_c('[TEAM]', 'yellow')} OFF - personal mode\n")
+        print(f"\n  {_c('[TEAM]', 'yellow')} OFF - personal mode (model: Free combo)\n")
     else:
         print(f"  Team: {_get_team()}")
 
@@ -41,7 +42,8 @@ def cmd_daily(args):
 
 
 def cmd_project(args):
-    from .helpers import list_registered_projects, read_json, write_json, _c
+    from .helpers import list_registered_projects, read_json, write_json, _c, read_project_code
+    from .memory import save_session
     if args.action == "list":
         projects = list_registered_projects()
         if not projects: print("  No registered projects."); return
@@ -55,6 +57,11 @@ def cmd_project(args):
         if not reg: return
         for name, info in reg.get("projects", {}).items():
             if info.get("project_code") == args.action:
+                # Save memory for previous project
+                old_active = reg.get("active", "farewell-assistant")
+                old_code = read_project_code(old_active)
+                save_session(old_code, old_active, f"switched to {args.action}-{name}")
+
                 reg["active"] = name
                 write_json(config.REGISTRY_FILE, reg)
                 _write_context_footer()
@@ -63,21 +70,104 @@ def cmd_project(args):
         print(f"  Project code '{args.action}' not found.")
 
 
+def cmd_cool(args):
+    from .awesome_indexer import load_all_entries, get_recommended_projects_for_stack, get_project_info
+    from .helpers import _c, read_project_active, read_project_code
+    plugs, themes, ags, projs, res = load_all_entries()
+
+    if args.action == "info" and args.query:
+        for cat, entries in [("plugin", plugs), ("theme", themes), ("agent", ags), ("project", projs), ("resource", res)]:
+            for e in entries:
+                if args.query.lower() in e.get("name", "").lower():
+                    name = e.get("name", "")
+                    print(f"\n  {_c(f'[{cat}] {name}', 'cyan')}")
+                    print(f"  {e.get('tagline', '')}")
+                    print(f"   {e.get('description', '')}")
+                    print(f"   {e.get('repo', '')}")
+                    if "installation" in e:
+                        print(f"   install: {e['installation']}")
+                    print()
+                    return
+        print(f"  '{args.query}' not found in awesome-opencode")
+
+    elif args.action == "search" and args.query:
+        q = args.query.lower()
+        found = []
+        for cat, entries in [("plugin", plugs), ("theme", themes), ("agent", ags), ("project", projs), ("resource", res)]:
+            for e in entries:
+                if q in e.get("name", "").lower() or q in e.get("tagline", "").lower() or q in e.get("description", "").lower():
+                    found.append((cat, e))
+        found_count = len(found)
+        print(f"\n  {_c(f'Found {found_count} in awesome-opencode for: {args.query}', 'cyan')}\n")
+        for cat, e in found[:20]:
+            print(f"  [{cat:>7}] {e.get('name')}")
+            print(f"          {e.get('tagline', '')}")
+            print(f"          {e.get('repo', '')}")
+            print()
+
+    elif args.action == "list":
+        cat = args.category or "all"
+        sources = [("plugin", plugs), ("theme", themes), ("agent", ags), ("project", projs), ("resource", res)]
+        print()
+        for label, entries in sources:
+            if cat in ("all", label):
+                print(f"  {_c(f'{label}s ({len(entries)})', 'cyan')}")
+                for e in entries[:10]:
+                    scope = ",".join(e.get("scope", ["global"])) if "scope" in e else ""
+                    s = f" [{scope}]" if scope else ""
+                    print(f"    - {e.get('name')}{s}")
+                if len(entries) > 10:
+                    print(f"    ... +{len(entries)-10} more")
+                print()
+
+    elif args.action == "recommend":
+        active = read_project_active()
+        code = read_project_code(active)
+        from .indexer import get_project_skills
+        skills = get_project_skills(code, active)
+        stack = list(dict.fromkeys([s.split("-")[0] for s in skills if "-" in s]))
+        if not stack:
+            stack = [code.split("-")[0] if "-" in code else code]
+        recs = get_recommended_projects_for_stack(stack)
+        if recs:
+            stack_str = ", ".join(stack[:3])
+            print(f"\n  {_c(f'awesome recommendations for {code}-{active} (stack: {stack_str})', 'cyan')}\n")
+            for r in recs[:10]:
+                print(f"  - {r.get('name')}: {r.get('tagline', '')}")
+                print(f"    {r.get('repo', '')}")
+            print()
+        else:
+            print(f"\n  No recommendations for current project\n")
+
+    elif args.action == "stats":
+        print(f"\n  {_c('awesome-opencode stats', 'cyan')}")
+        print(f"  plugins:  {len(plugs)}")
+        print(f"  themes:   {len(themes)}")
+        print(f"  agents:   {len(ags)}")
+        print(f"  projects: {len(projs)}")
+        print(f"  resources:{len(res)}")
+        print(f"  total:    {len(plugs)+len(themes)+len(ags)+len(projs)+len(res)}\n")
+
+
 def cmd_status(args):
     from .helpers import read_project_active, get_work_mode, _c, read_project_code
     from .indexer import get_project_skills
+    from .awesome_indexer import load_all_entries
     active = read_project_active()
     mode = get_work_mode()
     code = read_project_code(active)
     team = _get_team()
     skills = get_project_skills(code, active)
     sk = f" | Skills: {len(skills)}" if skills else ""
-    print(f"\n  {_c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk} | Team: {team}', 'cyan')}\n")
+    plugs, themes, ags, projs, res = load_all_entries()
+    ao = f" | awesome: {len(plugs)}p/{len(ags)}a/{len(projs)}pr"
+    print(f"\n  {_c(f'Farewell: ON | {code}-{active} | {mode.upper()}{sk} | Team: {team}{ao}', 'cyan')}\n")
 
 
 def _write_context_footer(project: str | None = None, mode: str | None = None):
     from .helpers import read_project_code, read_project_active, get_work_mode
     from .indexer import get_project_skills
+    from .awesome_indexer import get_recommended_projects_for_stack
     if project is None:
         project = read_project_active()
     if mode is None:
@@ -86,11 +176,28 @@ def _write_context_footer(project: str | None = None, mode: str | None = None):
     team = _get_team()
     skills = get_project_skills(code, project)
     sk = f" | Skills: {len(skills)}" if skills else ""
+
+    # Write active skills manifest (filtered)
+    write_active_skills_manifest(code, project)
+
+    # Memory context
+    mem_ctx = get_recent_context(code, project)
+
+    # Awesome recommendations
+    stack = list(dict.fromkeys([s.split("-")[0] for s in skills if "-" in s]))
+    if stack:
+        recs = get_recommended_projects_for_stack(stack)
+        recs_str = "\n".join(f"  - {r.get('name')}: {r.get('tagline', '')}" for r in recs[:3])
+        recs_block = f"\n\n# Awesome Recommendations\n{recs_str}" if recs_str else ""
+    else:
+        recs_block = ""
+
     ctx = f"""# State
 Farewell: ON
 Team: {team}
 Project: {code}-{project}
 Mode: {mode.upper()}{sk}
+{mem_ctx}{recs_block}
 """
     (config.STATE_DIR / "context.md").write_text(ctx, encoding="utf-8")
 
@@ -117,6 +224,12 @@ def main():
     proj_p = subparsers.add_parser("project", help="List or switch active project")
     proj_p.add_argument("action", nargs="?", default="list", help="Project code or 'list'")
     proj_p.set_defaults(func=cmd_project)
+
+    cool_p = subparsers.add_parser("cool", help="awesome-opencode: list / search / info / recommend / stats")
+    cool_p.add_argument("action", nargs="?", default="stats", choices=["list", "search", "info", "recommend", "stats"])
+    cool_p.add_argument("query", nargs="?", default="")
+    cool_p.add_argument("-c", "--category", default="all", help="Filter: plugin, theme, agent, project, resource")
+    cool_p.set_defaults(func=cmd_cool)
 
     args = parser.parse_args()
     if not args.command:

@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ECC_DIR = ROOT_DIR / "ecc"
 ROUTER_DIR = ROOT_DIR / "9router"
+AWESOME_DIR = ROOT_DIR / "awesome-opencode"
 STATE_DIR = ROOT_DIR / ".opencode"
 FAREWELL_DIR = ROOT_DIR / ".farewell"
 REGISTRY_FILE = FAREWELL_DIR / "registry.json"

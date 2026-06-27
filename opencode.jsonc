@@ -15,9 +15,23 @@
         "apiKey": "{env:NINEROUTER_API_KEY}"
       },
       "models": {
-        "Free": { "name": "Free (5 model Round Robin)" },
-        "Deepseek-API-Flash": { "name": "Deepseek-API-Flash (ds v4 flash + Free fallback)" },
-        "Deepseek-GO-Flash": { "name": "Deepseek-GO-Flash (Instructor + free fallback)" }
+        "Free": { "name": "Free (5 models, round-robin)" },
+        "Deepseek-API-Flash": { "name": "Deepseek-API-Flash (2 models, round-robin)" },
+        "Deepseek-GO-Flash": { "name": "Deepseek-GO-Flash (2 models, round-robin)" },
+        "Ollama": { "name": "Ollama (4 models, round-robin)" }
+      }
+    },
+    "nvidia": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Nvidia Direct",
+      "env": ["NVIDIA_API_KEY"],
+      "options": {
+        "baseURL": "https://integrate.api.nvidia.com/v1",
+        "apiKey": "{env:NVIDIA_API_KEY}"
+      },
+      "models": {
+        "deepseek-ai/deepseek-v4-flash": { "name": "Nvidia Flash (40 RPM)" },
+        "deepseek-ai/deepseek-v4-pro": { "name": "Nvidia Pro (40 RPM)" }
       }
     }
   },

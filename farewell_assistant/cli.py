@@ -45,6 +45,11 @@ def cmd_daily(args):
     run_daily()
 
 
+def cmd_sync(args):
+    from .sync_opencode import sync_opencode
+    sync_opencode()
+
+
 def cmd_project(args):
     from .helpers import list_registered_projects, read_json, write_json, _c
     if args.action == "list":
@@ -133,6 +138,9 @@ def main():
 
     daily_p = subparsers.add_parser("daily", help="Daily readiness: 9Router health + ECC/GitHub updates + combo model ping")
     daily_p.set_defaults(func=cmd_daily)
+
+    sync_p = subparsers.add_parser("sync", help="Sync 9Router combos + Nvidia to opencode.jsonc")
+    sync_p.set_defaults(func=cmd_sync)
 
     args = parser.parse_args()
     if not args.command:

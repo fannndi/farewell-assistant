@@ -8,6 +8,7 @@ import urllib.request
 from pathlib import Path
 from . import config
 from .helpers import _c, write_ok, write_skip, write_info, write_fail
+from .nvidia import ping_all as _ping_nvidia, NVIDIA_MODELS
 
 
 def _db() -> Path | None:
@@ -77,7 +78,7 @@ def _get_combos() -> dict:
         return {"error": str(e)}
 
 
-def _print_report(health, ecc, github, combos):
+def _print_report(health, ecc, github, combos, nvidia):
     print(f"\n  {_c('='*40, 'cyan')}\n  {_c('Daily Readiness', 'cyan')}\n  {_c('='*40, 'cyan')}")
 
     if health["running"]:
@@ -101,6 +102,17 @@ def _print_report(health, ecc, github, combos):
         else:
             write_ok("GitHub: {0}".format(github.get("tag", "?")))
 
+    if "error" in nvidia:
+        write_info("Nvidia: {0}".format(nvidia["error"]))
+    else:
+        ok_models = sum(1 for r in nvidia.values() if r.get("ok"))
+        total = len(nvidia)
+        if ok_models == total:
+            write_ok("Nvidia (direct): {0}/{1} models, 40 RPM".format(ok_models, total))
+        else:
+            failed = [m for m, r in nvidia.items() if not r.get("ok")]
+            write_info("Nvidia (direct): {0}/{1} models -- {2}".format(ok_models, total, ", ".join(failed[:3])))
+
     if "error" in combos:
         write_info("Combos: {0}".format(combos["error"]))
     else:
@@ -120,4 +132,5 @@ def run_daily():
     ecc = _check_ecc()
     github = _check_github_release()
     combos = _get_combos()
-    _print_report(health, ecc, github, combos)
+    nvidia = _ping_nvidia()
+    _print_report(health, ecc, github, combos, nvidia)

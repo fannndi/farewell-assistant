@@ -83,6 +83,70 @@ Decision priority: Boss → Director → Deputy → Team Leader → Senior BE �
 
 ---
 
+## Workflow Example
+
+Berikut alur lengkap dari user memberi task hingga eksekusi oleh tim AI:
+
+```
+USER (Boss)
+  │  "Bikin fitur login untuk service-hub"
+  ▼
+DIRECTOR AI (ocg/deepseek-v4-flash)
+  │  Memahami objective → menentukan scope → buat Work Order
+  │  Output: "WO-003: Implementasi auth (register/login/JWT) di service-hub"
+  ▼
+TEAM LEADER (oc/deepseek-v4-flash-free)
+  │  Menerima WO → bagi tugas:
+  │  ├─ Senior BE  → backend auth (API, DB, JWT)
+  │  ├─ Junior I   → validasi bug/edge cases
+  │  ├─ Junior II  → review code style
+  │  └─ Junior III → review arsitektur
+  ▼
+SENIOR BE (oc/mimo-v2.5-free)
+  │  Eksekusi backend:
+  │  1. Buat model User + migration
+  │  2. Buat endpoint register/login/me
+  │  3. Implementasi JWT + middleware
+  │  4. Tulis unit test
+  ▼
+GABUNG HASIL
+  │  Team Leader kumpulkan semua output
+  │  Resolve konflik rekomendasi antar reviewer
+  │  Prioritaskan berdasarkan dampak
+  ▼
+LAPOR ke DIRECTOR
+  │  "WO-003 selesai. 3 file: auth.ts, db.py, test_auth.py"
+  │  Teknologi: bcrypt, jsonwebtoken, express-validator
+  │  Coverage: 92%
+  ▼
+USER (Boss)
+  │  Review hasil → approve / minta revisi
+  ✔  SELESAI
+```
+
+### Alur perintah
+
+```bash
+# 1. Setup — tentukan mode tim
+py -m farewell_assistant team tim
+
+# 2. Lihat struktur organisasi
+py -m farewell_assistant org
+
+# 3. Kerjakan task (otomatis pake model sesuai peran)
+#    build/team → TEAM_LEADER
+#    planner/code-reviewer → SENIOR
+#    worker → JUNIOR_1
+
+# 4. Sync harian
+py -m farewell_assistant daily
+
+# 5. Cek status
+py -m farewell_assistant status
+```
+
+---
+
 ## Team Modes
 
 | Mode | root_model | senior_model | junior_model | Use case |

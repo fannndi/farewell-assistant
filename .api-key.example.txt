@@ -2,10 +2,10 @@
 NINEROUTER_API_KEY=sk-your-key-here
 
 # Model config (optional — default digunakan kalau tidak diisi)
+# LEADER_1 / LEADER_2 = premium controller
+# SPECIAL = free controller (dual role: leader + executor)
+# WORKER = worker models (fallback chain via 9Router combo)
 LEADER_1=ocg/deepseek-v4-flash
 LEADER_2=ds/deepseek-v4-flash
 SPECIAL=oc/deepseek-v4-flash-free
-WORKER_1=oc/mimo-v2.5-free
-WORKER_2=oc/big-pickle
-WORKER_3=oc/north-mini-code-free
-WORKER_4=oc/nemotron-3-ultra-free
+WORKER=oc/mimo-v2.5-free,oc/big-pickle,oc/north-mini-code-free,oc/nemotron-3-ultra-free

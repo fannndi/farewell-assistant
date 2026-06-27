@@ -151,35 +151,36 @@ def _sync_opencode():
     combo_names = _load_combo_names()
     team_state = _get_team()
 
-    # Resolve leader/special/worker/helper: alias if combo exists, else direct model
+    # Resolve leader/special/worker: alias if combo exists, else direct model
     leader_1 = cfg.get("LEADER_1", "ocg/deepseek-v4-flash")
     special = cfg.get("SPECIAL", "oc/deepseek-v4-flash-free")
-    worker_1 = cfg.get("WORKER_1", "oc/mimo-v2.5-free")
-    worker_2 = cfg.get("WORKER_2", "oc/big-pickle")
+    worker_val = cfg.get("WORKER", "oc/mimo-v2.5-free,oc/big-pickle,oc/north-mini-code-free,oc/nemotron-3-ultra-free")
 
     if team_state == "ON":  # Divisi — LEADER_1 leads, SPECIAL plans
         leader = _alias("LEADER_1", leader_1, combo_names)
         spc = _alias("SPECIAL", special, combo_names)
-        wrk = _alias("WORKER_1", worker_1, combo_names)
-        hlp = _alias("WORKER_2", worker_2, combo_names)
+        wrk = _alias("WORKER", worker_val.split(",")[0], combo_names)
+        hlp = wrk
     elif team_state == "TIM":  # Tim — SPECIAL leads AND plans
         leader = _alias("SPECIAL", special, combo_names)
         spc = _alias("SPECIAL", special, combo_names)
-        wrk = _alias("WORKER_1", worker_1, combo_names)
-        hlp = _alias("WORKER_2", worker_2, combo_names)
+        wrk = _alias("WORKER", worker_val.split(",")[0], combo_names)
+        hlp = wrk
     else:  # BAWAHAN — workers only
-        wrk_val = _alias("WORKER_1", worker_1, combo_names)
-        leader = wrk_val
-        spc = wrk_val
-        wrk = wrk_val
-        hlp = _alias("WORKER_2", worker_2, combo_names)
+        wrk_resolved = _alias("WORKER", worker_val.split(",")[0], combo_names)
+        leader = wrk_resolved
+        spc = wrk_resolved
+        wrk = wrk_resolved
+        hlp = wrk_resolved
 
-    # Build provider models: combo names + direct model names (from cfg)
+    # Build provider models: combo names + fallback direct models (no combo = split by comma)
     provider_models = set(combo_names)
     for k, v in cfg.items():
-        if k != "NINEROUTER_API_KEY" and v:
-            if k not in combo_names:
-                provider_models.add(v)  # direct model
+        if k != "NINEROUTER_API_KEY" and v and k not in combo_names:
+            for m in v.split(","):
+                m = m.strip()
+                if m:
+                    provider_models.add(m)
     model_entries = []
     sorted_models = sorted(provider_models)
     for i, m in enumerate(sorted_models):

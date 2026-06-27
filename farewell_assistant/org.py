@@ -93,55 +93,6 @@ SENIOR_BACKEND = Role(
     contribution="90% -- partner utama Team Leader",
 )
 
-DEPUTY = Role(
-    title="Deputy Director AI",
-    model_label="ds/deepseek-v4-flash",
-    status="Wakil Director -- Pegawai Tetap",
-    tier="pegawai_tetap",
-    authority=[
-        "Membantu Director",
-        "Memvalidasi keputusan",
-        "Second opinion",
-        "Menjaga konsistensi strategi",
-        "Menggantikan Director dalam emergency",
-    ],
-    contribution="Full authority jika Director tidak tersedia",
-)
-
-TEAM_LEADER = Role(
-    title="Team Leader AI",
-    model_label="oc/deepseek-v4-flash-free",
-    status="Ketua Tim Engineering -- Pegawai Tetap",
-    tier="pegawai_tetap",
-    focus=["Frontend Audit", "Integrasi Sistem", "Audit Umum"],
-    authority=[
-        "Menerima Work Order",
-        "Membagi pekerjaan",
-        "Mengaudit frontend & integrasi sistem",
-        "Bekerja bersama Senior Backend Engineer",
-        "Menggabungkan seluruh hasil audit",
-        "Menyelesaikan konflik rekomendasi",
-        "Membuat laporan lengkap untuk Director",
-    ],
-    contribution="90% -- kontributor utama",
-)
-
-SENIOR_BACKEND = Role(
-    title="Senior Backend Engineer",
-    model_label="oc/mimo-v2.5-free",
-    status="Pegawai Tetap",
-    tier="pegawai_tetap",
-    focus=["Backend", "API", "Database", "Auth", "Security"],
-    authority=[
-        "Bertanggung jawab penuh terhadap Backend, API, Database",
-        "Authentication & Authorization",
-        "Business Logic & Security",
-        "Performance & Cache",
-        "Backend Architecture",
-    ],
-    contribution="90% -- partner utama Team Leader",
-)
-
 JUNIOR_1 = Role(
     title="Junior Reviewer I -- Bug Finding",
     model_label="oc/big-pickle",

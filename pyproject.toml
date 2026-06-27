@@ -7,7 +7,7 @@ name = "farewell-assistant"
 version = "2.0.1"
 description = "Intent-driven AI coding assistant orchestrator"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = ["pyyaml>=6.0"]
 
 [project.scripts]
 farewell-assistant = "farewell_assistant.cli:main"

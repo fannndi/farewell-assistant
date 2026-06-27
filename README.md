@@ -52,10 +52,24 @@ pip install -e .
 Buat file `api-key.txt` di root project:
 
 ```
-NINEROUTER_API_KEY=sk-5aeb03e2d6fefe6e-oedccr-a35926e4
+NINEROUTER_API_KEY=sk-your-key-here
+LEADER_1=ocg/deepseek-v4-flash
+LEADER_2=ds/deepseek-v4-flash
+SPECIAL=oc/deepseek-v4-flash-free
+WORKER_1=oc/mimo-v2.5-free
+WORKER_2=oc/big-pickle
+WORKER_3=oc/north-mini-code-free
+WORKER_4=oc/nemotron-3-ultra-free
 ```
 
-Hanya 9Router API key — **tidak ada Nvidia**, **tidak ada combo hardcoded**.
+| Key | Peran |
+|-----|-------|
+| `LEADER_1` | Main controller (premium) |
+| `LEADER_2` | Secondary controller (premium) |
+| `SPECIAL` | Planner/Architect (free, dual-role: controller + worker) |
+| `WORKER_1..4` | Reviewer/Helper (free models) |
+
+Hanya 9Router API key + model mapping — **tidak ada Nvidia**, **tidak ada combo definition**. Model bisa disesuaikan tanpa edit kode.
 
 ---
 
@@ -74,10 +88,18 @@ Farewell-assistant adalah **orchestrator** yang menghubungkan:
 ### Cara Kerja
 
 1. Kamu (Boss) kasih task
-2. Farewell-assistant tentukan mode tim (divisi/tim/bawahan)
-3. Agent pake combo sesuai peran (DIRECTOR/TEAM_LEADER/SENIOR/JUNIOR)
-4. 9Router route request ke model sesungguhnya lewat combo fallback chain
-5. Hasil kembali ke kamu
+2. Farewell-assistent tentukan mode tim (divisi/tim/bawahan)
+3. Model mapping dari `api-key.txt`:
+
+```
+DIVISI:  LEADER → SPECIAL → WORKER_1 → WORKER_2
+TIM:     SPECIAL → SPECIAL → WORKER_1 → WORKER_2
+BAWAHAN: WORKER_1 → WORKER_1 → WORKER_1 → WORKER_2
+```
+
+4. Agent pakai model sesuai peran (controller/specialist/reviewer/helper)
+5. 9Router route request ke model sesungguhnya
+6. Hasil kembali ke kamu
 
 ---
 
@@ -158,55 +180,33 @@ Menampilkan chart hierarchy, roles, workflow, priority.
 
 ## Team Mode
 
-Ada 3 mode tim. Pilih sesuai kebutuhan:
+Model mapping diatur lewat `api-key.txt`. Tiap mode pilih LEADER berbeda, sisanya tetap.
 
-| Mode | Command | Root Model | Senior Model | Junior Model | Cocok Untuk |
-|------|---------|-----------|--------------|--------------|-------------|
-| **DIVISI** | `/team on` | DIRECTOR | DIRECTOR | DIRECTOR | Project besar, butuh premium |
-| **TIM** | `/team off` | TEAM_LEADER | SENIOR | JUNIOR_1 | Sehari-hari, hemat token |
-| **BAWAHAN** | `/team bawahan` | SENIOR | SENIOR | SENIOR | Task kecil, cepat |
+| Mode | Command | LEADER | SPECIAL | WORKER | HELPER | Cocok |
+|------|---------|--------|---------|--------|--------|-------|
+| **DIVISI** | `/team on` | LEADER_1 | SPECIAL | WORKER_1 | WORKER_2 | Premium |
+| **TIM** | `/team off` | SPECIAL | SPECIAL | WORKER_1 | WORKER_2 | Sehari-hari |
+| **BAWAHAN** | `/team bawahan` | WORKER_1 | WORKER_1 | WORKER_1 | WORKER_2 | Cepat |
 
-### DIVISI (ON) — Mode Perusahaan
+### Agent-to-Model (TIM mode)
 
-Semua agent pake DIRECTOR combo (ocg/deepseek-v4-flash → fallback ke TEAM_LEADER → SENIOR).
+```
+build/team           -> SPECIAL      (controller + execution)
+planner/architect    -> SPECIAL      (reasoning)
+reviewers            -> WORKER_1     (code review)
+docs-lookup/refactor -> WORKER_2     (lightweight)
+worker-1/2/3         -> WORKER_2     (helpers)
+```
+
+### Contoh
 
 ```bash
 py -m farewell_assistant team on
-# Output: [DIVISI] Ketua Divisi leading: DIRECTOR
-```
+# [DIVISI] LEADER = LEADER_1 | SPECIAL = SPECIAL | WORKER = WORKER_1
 
-**Alur:** User → Director → Team Leader → Senior BE → Junior → Lapor ke Director → User
-
-Cocok untuk: project besar, butuh kualitas maksimal, budget token gak masalah.
-
-### TIM (OFF) — Mode Personal/Hemat
-
-Agent dibagi peran:
-- **build/team** → TEAM_LEADER combo (oc/deepseek-v4-flash-free round-robin)
-- **planner/code-reviewer/dll** → SENIOR combo (oc/mimo-v2.5-free round-robin)
-- **worker-1/2/3** → JUNIOR_1 combo (oc/north-mini-code-free single)
-
-```bash
 py -m farewell_assistant team off
-# Output: [TEAM] Ketua Tim leading: TEAM_LEADER
+# [TEAM] LEADER = SPECIAL | SPECIAL = SPECIAL | WORKER = WORKER_1
 ```
-
-**Alur:** User → Team Leader → Senior BE + Junior → Lapor ke User
-
-Cocok untuk: sehari-hari, hemat token, task kompleksitas sedang.
-
-### BAWAHAN — Mode Worker
-
-Semua agent pake SENIOR combo. Tanpa leader.
-
-```bash
-py -m farewell_assistant team bawahan
-# Output: [KARYAWAN] Workers mode: SENIOR
-```
-
-**Alur:** User → Worker → User
-
-Cocok untuk: task kecil, cepat, token minimal.
 
 ---
 
@@ -363,67 +363,58 @@ py -m farewell_assistant cool stats             # Statistik
 
 ## Workflow Examples
 
-### DIVISI Mode — Via Director
+### DIVISI Mode -- Via Director
 
 ```
 USER (Boss)
-  │  "Bikin fitur login untuk service-hub"
+  |  "Bikin fitur login"
   ▼
-DIRECTOR AI (ocg/deepseek-v4-flash)
-  │  Memahami objective → scope → Work Order
-  │  Output: "WO-003: Implementasi auth (register/login/JWT)"
+DIRECTOR AI (LEADER_1)
+  |  Memahami objective -> scope -> Work Order
+  |  Output: "Implementasi auth (register/login/JWT)"
   ▼
-TEAM LEADER + SENIOR BE + JUNIORS
-  │  Eksekusi sesuai WO
+TEAM LEADER (LEADER) + SPECIAL + WORKERS
+  |  Eksekusi sesuai WO
   ▼
-LAPOR → DIRECTOR → USER
+LAPOR -> DIRECTOR -> USER
 ```
 
-### TIM Mode — Skip Director (Personal/Hemat)
+### TIM Mode -- Skip Director (Personal/Hemat)
 
 ```
 USER (Boss)
-  │  "Bikin fitur login untuk service-hub"
-  │  (langsung, tanpa Director — hemat token)
+  |  "Bikin fitur login"
+  |  (langsung, tanpa Director -- hemat token)
   ▼
-TEAM LEADER (oc/deepseek-v4-flash-free)
-  │  Pahami task → bagi tugas:
-  │  ├─ Senior BE  → backend auth (API, DB, JWT)
-  │  ├─ Junior I   → validasi bug/edge cases
-  │  ├─ Junior II  → review code style
-  │  └─ Junior III → review arsitektur
+TEAM LEADER (SPECIAL)
+  |  Pahami task -> bagi tugas:
+  |  +- SPECIAL  -> planning, architecture
+  |  +- WORKER_1 -> code review, validation
+  |  +- WORKER_2 -> docs, refactoring
   ▼
-SENIOR BE (oc/mimo-v2.5-free)
-  │  Eksekusi backend:
-  │  1. Buat model User + migration
-  │  2. Buat endpoint register/login/me
-  │  3. Implementasi JWT + middleware
-  │  4. Tulis unit test
-  ▼
-JUNIOR REVIEWERS
-  │  Validasi: bug, style, architecture
+EXECUTION
+  |  LEADER eksekusi + SPECIAL planning + WORKER review
   ▼
 GABUNG HASIL
-  │  Team Leader kumpulkan output
-  │  Resolve konflik rekomendasi
+  |  LEADER kumpulkan output
+  |  Resolve konflik rekomendasi
   ▼
 LAPOR ke USER
-  │  "Selesai. 3 file: auth.ts, db.py, test_auth.py"
-  │  Coverage: 92%
+  |  "Selesai. Fitur berjalan"
   ▼
 USER (Boss)
-  │  Review → approve / minta revisi
+  |  Review -> approve / minta revisi
   ✔  SELESAI
 ```
 
-### BAWAHAN Mode — Worker Langsung
+### BAWAHAN Mode -- Worker Langsung
 
 ```
 USER (Boss)
-  │  "Bikin fitur login"
+  |  "Bikin fitur login"
   ▼
-WORKER (SENIOR combo)
-  │  Eksekusi langsung
+WORKER (WORKER_1)
+  |  Eksekusi langsung
   ▼
 USER (Boss)
   ✔  SELESAI
@@ -432,7 +423,7 @@ USER (Boss)
 ### Sesi Lengkap (Pagi Hari)
 
 ```bash
-# 1. Daily — start 9Router + sync semua
+# 1. Daily -- start 9Router + sync semua
 py -m farewell_assistant daily
 
 # 2. Pilih mode tim
@@ -441,11 +432,10 @@ py -m farewell_assistant team tim
 # 3. Cek org chart
 py -m farewell_assistant org
 
-# 4. Mulai coding — opencode otomatis pake model sesuai mode
-#    (build/team → TEAM_LEADER, reviewer → SENIOR, worker → JUNIOR_1)
+# 4. Mulai coding -- opencode otomatis pake model sesuai mode
 
-# 5. Kalau perlu ganti project
-py -m farewell_assistant project 001
+# 5. Cek project
+py -m farewell_assistant project list
 
 # 6. Cek status
 py -m farewell_assistant status
@@ -471,21 +461,18 @@ Caranya:
 
 ### Role-Based Routing
 
-| Agent | Divisi | Tim | Bawahan |
+| Agent | DIVISI | TIM | BAWAHAN |
 |-------|--------|-----|---------|
-| build/team | DIRECTOR | TEAM_LEADER | SENIOR |
-| planner/reviewer | DIRECTOR | SENIOR | SENIOR |
-| worker | DIRECTOR | JUNIOR_1 | SENIOR |
+| build/team | LEADER_1 | SPECIAL | WORKER_1 |
+| planner/architect | SPECIAL | SPECIAL | WORKER_1 |
+| reviewers | WORKER_1 | WORKER_1 | WORKER_1 |
+| helpers (docs, worker) | WORKER_2 | WORKER_2 | WORKER_2 |
 
-Task simpel → model murah (JUNIOR). Task kompleks → model capable (SENIOR/TEAM_LEADER).
+Task simpel -> model ringan (WORKER_2). Task kompleks -> model capable (SPECIAL/LEADER).
 
-### Combo Fallback Chain
+### Fallback
 
-```
-DIRECTOR → TEAM_LEADER → SENIOR → JUNIOR_1/2/3
-```
-
-Kalau model premium rate-limited, turun otomatis ke free models. Gak perlu campur tangan manual.
+9Router handle fallback otomatis. Kalau model premium kena rate limit, 9Router coba model lain. Gak perlu campur tangan manual.
 
 ---
 
@@ -580,15 +567,15 @@ Daily otomatis start 9Router. Kalau gagal, cek:
 py -m farewell_assistant daily
 ```
 
-`_sync_opencode()` baca combo dari 9Router SQLite. Pastikan combo sudah dibuat di 9Router UI.
+`_sync_opencode()` baca model dari `api-key.txt`. Pastikan LEADER/SPECIAL/WORKER_N sudah terisi.
 
-### Model rate-limited
+### Model tidak sesuai ekspektasi
 
-Combo punya fallback chain. DIRECTOR → TEAM_LEADER → SENIOR → JUNIOR. Kalau model mahal kena limit, turun otomatis ke free model. Gak perlu manual.
+Cek `api-key.txt` — model mapping ada di sana. Edit lalu jalankan `/daily` untuk sync ulang.
 
-### Nvidia error
+### Nvidia error (sudah tidak relevan)
 
-Nvidia sudah dihapus sepenuhnya dari farewell-assistant. Tapi kalau masih terdaftar di 9Router (providerConnections table), hapus manual lewat 9Router UI → Settings → Providers.
+Nvidia sudah dihapus dari farewell-assistant dan 9Router. Kalau masih muncul error, cek `kv` table di 9Router SQLite (`%APPDATA%/9router/db/data.sqlite`) untuk entry `customModels` atau `disabledModels` scope dengan key nvidia.
 
 ---
 

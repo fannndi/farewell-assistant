@@ -2,7 +2,7 @@
 
 import argparse, json as _json
 from . import config
-from .workmode import switch_workmode, set_models
+from .workmode import switch_workmode
 from .indexer import write_active_skills_manifest
 from .memory import get_recent_context, save_session
 
@@ -24,36 +24,29 @@ def _get_team() -> str:
 
 def cmd_team(args):
     from .helpers import _c
-    from .daily import _load_combos, _resolve_combo
+    from .daily import _sync_opencode
     status = args.status
-    combos = _load_combos()
     if status in ("on", "divisi"):
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "ON"}), encoding="utf-8")
-        model = _resolve_combo(combos, ["DIRECTOR", "LEADER"]) or "DIRECTOR"
-        small = _resolve_combo(combos, ["DEPUTY", "SENIOR"], model) or model
-        set_models(model, small, "divisi")
+        _sync_opencode()
         _write_context_footer()
-        print(f"\n  {_c('[DIVISI]', 'green')} Ketua Divisi leading: {model}\n")
+        print(f"\n  {_c('[DIVISI]', 'green')} LEADER = {_c('LEADER_1', 'cyan')} | SPECIAL = {_c('SPECIAL', 'cyan')} | WORKER = {_c('WORKER_1', 'cyan')}\n")
     elif status in ("off", "tim"):
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "TIM"}), encoding="utf-8")
-        model = _resolve_combo(combos, ["TEAM_LEADER", "LEADER"]) or "TEAM_LEADER"
-        small = _resolve_combo(combos, ["SENIOR", "DEPUTY"], model) or model
-        set_models(model, small, "tim")
+        _sync_opencode()
         _write_context_footer()
-        print(f"\n  {_c('[TEAM]', 'yellow')} Ketua Tim leading: {model}\n")
+        print(f"\n  {_c('[TEAM]', 'yellow')} LEADER = {_c('SPECIAL', 'cyan')} | SPECIAL = {_c('SPECIAL', 'cyan')} | WORKER = {_c('WORKER_1', 'cyan')}\n")
     elif status == "bawahan":
         (config.FAREWELL_DIR / "team.json").write_text(_json.dumps({"team": "BAWAHAN"}), encoding="utf-8")
-        model = _resolve_combo(combos, ["SENIOR", "TEAM_LEADER", "PEKERJA"]) or "SENIOR"
-        small = model
-        set_models(model, small, "bawahan")
+        _sync_opencode()
         _write_context_footer()
-        print(f"\n  {_c('[KARYAWAN]', 'cyan')} Workers mode: {model}\n")
+        print(f"\n  {_c('[KARYAWAN]', 'cyan')} LEADER = {_c('WORKER_1', 'cyan')} | SPECIAL = {_c('WORKER_1', 'cyan')} | WORKER = {_c('WORKER_1', 'cyan')}\n")
     else:
         team = _get_team()
-        if team == "ON": tier = "Divisi"; m = _resolve_combo(combos, ["DIRECTOR", "LEADER"]) or "DIRECTOR"
-        elif team == "TIM": tier = "Tim"; m = _resolve_combo(combos, ["TEAM_LEADER", "LEADER"]) or "TEAM_LEADER"
-        else: tier = "Bawahan"; m = _resolve_combo(combos, ["SENIOR", "TEAM_LEADER"]) or "SENIOR"
-        print(f"  Team: {team} ({tier}: {m})")
+        if team == "ON": tier = "Divisi (LEADER_1)"
+        elif team == "TIM": tier = "Tim (SPECIAL)"
+        else: tier = "Bawahan (WORKER_1)"
+        print(f"  Team: {team} ({tier})")
 
 
 def cmd_daily(args):

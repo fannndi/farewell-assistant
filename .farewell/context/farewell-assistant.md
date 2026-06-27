@@ -30,15 +30,16 @@ Decision priority: Boss → Director → Deputy → Team Leader → Senior BE �
   /org chart|roles|workflow|priority — Show full org hierarchy
 
 ## Key Files
-  cli.py            — Daily, workmode, project, cool, save, self-heal, org
+  cli.py            — CLI dispatcher (daily, team, workmode, project, cool, org, status)
+  daily.py          — All-in-one: start 9Router + upstream + sync opencode + readiness
+  org.py            — Organization hierarchy (roles, decision priority, workflow)
+  config.py         — Path constants
   helpers.py        — JSON I/O, project registry, colored output
-  org.py            — Organizational hierarchy (roles, decision priority, workflow)
-  indexer.py        — Stack → ECC skill matching, centralized manifests
+  workmode.py       — PLAN/BUILD switch
+  indexer.py        — Stack → ECC skill matching, active-skills manifest
   awesome_indexer.py — YAML parser → awesome-opencode plugin/agent/project matching
-  daily.py          — 9Router health + token usage + awesome-opencode upstream sync
   memory.py         — Session save/load per project
-  tracker.py        — Token usage from 9Router SQLite
-  Combo models: load live from 9Router API (http://localhost:20128/api/combos)
+  Combo models: load live from 9Router SQLite
 
 ## Commands
   /org              — Show org chart, roles, workflow, decision priority

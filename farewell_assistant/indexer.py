@@ -27,8 +27,9 @@ COMMON_SKILLS = ["git-workflow", "tdd-workflow", "coding-standards", "error-hand
 def _find_matching_skills(stack: list[str]) -> list[str]:
     matched = set()
     for s in stack:
+        s_lower = s.lower()
         for keyword, skills in STACK_SKILLS.items():
-            if keyword in s.lower():
+            if keyword in s_lower or s_lower in keyword or s_lower.startswith(keyword):
                 matched.update(skills)
     matched.update(COMMON_SKILLS)
     return sorted(matched)
@@ -45,7 +46,18 @@ def get_project_skills(project_code: str, project_name: str) -> list[str]:
 def write_active_skills_manifest(project_code: str, project_name: str):
     skills = get_project_skills(project_code, project_name)
     if not skills:
-        skills = _find_matching_skills([project_code.split("-")[0] if "-" in project_code else project_code]) + COMMON_SKILLS
+        # Fallback: try reading stack from manifest, not project_code
+        manifest_path = config.FAREWELL_DIR / "manifests" / f"{project_code}-{project_name}.json"
+        stack = []
+        if manifest_path.exists():
+            try:
+                data = json.loads(manifest_path.read_text(encoding="utf-8"))
+                stack = data.get("stack", [])
+            except Exception:
+                pass
+        if not stack:
+            stack = [project_code.split("-")[0] if "-" in project_code else project_code]
+        skills = _find_matching_skills(stack) + COMMON_SKILLS
         skills = sorted(set(skills))
     paths = [f"ecc/skills/{s}/SKILL.md" for s in skills if (config.ECC_DIR / "skills" / s / "SKILL.md").exists()]
     paths += [".farewell/custom-skills"]

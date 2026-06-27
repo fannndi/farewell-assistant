@@ -90,32 +90,19 @@ def git_pull(repo_dir: Path, remote: str = "origin", branch: str = "main") -> di
 
 # ── Phase 3/4: Sync opencode.jsonc ───────────────────────────────────────
 
-def _load_combos() -> list[dict]:
-    """Fetch combos from 9Router SQLite directly."""
-    import sqlite3
-    db = Path(os.environ.get("APPDATA", "")) / "9router" / "db" / "data.sqlite"
-    if not db.exists():
-        return []
-    try:
-        conn = sqlite3.connect(str(db))
-        cur = conn.execute("SELECT name, kind, models FROM combos ORDER BY name")
-        combos = []
-        for row in cur.fetchall():
-            models = json.loads(row[2]) if row[2] else []
-            combos.append({"key": row[0], "kind": row[1] or "round-robin", "models": models})
-        conn.close()
-        return combos
-    except Exception:
-        return []
-
-
-def _resolve_combo(combos: list[dict], preferred: list[str], fallback: str | None = None) -> str:
-    """Find combo by preferred names (case-insensitive), fallback to first or given fallback."""
-    for name in preferred:
-        for c in combos:
-            if c["key"].upper() == name.upper():
-                return c["key"]
-    return fallback if fallback else (combos[0]["key"] if combos else "")
+def _load_config() -> dict:
+    """Read model config from api-key.txt. Returns {KEY: value}."""
+    models = {}
+    f = config.ROOT_DIR / "api-key.txt"
+    if not f.exists():
+        return models
+    for line in f.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if "=" not in line or line.startswith("#"):
+            continue
+        k, v = line.split("=", 1)
+        models[k.strip()] = v.strip()
+    return models
 
 
 def _load_skill_paths() -> list[str]:
@@ -130,60 +117,54 @@ def _load_skill_paths() -> list[str]:
     return ["ecc/skills", ".farewell/custom-skills"]
 
 
-def _get_team_mode() -> str:
-    """Read team mode from team.json."""
-    import json as _json
-    f = config.FAREWELL_DIR / "team.json"
-    if f.exists():
-        try:
-            return _json.loads(f.read_text(encoding="utf-8")).get("team", "TIM")
-        except Exception:
-            pass
-    return "TIM"
-
-
 def _sync_opencode():
-    """Read template, substitute combo models + role-based model names + skill paths, write to opencode.jsonc."""
+    """Read template, substitute models from api-key.txt + skill paths, write opencode.jsonc."""
+    from .cli import _get_team
+
     template = config.ROOT_DIR / "opencode.template.jsonc"
     output = config.ROOT_DIR / "opencode.jsonc"
     if not template.exists():
         return
 
-    combos = _load_combos()
-    model_entries = []
-    for i, c in enumerate(combos):
-        comma = "," if i < len(combos) - 1 else ""
-        model_entries.append(f'        "{c["key"]}": {{ "name": "{c["key"]}" }}{comma}')
-    models_json = "{\n" + "\n".join(model_entries) + "\n      }"
+    cfg = _load_config()
+    team_state = _get_team()
 
-    # Resolve models based on current team mode
-    team_state = _get_team_mode()
+    # Resolve leader/special/worker/helper based on team mode
+    leader_1 = cfg.get("LEADER_1", "ocg/deepseek-v4-flash")
+    special = cfg.get("SPECIAL", "oc/deepseek-v4-flash-free")
+    worker_1 = cfg.get("WORKER_1", "oc/mimo-v2.5-free")
+    worker_2 = cfg.get("WORKER_2", "oc/big-pickle")
 
-    if team_state == "ON":  # Divisi — director leads all
-        root_model = _resolve_combo(combos, ["DIRECTOR", "LEADER"]) or "DIRECTOR"
-        small_model = _resolve_combo(combos, ["DEPUTY", "SENIOR"], root_model) or root_model
-        senior_model = root_model
-        junior_model = root_model
-    elif team_state == "TIM":  # Tim — team leader + senior + juniors
-        root_model = _resolve_combo(combos, ["TEAM_LEADER", "LEADER"]) or "TEAM_LEADER"
-        small_model = _resolve_combo(combos, ["SENIOR", "DEPUTY"], root_model) or root_model
-        senior_model = _resolve_combo(combos, ["SENIOR", "TEAM_LEADER"], root_model) or root_model
-        junior_model = _resolve_combo(combos, ["JUNIOR_1", "JUNIOR_2", "JUNIOR_3", "SENIOR"], root_model) or root_model
+    if team_state == "ON":  # Divisi — LEADER_1 leads, SPECIAL plans
+        leader = leader_1
+        spc = special
+        wrk = worker_1
+        hlp = worker_2
+    elif team_state == "TIM":  # Tim — SPECIAL leads AND plans
+        leader = special
+        spc = special
+        wrk = worker_1
+        hlp = worker_2
     else:  # BAWAHAN — workers only
-        root_model = _resolve_combo(combos, ["SENIOR", "TEAM_LEADER", "PEKERJA"]) or "SENIOR"
-        small_model = root_model
-        senior_model = root_model
-        junior_model = root_model
+        leader = worker_1
+        spc = worker_1
+        wrk = worker_1
+        hlp = worker_2
+
+    # Build provider models from all unique model names
+    all_models = {v for k, v in cfg.items() if k != "NINEROUTER_API_KEY" and v}
+    model_entries = sorted(f'        "{m}": {{ "name": "{m}" }}' for m in all_models)
+    models_json = "{\n" + "\n".join(model_entries) + "\n      }"
 
     skill_paths = _load_skill_paths()
     skill_paths_json = json.dumps(skill_paths)
 
     content = template.read_text(encoding="utf-8")
-    content = content.replace("${COMBO_MODELS}", models_json)
-    content = content.replace("${ROUTER_MODEL}", root_model)
-    content = content.replace("${ROUTER_SMALL_MODEL}", small_model)
-    content = content.replace("${SENIOR_MODEL}", senior_model)
-    content = content.replace("${JUNIOR_MODEL}", junior_model)
+    content = content.replace("${MODELS_JSON}", models_json)
+    content = content.replace("${LEADER}", leader)
+    content = content.replace("${SPECIAL}", spc)
+    content = content.replace("${WORKER}", wrk)
+    content = content.replace("${HELPER}", hlp)
     content = content.replace("${SKILL_PATHS}", skill_paths_json)
     tmp = output.with_suffix(".jsonc.tmp")
     tmp.write_text(content, encoding="utf-8")

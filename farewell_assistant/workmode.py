@@ -37,39 +37,6 @@ def _switch_default_agent(target: str) -> bool:
         return False
 
 
-def set_models(model_key: str, small_key: str, tier: str = "divisi"):
-    """JSONC-safe model swap — updates root + agent-level models per team tier."""
-    if not OC_FILE.exists():
-        return
-    try:
-        content = OC_FILE.read_text(encoding="utf-8")
-
-        # Step 1: Set all AGENT models (indented lines) to model_key
-        content = re.sub(
-            r'(\s{4,}"model"\s*:\s*)"[^"]*"',
-            lambda m: f'{m.group(1)}"{model_key}"',
-            content,
-        )
-
-        # Step 2: Set ROOT model (first occurrence, minimal indent)
-        content = re.sub(
-            r'^(\s*"model"\s*:\s*)"[^"]*"',
-            lambda m: f'{m.group(1)}"{model_key}"',
-            content, count=1, flags=re.MULTILINE,
-        )
-
-        content = re.sub(
-            r'^(\s*"small_model"\s*:\s*)"[^"]*"',
-            lambda m: f'{m.group(1)}"{small_key}"',
-            content, count=1, flags=re.MULTILINE,
-        )
-        tmp = OC_FILE.with_suffix(".jsonc.tmp")
-        tmp.write_text(content, encoding="utf-8")
-        tmp.replace(OC_FILE)
-    except Exception:
-        pass
-
-
 def switch_workmode(action: str):
     current = read_json(config.WORK_MODE_FILE, {}).get("mode", "build")
     if action == "status":

@@ -102,8 +102,8 @@ def _load_db_combos() -> list[dict]:
         if row[0].lower() == "nvidia": continue
         models = json.loads(row[2]) if row[2] else []
         if models:
-            kind = row[1] or "round-robin"
-            combos.append({"key": row[0], "name": f"{row[0]} ({len(models)} models, {kind})", "models": models})
+            kind = row[1] if row[1] and row[1] != "None" else "round-robin"
+            combos.append({"key": row[0], "kind": kind, "models": models})
     conn.close()
     return combos
 
@@ -137,7 +137,7 @@ def _sync_opencode():
     model_entries = []
     for i, c in enumerate(combos):
         comma = "," if i < len(combos) - 1 else ""
-        model_entries.append(f'        "{c["key"]}": {{ "name": "{c["name"]}" }}{comma}')
+        model_entries.append(f'        "{c["key"]}": {{ "name": "{c["key"]}" }}{comma}')
     models_json = "{\n" + "\n".join(model_entries) + "\n      }"
 
     content = template.read_text(encoding="utf-8")

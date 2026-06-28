@@ -1,22 +1,28 @@
 {
-  "project": "service-hub",
-  "code": "002",
   "stack": [
-    "node",
-    "dart"
+    "database",
+    "flutter",
+    "nodejs"
   ],
   "skills": [
     "accessibility",
     "agent-self-evaluation",
+    "backend-patterns",
     "coding-standards",
+    "compose-multiplatform-patterns",
     "dart-flutter-patterns",
+    "database-migrations",
     "error-handling",
     "flutter-dart-code-review",
     "git-workflow",
+    "mysql-patterns",
+    "nestjs-patterns",
+    "postgres-patterns",
+    "prisma-patterns",
+    "redis-patterns",
     "security-review",
     "tdd-workflow",
     "verification-loop"
   ],
-  "total": 10,
-  "indexed_at": "2026-06-26T01:30:56.245961"
+  "project": "002-service-hub"
 }

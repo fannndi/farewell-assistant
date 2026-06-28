@@ -57,7 +57,21 @@ def cmd_daily(args):
 def cmd_project(args):
     from .helpers import list_registered_projects, read_json, write_json, _c, read_project_code
     from .memory import save_session
-    if args.action == "list":
+    reg = read_json(config.REGISTRY_FILE)
+    if args.action == "star" and args.code:
+        if not reg: return
+        for name, info in reg.get("projects", {}).items():
+            if info.get("project_code") == args.code:
+                old_active = reg.get("active", "farewell-assistant")
+                old_code = read_project_code(old_active)
+                save_session(old_code, old_active, f"switched to {args.code}-{name}")
+                reg["active"] = name
+                write_json(config.REGISTRY_FILE, reg)
+                _write_context_footer()
+                print(f"\n  {_c('[ACTIVE]', 'green')} {args.code}-{name}\n")
+                return
+        print(f"  Project code '{args.code}' not found.")
+    else:
         projects = list_registered_projects()
         if not projects: print("  No registered projects."); return
         print(); print("  === Registered Projects ===")
@@ -65,22 +79,22 @@ def cmd_project(args):
             marker = " <- active" if p["active"] else ""
             print(f"  {p['code']} - {p['name']} ({p['type']}, {p['dominan']}){marker}")
         print()
-    else:
-        reg = read_json(config.REGISTRY_FILE)
-        if not reg: return
-        for name, info in reg.get("projects", {}).items():
-            if info.get("project_code") == args.action:
-                # Save memory for previous project
-                old_active = reg.get("active", "farewell-assistant")
-                old_code = read_project_code(old_active)
-                save_session(old_code, old_active, f"switched to {args.action}-{name}")
 
-                reg["active"] = name
-                write_json(config.REGISTRY_FILE, reg)
-                _write_context_footer()
-                print(f"\n  {_c('[ACTIVE]', 'green')} {args.action}-{name}\n")
-                return
-        print(f"  Project code '{args.action}' not found.")
+
+def cmd_setup_project(args):
+    from .helpers import _c
+    from .setup_project import analyze_and_register
+    try:
+        res = analyze_and_register(args.path)
+        action_verb = "Updated" if res["action"] == "updated" else "Registered"
+        label = f"[{action_verb}] {res['code']}-{res['name']}"
+        print(f"\n  {_c(label, 'green')}")
+        print(f"  Type: {res['type']} | Dominan: {res['dominan']}")
+        print(f"  Stack: {', '.join(res['stack'])}")
+        print(f"  Skills: {len(res['skills'])} matched")
+        print(f"  Path: {res['path']}\n")
+    except ValueError as e:
+        print(f"  {_c('[FAIL]', 'red')} {e}")
 
 
 def cmd_org(args):
@@ -273,8 +287,13 @@ def main():
     daily_p.set_defaults(func=cmd_daily)
 
     proj_p = subparsers.add_parser("project", help="List or switch active project")
-    proj_p.add_argument("action", nargs="?", default="list", help="Project code or 'list'")
+    proj_p.add_argument("action", nargs="?", default="list", choices=["star", "list"], help="star <code> to switch, list to show all")
+    proj_p.add_argument("code", nargs="?", default="", help="Project code to star")
     proj_p.set_defaults(func=cmd_project)
+
+    setup_p = subparsers.add_parser("setup-project", help="Register & analyze a project by path")
+    setup_p.add_argument("path", help="Absolute path to project directory")
+    setup_p.set_defaults(func=cmd_setup_project)
 
     org_p = subparsers.add_parser("org", help="Show org hierarchy, roles, workflow, decision priority")
     org_p.add_argument("action", nargs="?", default="all", choices=["chart", "roles", "workflow", "priority", "all"])

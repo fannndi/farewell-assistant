@@ -1,11 +1,8 @@
 {
   "project_code": "002",
   "project_name": "service-hub",
-  "last_summary": "working on auth integration",
-  "files_touched": [
-    "auth.ts",
-    "db.py"
-  ],
-  "user_messages": 3,
-  "updated_at": "2026-06-27T17:13:26.016413"
+  "last_summary": "switched to 001-farewell-assistant",
+  "files_touched": [],
+  "user_messages": 1,
+  "updated_at": "2026-06-28T12:27:12.181071"
 }
